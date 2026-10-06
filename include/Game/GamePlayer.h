@@ -4,6 +4,7 @@
 #include "sead/math/seadVector.h"
 #include "Game/Actor/GambitActor.h"
 #include "Game/GamePlayerBehindCamera.h"
+#include "cafe/vpad.h"
 
 namespace Game {
 
@@ -39,6 +40,44 @@ struct PlayerStateCloneEvent {
 };
 
 class Player : public GambitActor {
+public:
+    Player();
+    virtual ~Player() override;
+
+    // Actor lifecycle
+    virtual void init() override;
+    virtual void update() override;
+    virtual void postUpdate() override;
+    virtual void draw() override;
+
+    // State machine management
+    void changeState(PlayerStateID stateId);
+    PlayerStateID getCurrentState() const { return mCurrentState; }
+    bool isSquidState() const;
+    bool isHumanState() const;
+
+    // State tick & transition methods
+    void enterState(PlayerStateID state);
+    void updateState(PlayerStateID state);
+    void exitState(PlayerStateID state);
+
+    // Input & Physics
+    void handleInput(const VPADStatus& vpad);
+    void updatePhysics();
+    void updateInkSwimming();
+    void tryShoot();
+    void trySubWeapon();
+
+    // Network event handlers
+    void receiveDie_Net();
+    void receiveAirFall_Net();
+    void receiveWaterFall_Net();
+    void receiveRevival_Net();
+    void receiveUnk_Net();
+    void receiveStartDokanWarp_Net();
+    void receiveUnk2_Net();
+    void receiveEndDokanWarp_Net();
+
 public:
     undefined field0_0x0[44];
     s32 teamId;
@@ -102,22 +141,13 @@ public:
     undefined field59_0x890[64];
     PlayerBehindCamera* playerBehindCamera;
 
-    virtual ~Player();
-
-    // State transition handlers
-    void changeState(PlayerStateID stateId);
-    bool isSquidState() const;
-    bool isHumanState() const;
-
-    // Network event stubs
-    void receiveDie_Net();
-    void receiveAirFall_Net();
-    void receiveWaterFall_Net();
-    void receiveRevival_Net();
-    void receiveUnk_Net();
-    void receiveStartDokanWarp_Net();
-    void receiveUnk2_Net();
-    void receiveEndDokanWarp_Net();
+protected:
+    PlayerStateID mCurrentState;
+    f32 mInkTankAmount;     // 0.0 to 1.0 (empty to full)
+    sead::Vector3f mVelocity;
+    bool mIsGrounded;
+    bool mIsInFriendlyInk;
+    bool mIsInEnemyInk;
 };
 
 class PlayerCloneHandle {

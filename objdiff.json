@@ -11,6 +11,14 @@
   ],
   "units": [
     {
+      "name": "GamePlayer",
+      "target_path": "original/Gambit.elf",
+      "base_path": "build/src/Game/Player/GamePlayer.o",
+      "metadata": {
+        "complete": false
+      }
+    },
+    {
       "name": "GamePlayerCloneHandle",
       "target_path": "original/Gambit.elf",
       "base_path": "build/src/Game/Player/GamePlayerCloneHandle.o",
@@ -19,9 +27,41 @@
       }
     },
     {
-      "name": "GamePlayer",
+      "name": "GambitActor",
       "target_path": "original/Gambit.elf",
-      "base_path": "build/src/Game/Player/GamePlayer.o",
+      "base_path": "build/src/Game/Actor/GambitActor.o",
+      "metadata": {
+        "complete": false
+      }
+    },
+    {
+      "name": "GambitActorMgr",
+      "target_path": "original/Gambit.elf",
+      "base_path": "build/src/Game/Actor/GambitActorMgr.o",
+      "metadata": {
+        "complete": false
+      }
+    },
+    {
+      "name": "GameBullet",
+      "target_path": "original/Gambit.elf",
+      "base_path": "build/src/Game/Bullet/GameBullet.o",
+      "metadata": {
+        "complete": false
+      }
+    },
+    {
+      "name": "GameBulletBombSucker",
+      "target_path": "original/Gambit.elf",
+      "base_path": "build/src/Game/Bullet/GameBulletBombSucker.o",
+      "metadata": {
+        "complete": false
+      }
+    },
+    {
+      "name": "PaintTextureMgr",
+      "target_path": "original/Gambit.elf",
+      "base_path": "build/src/Game/Paint/PaintTextureMgr.o",
       "metadata": {
         "complete": false
       }
