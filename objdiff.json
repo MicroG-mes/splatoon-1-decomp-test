@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/encounter/objdiff/main/objdiff.schema.json",
+  "min_version": "2.0.0",
+  "custom_make": "ninja",
+  "build_base": false,
+  "build_target": false,
+  "watch_patterns": [
+    "src/**/*.cpp",
+    "src/**/*.h",
+    "include/**/*.h"
+  ],
+  "units": [
+    {
+      "name": "GamePlayerCloneHandle",
+      "target_path": "original/Gambit.elf",
+      "base_path": "build/src/Game/Player/GamePlayerCloneHandle.o",
+      "metadata": {
+        "complete": false
+      }
+    },
+    {
+      "name": "GamePlayer",
+      "target_path": "original/Gambit.elf",
+      "base_path": "build/src/Game/Player/GamePlayer.o",
+      "metadata": {
+        "complete": false
+      }
+    }
+  ]
+}
