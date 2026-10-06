@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include "sead/math/seadVector.h"
+#include "Game/Actor/GambitActor.h"
 #include "Game/GamePlayerBehindCamera.h"
 
 namespace Game {
@@ -37,7 +38,7 @@ struct PlayerStateCloneEvent {
     byte eventId;
 };
 
-class Player {
+class Player : public GambitActor {
 public:
     undefined field0_0x0[44];
     s32 teamId;

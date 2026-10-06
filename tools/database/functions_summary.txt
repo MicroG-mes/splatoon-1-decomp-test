@@ -1,0 +1,57 @@
+Splatoon 1 (Gambit) Function Catalog Summary
+============================================================
+Total Functions Cataloged: 96,655
+Directly Named Functions : 548
+Total Code Coverage      : 14,484,812 bytes
+
+Sample Cataloged Functions:
+  0x02000020 ( 272B) [Unknown.cpp] : fn_02000020
+  0x02000130 ( 108B) [Unknown.cpp] : fn_02000130
+  0x0200019C ( 172B) [Unknown.cpp] : fn_0200019C
+  0x02000248 ( 456B) [Unknown.cpp] : fn_02000248
+  0x02000410 ( 248B) [Unknown.cpp] : fn_02000410
+  0x02000508 (  84B) [Unknown.cpp] : fn_02000508
+  0x0200055C (  68B) [Unknown.cpp] : fn_0200055C
+  0x020005A0 (  64B) [Unknown.cpp] : fn_020005A0
+  0x020005E0 (  92B) [Unknown.cpp] : fn_020005E0
+  0x0200063C (  28B) [Unknown.cpp] : fn_0200063C
+  0x02000658 ( 128B) [Unknown.cpp] : fn_02000658
+  0x020006D8 ( 108B) [Unknown.cpp] : fn_020006D8
+  0x02000744 ( 124B) [Unknown.cpp] : fn_02000744
+  0x020007C0 (  28B) [Unknown.cpp] : fn_020007C0
+  0x020007DC (  20B) [Unknown.cpp] : fn_020007DC
+  0x020007F0 (  20B) [Unknown.cpp] : fn_020007F0
+  0x02000804 (  48B) [Unknown.cpp] : fn_02000804
+  0x02000834 (   8B) [Unknown.cpp] : fn_02000834
+  0x0200083C (  16B) [Unknown.cpp] : fn_0200083C
+  0x0200084C (  16B) [Unknown.cpp] : fn_0200084C
+  0x0200085C (  16B) [Unknown.cpp] : fn_0200085C
+  0x0200086C (  60B) [Unknown.cpp] : fn_0200086C
+  0x020008A8 (  40B) [Unknown.cpp] : fn_020008A8
+  0x020008D0 (  40B) [Unknown.cpp] : fn_020008D0
+  0x020008F8 ( 108B) [Unknown.cpp] : fn_020008F8
+  0x02000964 ( 104B) [Unknown.cpp] : fn_02000964
+  0x020009CC (  20B) [Unknown.cpp] : fn_020009CC
+  0x020009E0 (   4B) [Unknown.cpp] : fn_020009E0
+  0x020009E4 (   4B) [Unknown.cpp] : fn_020009E4
+  0x020009E8 (   4B) [Unknown.cpp] : fn_020009E8
+  0x020009EC (   4B) [Unknown.cpp] : fn_020009EC
+  0x020009F0 (   4B) [Unknown.cpp] : fn_020009F0
+  0x020009F4 (   4B) [Unknown.cpp] : fn_020009F4
+  0x020009F8 (   4B) [Unknown.cpp] : fn_020009F8
+  0x020009FC (   4B) [Unknown.cpp] : fn_020009FC
+  0x02000A00 (   4B) [Unknown.cpp] : fn_02000A00
+  0x02000A04 (   4B) [Unknown.cpp] : fn_02000A04
+  0x02000A08 (   4B) [Unknown.cpp] : fn_02000A08
+  0x02000A0C (   4B) [Unknown.cpp] : fn_02000A0C
+  0x02000A10 (   4B) [Unknown.cpp] : fn_02000A10
+  0x02000A14 (   4B) [Unknown.cpp] : fn_02000A14
+  0x02000A18 (   4B) [Unknown.cpp] : fn_02000A18
+  0x02000A1C (  28B) [Unknown.cpp] : fn_02000A1C
+  0x02000A38 (  28B) [Unknown.cpp] : fn_02000A38
+  0x02000A54 (  28B) [Unknown.cpp] : fn_02000A54
+  0x02000A70 (  28B) [Unknown.cpp] : fn_02000A70
+  0x02000A8C (  28B) [Unknown.cpp] : fn_02000A8C
+  0x02000AA8 (  16B) [Unknown.cpp] : fn_02000AA8
+  0x02000AB8 (  80B) [Unknown.cpp] : fn_02000AB8
+  0x02000B08 (  12B) [Unknown.cpp] : fn_02000B08
