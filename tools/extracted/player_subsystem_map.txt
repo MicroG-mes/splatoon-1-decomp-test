@@ -1,0 +1,642 @@
+
+=== Block 0x02621000 (4 refs) ===
+  0x02621FF6: NpcPlaza
+  0x02621FFA: NpcPlaza
+  0x02621586: GameNpcPlaza.cpp
+  0x0262159E: GameNpcPlaza.cpp
+
+=== Block 0x02622000 (2 refs) ===
+  0x02622B06: neck
+  0x02622B12: neck
+
+=== Block 0x02624000 (4 refs) ===
+  0x02624276: GameNpcPlazaAction.cpp
+  0x02624282: GameNpcPlazaAction.cpp
+  0x0262436E: GameNpcPlazaAction.cpp
+  0x0262437A: GameNpcPlazaAction.cpp
+
+=== Block 0x02625000 (16 refs) ===
+  0x02625372: StateId::cWait
+  0x0262537A: StateId::cWait
+  0x0262546E: StateId::cAppearWait
+  0x02625476: StateId::cAppearWait
+  0x02625572: StateId::cCustomize
+  0x0262557A: StateId::cCustomize
+  0x02625676: StateId::cShow
+  0x0262567E: StateId::cShow
+  0x026257AA: IsPresetReserve
+  0x026257B2: IsPresetReserve
+  0x026257C2: PlazaNpcSpawnType
+  0x026257CE: PlazaNpcSpawnType
+  0x026257D6: PresetName
+  0x026257E2: PresetName
+  0x0262581A: Combination
+  0x02625826: Combination
+
+=== Block 0x02626000 (6 refs) ===
+  0x02626A06: NpcPlazaMgr
+  0x02626A0A: NpcPlazaMgr
+  0x0262647A: NpcPlazaMgr
+  0x02626492: NpcPlazaMgr
+  0x026264AE: NpcPlaza
+  0x026264BA: NpcPlaza
+
+=== Block 0x02627000 (20 refs) ===
+  0x0262785E: M_Eye
+  0x02627862: tex_mtx0
+  0x02627866: M_Eye
+  0x0262786E: tex_mtx0
+  0x0262788E: TsukkomiTalk
+  0x02627896: TsukkomiTalk
+  0x02627C1A: StateId::cWait
+  0x02627C22: StateId::cWait
+  0x02627D52: head1
+  0x02627D5A: head1
+  0x02627DAE: mouth00
+  0x02627DB6: mouth00
+  0x02627E36: Lighting
+  0x02627E3E: Lighting
+  0x02627E96: Blink
+  0x02627E9E: Blink
+  0x02627F12: Blink
+  0x02627F1A: Blink
+  0x02627FB6: CameraIdol
+  0x02627FBE: CameraIdol
+
+=== Block 0x02628000 (6 refs) ===
+  0x02628366: TalkMouth
+  0x0262836E: TalkMouth
+  0x02628586: Blink
+  0x02628596: Blink
+  0x026285E2: Blink
+  0x026285EE: Blink
+
+=== Block 0x02629000 (28 refs) ===
+  0x02629C32: Npc_IdolA
+  0x02629C3A: Npc_IdolA
+  0x02629C52: Npc_IdolB
+  0x02629C5A: Npc_IdolB
+  0x02629C6A: Invalid
+  0x02629C72: Invalid
+  0x02629D02: IdolChairA
+  0x02629D0A: IdolChairA
+  0x02629D16: IdolChairB
+  0x02629D1E: Wait
+  0x02629D22: IdolChairB
+  0x02629D32: Wait
+  0x02629D36: NormalTalk
+  0x02629D42: NormalTalk
+  0x02629D4A: Greeting
+  0x02629D52: Greeting
+  0x02629D5A: Happy
+  0x02629D62: Happy
+  0x02629D6A: Surprised
+  0x02629D72: Surprised
+  0x02629D7A: Bored
+  0x02629D86: Angry
+  0x02629D8A: Bored
+  0x02629D92: Angry
+  0x02629D9A: Breaktime
+  0x02629DA2: Breaktime
+  0x02629DAA: Breaktime_Notice
+  0x02629DB2: Breaktime_Notice
+
+=== Block 0x0262A000 (16 refs) ===
+  0x0262A0DE: NpcPlazaNews
+  0x0262A0E2: NpcPlazaNews
+  0x0262AB02: cState_Init
+  0x0262AB0A: cState_Init
+  0x0262ABFE: cState_Wait
+  0x0262AC06: cState_Wait
+  0x0262AD02: cState_Move
+  0x0262AD0A: cState_Move
+  0x0262AEFA: RandomPattern
+  0x0262AEFE: RandomPattern
+  0x0262AF82: PlazaSimpleNpcType
+  0x0262AF92: PlazaSimpleNpcType
+  0x0262AF9E: IsUseHighCollision
+  0x0262AFAA: IsUseHighCollision
+  0x0262AFB6: AnimName
+  0x0262AFC2: AnimName
+
+=== Block 0x0262B000 (14 refs) ===
+  0x0262B2F6: PlazaSimpleNPC
+  0x0262B2FE: PlazaSimpleNPC
+  0x0262B352: PlazaSimpleNPC
+  0x0262B35A: PlazaSimpleNPC
+  0x0262B43A: Walk_Plaza_SurpriseL
+  0x0262B44E: Walk_Plaza_SurpriseL
+  0x0262B45A: Walk_Plaza_SurpriseB
+  0x0262B46E: Walk_Plaza_SurpriseF
+  0x0262B476: Walk_Plaza_SurpriseF
+  0x0262B486: Walk_Plaza_SurpriseB
+  0x0262B4A2: Walk_Plaza_SurpriseR
+  0x0262B4DA: Walk_Plaza_SurpriseR
+  0x0262B562: Wait_random
+  0x0262B566: Wait_random
+
+=== Block 0x0262C000 (28 refs) ===
+  0x0262C71A: NpcPlazaSimple
+  0x0262C71E: NpcPlazaSimple
+  0x0262C28E: Wait
+  0x0262C2A6: Walk_Plaza
+  0x0262C2AE: Walk_Plaza
+  0x0262C2B2: Wait
+  0x0262C2C6: Wait_Plaza_Chair
+  0x0262C2CE: Wait_Plaza_DanceB
+  0x0262C2DE: Wait_Plaza_Chair
+  0x0262C2E6: Wait_Plaza_DanceA
+  0x0262C2EE: Wait_Plaza_Dance
+  0x0262C2F6: Walk_Plaza_SurpriseR
+  0x0262C2FE: Wait_Plaza_Dance
+  0x0262C302: Wait_Plaza_DanceA
+  0x0262C30A: Wait_Plaza_DanceB
+  0x0262C312: Walk_Plaza_SurpriseF
+  0x0262C31A: Walk_Plaza_SurpriseF
+  0x0262C322: Walk_Plaza_SurpriseB
+  0x0262C32A: Walk_Plaza_SurpriseB
+  0x0262C332: Walk_Plaza_SurpriseL
+  0x0262C33A: Walk_Plaza_SurpriseL
+  0x0262C35A: Walk_Plaza_SurpriseR
+  0x0262C362: Clothes
+  0x0262C36A: Clothes
+  0x0262C37E: NpcPlazaSimple
+  0x0262C386: NpcPlazaSimple
+  0x0262C38E: Npc_Jerry00
+  0x0262C396: Npc_Jerry00
+
+=== Block 0x0262D000 (2 refs) ===
+  0x0262DFE2: Shachihoko
+  0x0262DFEA: Shachihoko
+
+=== Block 0x0262E000 (2 refs) ===
+  0x0262E446: GamePlayer.cpp
+  0x0262E456: GamePlayer.cpp
+
+=== Block 0x0262F000 (10 refs) ===
+  0x0262F506: Unknown
+  0x0262F522: Unknown
+  0x0262F5D2: Unknown
+  0x0262F5DE: Unknown
+  0x0262F61E: Unknown
+  0x0262F62A: Unknown
+  0x0262FE32: StateID::Human_Wait
+  0x0262FE3A: StateID::Human_Wait
+  0x0262FF1E: StateID::Human_Move
+  0x0262FF26: StateID::Human_Move
+
+=== Block 0x02630000 (30 refs) ===
+  0x02630012: StateID::Human_JumpSt
+  0x0263001A: StateID::Human_JumpSt
+  0x02630106: StateID::Human_Jump
+  0x0263010E: StateID::Human_Jump
+  0x026301FA: StateID::Human_JumpEd
+  0x02630202: StateID::Human_JumpEd
+  0x026302EE: StateID::Human_Jet
+  0x026302F6: StateID::Human_Jet
+  0x026303E2: StateID::Human_JetEd
+  0x026303EA: StateID::Human_JetEd
+  0x026304D6: StateID::Squid_Wait
+  0x026304DE: StateID::Squid_Wait
+  0x026305CA: StateID::Squid_Move
+  0x026305D2: StateID::Squid_Move
+  0x026306BE: StateID::Squid_JumpSt
+  0x026306C6: StateID::Squid_JumpSt
+  0x026307B2: StateID::Squid_Jump
+  0x026307BE: StateID::Squid_Jump
+  0x02630832: StateID::Squid_JumpEd
+  0x0263083A: StateID::Squid_JumpEd
+  0x026308B2: StateID::Squid_Jet
+  0x026308BA: StateID::Squid_Jet
+  0x02630932: StateID::Squid_JetEd
+  0x0263093A: StateID::Squid_JetEd
+  0x026309B2: StateID::Squid_InkRail
+  0x026309BA: StateID::Squid_InkRail
+  0x02630A36: StateID::Squid_Geyser
+  0x02630A3E: StateID::Squid_Geyser
+  0x02630AB6: StateID::Squid_ObjAim
+  0x02630ABE: StateID::Squid_ObjAim
+
+=== Block 0x02633000 (2 refs) ===
+  0x0263393E: MarkingDeathAttackStart
+  0x02633946: MarkingDeathAttackStart
+
+=== Block 0x02635000 (4 refs) ===
+  0x02635936: ?333AllMarkingStart
+  0x0263593E: ?333AllMarkingStart
+  0x02635FB2: AllMarkingStart
+  0x02635FBA: AllMarkingStart
+
+=== Block 0x02638000 (2 refs) ===
+  0x02638842: D:/home/Cafe/Gambit/App/Program/Game/Player/GamePlayer.cpp
+  0x0263884E: D:/home/Cafe/Gambit/App/Program/Game/Player/GamePlayer.cpp
+
+=== Block 0x02639000 (4 refs) ===
+  0x02639A4E: ?333AllMarkingStart
+  0x02639A52: ?333AllMarkingStart
+  0x02639F56: ?333AllMarkingStart
+  0x02639F5E: ?333AllMarkingStart
+
+=== Block 0x0263D000 (4 refs) ===
+  0x0263DC92: ?333AllMarkingStart
+  0x0263DC9A: ?333AllMarkingStart
+  0x0263DE62: ?333AllMarkingStart
+  0x0263DE6A: ?333AllMarkingStart
+
+=== Block 0x0263E000 (6 refs) ===
+  0x0263E17A: ?333AllMarkingStart
+  0x0263E17E: ?333AllMarkingStart
+  0x0263E8BA: ?333AllMarkingStart
+  0x0263E8BE: ?333AllMarkingStart
+  0x0263E98A: ?333AllMarkingStart
+  0x0263E98E: ?333AllMarkingStart
+
+=== Block 0x0263F000 (2 refs) ===
+  0x0263F492: ?333AllMarkingStart
+  0x0263F49A: ?333AllMarkingStart
+
+=== Block 0x02641000 (4 refs) ===
+  0x0264120A: ?333AllMarkingStart
+  0x02641212: ?333AllMarkingStart
+  0x0264157A: D:/home/Cafe/Gambit/App/Program/Game/Player/GamePlayer.cpp
+  0x02641586: D:/home/Cafe/Gambit/App/Program/Game/Player/GamePlayer.cpp
+
+=== Block 0x02642000 (2 refs) ===
+  0x026429F6: ?333AllMarkingStart
+  0x026429FE: ?333AllMarkingStart
+
+=== Block 0x02643000 (2 refs) ===
+  0x0264339A: ?333AllMarkingStart
+  0x026433A2: ?333AllMarkingStart
+
+=== Block 0x02644000 (2 refs) ===
+  0x02644B12: VSoul
+  0x02644B1A: VSoul
+
+=== Block 0x02646000 (2 refs) ===
+  0x0264676E: VToHumanEnemy
+  0x02646776: VToHumanEnemy
+
+=== Block 0x02647000 (4 refs) ===
+  0x026477B6: ?333AllMarkingStart
+  0x026477BE: ?333AllMarkingStart
+  0x02647AA6: ?333AllMarkingStart
+  0x02647AAE: ?333AllMarkingStart
+
+=== Block 0x02649000 (4 refs) ===
+  0x02649772: ?333AllMarkingStart
+  0x0264977A: ?333AllMarkingStart
+  0x026499DE: ?333AllMarkingStart
+  0x026499E6: ?333AllMarkingStart
+
+=== Block 0x0264B000 (12 refs) ===
+  0x0264B412: ?333AllMarkingStart
+  0x0264B416: ?333AllMarkingStart
+  0x0264B45E: ?333AllMarkingStart
+  0x0264B462: ?333AllMarkingStart
+  0x0264B4CE: ?333AllMarkingStart
+  0x0264B4D2: ?333AllMarkingStart
+  0x0264B62A: ?333AllMarkingStart
+  0x0264B62E: ?333AllMarkingStart
+  0x0264B676: ?333AllMarkingStart
+  0x0264B67A: ?333AllMarkingStart
+  0x0264B6E6: ?333AllMarkingStart
+  0x0264B6EA: ?333AllMarkingStart
+
+=== Block 0x0264F000 (4 refs) ===
+  0x0264F402: MarkingDeathPlayerDead
+  0x0264F40A: MarkingDeathPlayerDead
+  0x0264FED6: BulletCurlingSearchGuideOn
+  0x0264FEE2: BulletCurlingSearchGuideOn
+
+=== Block 0x02650000 (2 refs) ===
+  0x02650022: SquidAttack
+  0x0265002A: SquidAttack
+
+=== Block 0x02651000 (8 refs) ===
+  0x026510BA: BarrierEnd
+  0x026510C2: BarrierEnd
+  0x02651152: MarkingDamageEnd
+  0x0265115A: MarkingDamageEnd
+  0x0265120E: MarkingDamageEnd_ByYagura
+  0x02651216: MarkingDamageEnd_ByYagura
+  0x0265129A: DevilDamageEnd
+  0x026512A2: DevilDamageEnd
+
+=== Block 0x02652000 (8 refs) ===
+  0x0265220A: SpecialMode1Time
+  0x02652212: SpecialMode1Time
+  0x026526D2: Damage
+  0x026526DA: Damage
+  0x026526EE: VDamage
+  0x026526F6: VDamage
+  0x02652C42: GamePlayer.cpp
+  0x02652C4E: GamePlayer.cpp
+
+=== Block 0x02654000 (2 refs) ===
+  0x02654AA6: SuperShot
+  0x02654AAE: SuperShot
+
+=== Block 0x02655000 (2 refs) ===
+  0x02655D4A: GamePlayer.cpp
+  0x02655D56: GamePlayer.cpp
+
+=== Block 0x02656000 (2 refs) ===
+  0x026560A2: GamePlayer.cpp
+  0x026560AE: GamePlayer.cpp
+
+=== Block 0x02659000 (8 refs) ===
+  0x026592C6: ?333AllMarkingStart
+  0x026592D2: ?333AllMarkingStart
+  0x02659302: ?333AllMarkingStart
+  0x0265930E: ?333AllMarkingStart
+  0x02659A8A: D:/home/Cafe/Gambit/App/Program/Game/Player/GamePlayer.cpp
+  0x02659A92: D:/home/Cafe/Gambit/App/Program/Game/Player/GamePlayer.cpp
+  0x02659D02: SuperShotAvailable
+  0x02659D0A: SuperShotAvailable
+
+=== Block 0x0265A000 (16 refs) ===
+  0x0265A6D6: PlayerV0
+  0x0265A6E6: PlayerV0
+  0x0265A6F2: PlayerV1
+  0x0265A702: PlayerV1
+  0x0265A772: DuelPlayerCtrl
+  0x0265A782: DuelPlayerCtrl
+  0x0265A78E: DuelPlayerCtrlV0
+  0x0265A79E: DuelPlayerCtrlV0
+  0x0265A7AA: DuelPlayerCtrlV1
+  0x0265A7BA: DuelPlayerCtrlV1
+  0x0265A7C6: PlayerCtrl
+  0x0265A7D6: PlayerCtrl
+  0x0265A7E2: PlayerOther
+  0x0265A7F2: PlayerOther
+  0x0265AC1E: ?333AllMarkingStart
+  0x0265AC2E: ?333AllMarkingStart
+
+=== Block 0x0265B000 (2 refs) ===
+  0x0265B80E: Player
+  0x0265B812: Player
+
+=== Block 0x0265C000 (6 refs) ===
+  0x0265CB4E: SpFull
+  0x0265CB5E: SpFull
+  0x0265CBB6: Blink
+  0x0265CBBE: Blink
+  0x0265CC2E: Sqd_Blink
+  0x0265CC36: Sqd_Blink
+
+=== Block 0x0265D000 (4 refs) ===
+  0x0265D84A: Sqd_Stain
+  0x0265D852: Sqd_Stain
+  0x0265D85A: Stain
+  0x0265D85E: Stain
+
+=== Block 0x02660000 (4 refs) ===
+  0x02660672: GamePlayerBehindCamera.cpp
+  0x02660682: GamePlayerBehindCamera.cpp
+  0x0266082A: GamePlayerBehindCamera.cpp
+  0x02660836: GamePlayerBehindCamera.cpp
+
+=== Block 0x02664000 (2 refs) ===
+  0x02664E5A: ?fff?@
+  0x02664E62: ?fff?@
+
+=== Block 0x02665000 (2 refs) ===
+  0x02665052: GyroPitchBase
+  0x0266505E: GyroPitchBase
+
+=== Block 0x02666000 (6 refs) ===
+  0x0266605E: ?fff?@
+  0x02666062: ?fff?@
+  0x026660F6: ?fff?@
+  0x026660FE: ?fff?@
+  0x02666D5A: ?fff?@
+  0x02666D5E: ?fff?@
+
+=== Block 0x02667000 (8 refs) ===
+  0x0266760E: ?fff?@
+  0x0266761A: ?fff?@
+  0x0266764A: ?fff?@
+  0x02667656: ?fff?@
+  0x02667676: ?fff?@
+  0x02667682: ?fff?@
+  0x02667862: ?fff?@
+  0x0266786E: ?fff?@
+
+=== Block 0x02668000 (6 refs) ===
+  0x02668A96: ?s33
+  0x02668A9A: ?s33
+  0x02668B66: ?s33
+  0x02668B6A: ?s33
+  0x02668E3E: ?fff?@
+  0x02668E42: ?fff?@
+
+=== Block 0x02669000 (4 refs) ===
+  0x026692CA: ?fff?@
+  0x026692E2: ?fff?@
+  0x02669C82: Game::PlayerClone
+  0x02669C8A: Game::PlayerClone
+
+=== Block 0x0266A000 (4 refs) ===
+  0x0266A3F2: PlayerStateSendInterval
+  0x0266A402: PlayerStateSendInterval
+  0x0266A9F6: PlayerNetState::mFrmAir
+  0x0266AA02: PlayerNetState::mFrmAir
+
+=== Block 0x0266F000 (2 refs) ===
+  0x0266FC56: ValidEventCloneDeferment
+  0x0266FC62: ValidEventCloneDeferment
+
+=== Block 0x0267F000 (14 refs) ===
+  0x0267F3A6: VGetItem
+  0x0267F462: VGetItem
+  0x0267F4B6: VGetItem
+  0x0267F4F6: Barrier
+  0x0267F4FE: Barrier
+  0x0267F522: VGetItem
+  0x0267F562: SuperShot
+  0x0267F56A: SuperShot
+  0x0267F58E: VGetItem
+  0x0267F632: VGetItem
+  0x0267F686: VGetItem
+  0x0267F72E: FreeBombs
+  0x0267F736: FreeBombs
+  0x0267F75A: VGetItem
+
+=== Block 0x02681000 (6 refs) ===
+  0x02681E1A: InkInF
+  0x02681E1E: InkInF
+  0x02681E3A: InkInF
+  0x02681E56: InkOutF
+  0x02681E5A: InkOutF
+  0x02681E76: InkOutF
+
+=== Block 0x02682000 (11 refs) ===
+  0x026829AA: MarkingCancel
+  0x026829B6: MarkingCancel
+  0x026829BE: MarkingEnd
+  0x026829C6: MarkingEnd
+  0x02682A2E: MarkingDamageStart_ByEnemyPlayer
+  0x02682A4A: MarkingDamageStart_ByEnemyPlayer
+  0x02682AB6: MarkingDamageStart_ByControlledPlayer
+  0x02682ABA: MarkingDamageStart_ByControlledPlayer
+  0x02682AE2: MarkingDamageStart_ByEnemyPlayer
+  0x02682EEE: GamePlayerEffect.cpp
+  0x02682EFA: GamePlayerEffect.cpp
+
+=== Block 0x02683000 (26 refs) ===
+  0x0268340A: ?wE9?
+  0x02683412: ?wE9?
+  0x02683A0E: InkDash
+  0x02683A1A: InkDash
+  0x02683A8A: NoRise
+  0x02683A96: NoRise
+  0x02683ADE: InkSplashAmi
+  0x02683AEA: InkSplashAmi
+  0x02683B12: InkMain
+  0x02683B1A: InkMain
+  0x02683B32: ModeV
+  0x02683B3E: ModeV
+  0x02683B9E: SwpBarrier
+  0x02683BAA: SwpBarrier
+  0x02683C0E: BarrierStart
+  0x02683C16: BarrierStart
+  0x02683DAA: Marking
+  0x02683DB6: Marking
+  0x02683DCA: MarkingEnd
+  0x02683DD2: MarkingEnd
+  0x02683DEA: YgrMarking
+  0x02683DFA: YgrMarking
+  0x02683E16: MarkingDamageStart_ByYagura
+  0x02683E1E: MarkingDamageStart_ByYagura
+  0x02683E4E: MarkingLine
+  0x02683E5A: MarkingLine
+
+=== Block 0x02684000 (32 refs) ===
+  0x026842EE: Deviling
+  0x026842FA: Deviling
+  0x0268432E: Deviling
+  0x0268433A: Deviling
+  0x02684352: MarkingPoint
+  0x02684362: MarkingPoint
+  0x0268438A: MarkingAttackStart
+  0x02684392: MarkingAttackStart
+  0x026847EE: MoveSmokeL
+  0x026847FA: MoveSmokeL
+  0x0268480E: FootMainL
+  0x02684816: FootMainL
+  0x0268482A: FootInkL
+  0x02684832: FootInkL
+  0x0268487E: MoveSmokeR
+  0x0268488A: MoveSmokeR
+  0x0268489E: FootMainR
+  0x026848A6: FootMainR
+  0x026848BA: FootInkR
+  0x026848C2: FootInkR
+  0x0268490E: FootLiftL
+  0x0268491A: FootLiftL
+  0x0268492E: FootUpL
+  0x02684936: FootUpL
+  0x0268494A: FootUpInkL
+  0x02684952: FootUpInkL
+  0x0268498A: FootLiftR
+  0x02684996: FootLiftR
+  0x026849AA: FootUpL
+  0x026849B2: FootUpL
+  0x026849C6: FootUpInkR
+  0x026849CE: FootUpInkR
+
+=== Block 0x02685000 (52 refs) ===
+  0x026850E2: InkLand
+  0x026850EE: InkLand
+  0x02685312: BrushLocus01
+  0x02685316: BrushLocus01
+  0x02685326: BrushLocus00
+  0x0268532A: BrushLocus00
+  0x026853CA: InkLimit
+  0x026853D2: InkLimit
+  0x02685432: PointLight
+  0x0268543E: PointLight
+  0x0268575A: Damage
+  0x02685766: Damage
+  0x0268599A: ChargeMask
+  0x026859AA: ChargeMask
+  0x026859CA: Msk
+  0x026859D2: Msk
+  0x02685A46: DeathFall
+  0x02685A4E: DeathFall
+  0x02685A66: DeadSteam
+  0x02685A6E: DeadSteam
+  0x02685BA2: ArmorMounting_0
+  0x02685BA6: ArmorMounting_0
+  0x02685BBE: ArmorGet
+  0x02685BC6: ArmorGet
+  0x02685BD2: ArmorMounting_2
+  0x02685BDA: ArmorMounting_2
+  0x02685BE2: ArmorMounting_1
+  0x02685BE6: ArmorMounting_1
+  0x02685BFE: ArmorGet
+  0x02685C06: ArmorGet
+  0x02685C4A: ArmorBreak_0
+  0x02685C4E: ArmorBreak_0
+  0x02685C66: ArmorLost
+  0x02685C6E: ArmorLost
+  0x02685C7A: ArmorBreak_2
+  0x02685C82: ArmorBreak_2
+  0x02685C8A: ArmorBreak_1
+  0x02685C8E: ArmorBreak_1
+  0x02685CA6: ArmorLost
+  0x02685CAE: ArmorLost
+  0x02685CDA: VChance
+  0x02685CE2: VChance
+  0x02685CFA: DevilDamageStart
+  0x02685D02: DevilDamageStart
+  0x02685D7E: SwpBarrier1Time
+  0x02685D8A: SwpBarrier1Time
+  0x02685E5A: SwpBarrierGuard
+  0x02685E66: SwpBarrierGuard
+  0x02685E7E: BarrierGuard
+  0x02685E86: BarrierGuard
+  0x02685EA6: BarrierKnockBack
+  0x02685EAE: BarrierKnockBack
+
+=== Block 0x02686000 (9 refs) ===
+  0x02686052: SwpBarrierGet
+  0x02686056: SwpBarrierGet
+  0x026860A6: SearchLine
+  0x026860AE: SearchLine
+  0x02686212: BarrierInfect
+  0x0268621A: BarrierInfect
+  0x0268631A: ShotLocus
+  0x02686342: ShotLocus
+  0x02686366: ShotLocus
+
+=== Block 0x0268D000 (4 refs) ===
+  0x0268D0D6: GamePlayerInkAction.cpp
+  0x0268D0E2: GamePlayerInkAction.cpp
+  0x0268DFB2: GamePlayerInkAction.cpp
+  0x0268DFC2: GamePlayerInkAction.cpp
+
+=== Block 0x0268E000 (2 refs) ===
+  0x0268E072: GamePlayerInkAction.cpp
+  0x0268E07E: GamePlayerInkAction.cpp
+
+=== Block 0x02690000 (11 refs) ===
+  0x02690C76: TankRestHi
+  0x02690C96: TankRestHi
+  0x02690CC6: TankRestLineHi
+  0x02690CD2: TankRestLineHi
+  0x02690CF2: TankRestHi
+  0x02690E3A: InkLimitL
+  0x02690E46: InkLimitL
+  0x02690FA6: DiveInkFrame
+  0x02690FB2: DiveInkFrame
+  0x02690FDE: DiveInkGauge
+  0x02690FEA: DiveInkGauge
+
+=== Block 0x02691000 (5 refs) ===
+  0x02691B72: TankRestBombL
+  0x02691B7E: TankRestBombL
+  0x02691B96: TankRestBombL
+  0x02691C9A: TankUsedGauge
+  0x02691CA6: TankUsedGauge

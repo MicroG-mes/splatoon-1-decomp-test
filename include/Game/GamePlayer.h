@@ -12,6 +12,27 @@ struct PlayerModel;
 struct PlayerEffect;
 struct PlayerNetControl;
 
+// State IDs recovered from binary strings at 0x0262FE32 - 0x02630AB6
+enum class PlayerStateID : u32 {
+    Human_Wait   = 0,
+    Human_Move   = 1,
+    Human_JumpSt = 2,
+    Human_Jump   = 3,
+    Human_JumpEd = 4,
+    Human_Jet    = 5, // Super Jump
+    Human_JetEd  = 6,
+    Squid_Wait   = 7,
+    Squid_Move   = 8,
+    Squid_JumpSt = 9,
+    Squid_Jump   = 10,
+    Squid_JumpEd = 11,
+    Squid_Jet    = 12,
+    Squid_JetEd  = 13,
+    Squid_InkRail= 14,
+    Squid_Geyser = 15,
+    Squid_ObjAim = 16,
+};
+
 struct PlayerStateCloneEvent {
     byte eventId;
 };
@@ -82,6 +103,12 @@ public:
 
     virtual ~Player();
 
+    // State transition handlers
+    void changeState(PlayerStateID stateId);
+    bool isSquidState() const;
+    bool isHumanState() const;
+
+    // Network event stubs
     void receiveDie_Net();
     void receiveAirFall_Net();
     void receiveWaterFall_Net();
