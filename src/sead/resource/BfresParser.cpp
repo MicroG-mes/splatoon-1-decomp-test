@@ -33,7 +33,6 @@ bool BfresParser::load(const u8* data, size_t size) {
     } else if (magic == cMagicLE) {
         mIsBigEndian = false;
     } else {
-        // Not a BFRES magic header
         return false;
     }
 
@@ -49,37 +48,175 @@ bool BfresParser::load(const u8* data, size_t size) {
         mIsBigEndian = false;
     }
 
-    u32 rawFileSize = *reinterpret_cast<const u32*>(data + 12);
-    u32 fileSize = Endian::toHostU32(rawFileSize, mIsBigEndian);
-    (void)fileSize;
+    auto readU32 = [this, data, size](size_t offset) -> u32 {
+        if (offset + 4 > size) return 0;
+        u32 raw = *reinterpret_cast<const u32*>(data + offset);
+        return Endian::toHostU32(raw, mIsBigEndian);
+    };
 
-    // Minimum mock/test model representation if parsed successfully
-    BfresModel parsedModel;
-    parsedModel.name = "FRES_Model_0";
+    auto readU16 = [this, data, size](size_t offset) -> u16 {
+        if (offset + 2 > size) return 0;
+        u16 raw = *reinterpret_cast<const u16*>(data + offset);
+        return Endian::toHostU16(raw, mIsBigEndian);
+    };
 
-    BfresMaterial defMat;
-    defMat.name = "DefMat";
-    defMat.shaderName = "splatoon_standard";
-    parsedModel.materials.push_back(defMat);
+    auto readF32 = [this, data, size](size_t offset) -> f32 {
+        if (offset + 4 > size) return 0.0f;
+        u32 raw = *reinterpret_cast<const u32*>(data + offset);
+        u32 host = Endian::toHostU32(raw, mIsBigEndian);
+        f32 res = 0.0f;
+        std::memcpy(&res, &host, 4);
+        return res;
+    };
 
-    BfresMesh mesh;
-    mesh.name = "Mesh_0";
-    mesh.materialIndex = 0;
+    // Scan for all FMDL (Model) blocks throughout the BFRES archive
+    const u32 targetFmdl = (mIsBigEndian) ? 0x464D444C : 0x4C444D46; // "FMDL"
+    const u32 targetFvtx = (mIsBigEndian) ? 0x46565458 : 0x58545646; // "FVTX"
+    const u32 targetFshp = (mIsBigEndian) ? 0x46534850 : 0x50485346; // "FSHP"
 
-    // Basic triangle placeholder for binary header validation
-    BfresVertex v0, v1, v2;
-    v0.position = Vector3f(0.0f, 1.0f, 0.0f);
-    v1.position = Vector3f(-1.0f, -1.0f, 0.0f);
-    v2.position = Vector3f(1.0f, -1.0f, 0.0f);
-    mesh.vertices.push_back(v0);
-    mesh.vertices.push_back(v1);
-    mesh.vertices.push_back(v2);
-    mesh.indices.push_back(0);
-    mesh.indices.push_back(1);
-    mesh.indices.push_back(2);
+    for (size_t offset = 0; offset + 64 <= size; offset += 4) {
+        if (*reinterpret_cast<const u32*>(data + offset) != targetFmdl) {
+            continue;
+        }
 
-    parsedModel.meshes.push_back(mesh);
-    mModels.push_back(parsedModel);
+        size_t fmdlOff = offset;
+        BfresModel model;
+
+        // Model name
+        u32 nameRel = readU32(fmdlOff + 4);
+        size_t nameActual = fmdlOff + 4 + nameRel;
+        if (nameActual < size) {
+            const char* nameStr = reinterpret_cast<const char*>(data + nameActual);
+            model.name = nameStr;
+        } else {
+            model.name = "FMDL_Model_" + std::to_string(mModels.size());
+        }
+
+        // Find FVTX vertex buffers associated with this model
+        u32 vtxRel = readU32(fmdlOff + 0x10);
+        size_t fvtxOff = fmdlOff + 0x10 + vtxRel;
+
+        std::vector<std::vector<Vector3f>> modelVertexPositions;
+
+        // Parse FVTX structures in range
+        for (size_t scanV = fvtxOff; scanV + 32 <= size && scanV < fmdlOff + 0x4000; scanV += 4) {
+            if (*reinterpret_cast<const u32*>(data + scanV) == targetFvtx) {
+                u32 numVerts = readU32(scanV + 8);
+                u32 vbArrRel = readU32(scanV + 0x18);
+                size_t vbArr = scanV + 0x18 + vbArrRel;
+
+                if (vbArr + 24 <= size) {
+                    u16 stride = readU16(vbArr + 0x0C);
+                    if (stride == 0) stride = 16;
+                    u32 vbDataRel = readU32(vbArr + 0x14);
+                    size_t vbData = vbArr + 0x14 + vbDataRel;
+
+                    if (vbData + numVerts * stride <= size) {
+                        std::vector<Vector3f> positions;
+                        positions.reserve(numVerts);
+                        for (size_t v = 0; v < numVerts; ++v) {
+                            size_t p = vbData + v * stride;
+                            Vector3f pos(readF32(p), readF32(p + 4), readF32(p + 8));
+                            positions.push_back(pos);
+                        }
+                        modelVertexPositions.push_back(std::move(positions));
+                    }
+                }
+            }
+        }
+
+        // Parse FSHP shapes
+        for (size_t scanS = fmdlOff; scanS + 64 <= size && scanS < fmdlOff + 0x10000; scanS += 4) {
+            if (*reinterpret_cast<const u32*>(data + scanS) == targetFshp) {
+                size_t fshpOff = scanS;
+                BfresMesh mesh;
+
+                u32 sNameRel = readU32(fshpOff + 4);
+                size_t sNameActual = fshpOff + 4 + sNameRel;
+                if (sNameActual < size) {
+                    mesh.name = reinterpret_cast<const char*>(data + sNameActual);
+                } else {
+                    mesh.name = "SubMesh_" + std::to_string(model.meshes.size());
+                }
+
+                u16 matIdx = readU16(fshpOff + 0x0E);
+                mesh.materialIndex = matIdx;
+
+                u16 vtxBufferIdx = readU16(fshpOff + 0x12);
+                if (vtxBufferIdx >= modelVertexPositions.size()) {
+                    vtxBufferIdx = 0;
+                }
+
+                // Read IndexBuffer from LOD 0
+                u32 lodArrRel = readU32(fshpOff + 0x30);
+                size_t lodArr = fshpOff + 0x30 + lodArrRel;
+
+                u32 idxCount = 0;
+                size_t idxBuf = 0;
+                if (lodArr + 24 <= size) {
+                    idxCount = readU32(lodArr + 8);
+                    u32 idxBufRel = readU32(lodArr + 0x14);
+                    idxBuf = lodArr + 0x14 + idxBufRel;
+                }
+
+                if (idxCount > 0 && idxBuf + 24 <= size) {
+                    u32 idxDataRel = readU32(idxBuf + 0x14);
+                    size_t idxData = idxBuf + 0x14 + idxDataRel;
+
+                    if (idxData + idxCount * 2 <= size && !modelVertexPositions.empty()) {
+                        const auto& positions = modelVertexPositions[vtxBufferIdx];
+                        mesh.vertices.resize(positions.size());
+                        for (size_t vi = 0; vi < positions.size(); ++vi) {
+                            mesh.vertices[vi].position = positions[vi];
+                            mesh.vertices[vi].normal = Vector3f(0.0f, 1.0f, 0.0f);
+                            mesh.vertices[vi].color = Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+                        }
+
+                        mesh.indices.reserve(idxCount);
+                        for (size_t k = 0; k < idxCount; ++k) {
+                            u16 idx = readU16(idxData + k * 2);
+                            if (idx < mesh.vertices.size()) {
+                                mesh.indices.push_back(idx);
+                            }
+                        }
+
+                        // Compute surface normal per triangle
+                        for (size_t tri = 0; tri + 2 < mesh.indices.size(); tri += 3) {
+                            u32 i0 = mesh.indices[tri];
+                            u32 i1 = mesh.indices[tri + 1];
+                            u32 i2 = mesh.indices[tri + 2];
+                            Vector3f e1 = mesh.vertices[i1].position - mesh.vertices[i0].position;
+                            Vector3f e2 = mesh.vertices[i2].position - mesh.vertices[i0].position;
+                            Vector3f n = e1.cross(e2).normalized();
+                            mesh.vertices[i0].normal = n;
+                            mesh.vertices[i1].normal = n;
+                            mesh.vertices[i2].normal = n;
+                        }
+
+                        model.meshes.push_back(std::move(mesh));
+                    }
+                }
+            }
+        }
+
+        // Materials
+        BfresMaterial defMat;
+        defMat.name = model.name + "_Mat";
+        defMat.shaderName = "splatoon_standard";
+        model.materials.push_back(defMat);
+
+        if (!model.meshes.empty()) {
+            mModels.push_back(std::move(model));
+        }
+    }
+
+    // Fallback if no full models were parsed
+    if (mModels.empty()) {
+        BfresModel fallbackModel;
+        fallbackModel.name = "Fallback_Cube";
+        fallbackModel = createProceduralCube("Fallback_Cube", 1.0f);
+        mModels.push_back(fallbackModel);
+    }
 
     return true;
 }
@@ -211,6 +348,22 @@ BfresModel BfresParser::createProceduralGroundPlane(const char* name, f32 width,
 }
 
 BfresModel BfresParser::createSplatoonCrateModel(const char* name, f32 size) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_GeneralBox.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = size / 15.0f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = (v.position - Vector3f(0.0f, 7.5f, 0.0f)) * scale;
+                }
+            }
+            return copy;
+        }
+    }
+
     BfresModel model;
     model.name = name ? name : "Obj_GeneralBox";
 
@@ -510,6 +663,22 @@ BfresModel BfresParser::createInkBulletModel(const char* name, f32 radius) {
 }
 
 BfresModel BfresParser::createSighterTargetModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_SighterTarget.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 2.4f / 21.5f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                }
+            }
+            return copy;
+        }
+    }
+
     BfresModel model;
     model.name = name ? name : "SighterTarget";
 
@@ -600,6 +769,152 @@ BfresModel BfresParser::createSighterTargetModel(const char* name) {
     model.meshes.push_back(standMesh);
     model.meshes.push_back(boardMesh);
     model.meshes.push_back(ringMesh);
+
+    return model;
+}
+
+BfresModel BfresParser::createKillerWailModel(const char* name, u32 teamId) {
+    BfresModel model;
+    model.name = name ? name : "Weapon_KillerWail";
+
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresMaterial speakerMat; speakerMat.name = "M_SpeakerBody"; speakerMat.teamColor = Vector4f(0.20f, 0.22f, 0.25f, 1.0f);
+    BfresMaterial hornMat;    hornMat.name = "M_SpeakerHorn";    hornMat.teamColor = teamColor;
+    BfresMaterial frameMat;   frameMat.name = "M_SpeakerFrame";   frameMat.teamColor = Vector4f(0.65f, 0.65f, 0.70f, 1.0f);
+
+    model.materials.push_back(speakerMat); // 0
+    model.materials.push_back(hornMat);    // 1
+    model.materials.push_back(frameMat);   // 2
+
+    BfresMesh bodyMesh;  bodyMesh.name = "SubMesh_Body";  bodyMesh.materialIndex = 0;
+    BfresMesh hornMesh;  hornMesh.name = "SubMesh_Horn";  hornMesh.materialIndex = 1;
+    BfresMesh frameMesh; frameMesh.name = "SubMesh_Frame"; frameMesh.materialIndex = 2;
+
+    auto addBox = [](BfresMesh& m, Vector3f center, Vector3f halfExtents, Vector4f col) {
+        Vector3f corners[8] = {
+            center + Vector3f(-halfExtents.x, -halfExtents.y, -halfExtents.z),
+            center + Vector3f( halfExtents.x, -halfExtents.y, -halfExtents.z),
+            center + Vector3f( halfExtents.x,  halfExtents.y, -halfExtents.z),
+            center + Vector3f(-halfExtents.x,  halfExtents.y, -halfExtents.z),
+            center + Vector3f(-halfExtents.x, -halfExtents.y,  halfExtents.z),
+            center + Vector3f( halfExtents.x, -halfExtents.y,  halfExtents.z),
+            center + Vector3f( halfExtents.x,  halfExtents.y,  halfExtents.z),
+            center + Vector3f(-halfExtents.x,  halfExtents.y,  halfExtents.z)
+        };
+        u32 faceIndices[6][4] = {
+            { 0, 3, 2, 1 }, { 4, 5, 6, 7 },
+            { 0, 1, 5, 4 }, { 2, 3, 7, 6 },
+            { 0, 4, 7, 3 }, { 1, 2, 6, 5 }
+        };
+        Vector3f faceNormals[6] = {
+            Vector3f(0, 0, -1), Vector3f(0, 0, 1),
+            Vector3f(0, -1, 0), Vector3f(0, 1, 0),
+            Vector3f(-1, 0, 0), Vector3f(1, 0, 0)
+        };
+        for (int f = 0; f < 6; ++f) {
+            u32 faceBase = static_cast<u32>(m.vertices.size());
+            for (int v = 0; v < 4; ++v) {
+                BfresVertex vert;
+                vert.position = corners[faceIndices[f][v]];
+                vert.normal = faceNormals[f];
+                vert.color = col;
+                vert.uv = (v == 0) ? Vector2f(0, 0) : (v == 1) ? Vector2f(1, 0) : (v == 2) ? Vector2f(1, 1) : Vector2f(0, 1);
+                m.vertices.push_back(vert);
+            }
+            m.indices.push_back(faceBase + 0); m.indices.push_back(faceBase + 1); m.indices.push_back(faceBase + 2);
+            m.indices.push_back(faceBase + 0); m.indices.push_back(faceBase + 2); m.indices.push_back(faceBase + 3);
+        }
+    };
+
+    // Central Megaphone Speaker Housing
+    addBox(bodyMesh, Vector3f(0.0f, 0.70f, 0.0f), Vector3f(0.40f, 0.40f, 0.70f), Vector4f(0.18f, 0.18f, 0.22f, 1.0f));
+    // Acoustic Flared Horn
+    addBox(hornMesh, Vector3f(0.0f, 0.70f, 0.85f), Vector3f(0.65f, 0.65f, 0.20f), teamColor);
+    addBox(hornMesh, Vector3f(0.0f, 0.70f, 1.05f), Vector3f(0.85f, 0.85f, 0.06f), teamColor * 1.15f);
+    // Tripod Stand Frame
+    addBox(frameMesh, Vector3f(-0.35f, 0.18f, -0.35f), Vector3f(0.06f, 0.20f, 0.06f), Vector4f(0.6f, 0.6f, 0.65f, 1.0f));
+    addBox(frameMesh, Vector3f( 0.35f, 0.18f, -0.35f), Vector3f(0.06f, 0.20f, 0.06f), Vector4f(0.6f, 0.6f, 0.65f, 1.0f));
+    addBox(frameMesh, Vector3f( 0.00f, 0.18f,  0.40f), Vector3f(0.06f, 0.20f, 0.06f), Vector4f(0.6f, 0.6f, 0.65f, 1.0f));
+
+    model.meshes.push_back(bodyMesh);
+    model.meshes.push_back(hornMesh);
+    model.meshes.push_back(frameMesh);
+
+    return model;
+}
+
+BfresModel BfresParser::createInkzookaModel(const char* name, u32 teamId) {
+    BfresModel model;
+    model.name = name ? name : "Weapon_Inkzooka";
+
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresMaterial barrelMat; barrelMat.name = "M_ZookaBarrel"; barrelMat.teamColor = Vector4f(0.15f, 0.15f, 0.18f, 1.0f);
+    BfresMaterial drumMat;   drumMat.name = "M_ZookaDrum";     drumMat.teamColor = teamColor;
+    BfresMaterial gripMat;   gripMat.name = "M_ZookaGrip";     gripMat.teamColor = Vector4f(0.85f, 0.85f, 0.15f, 1.0f);
+
+    model.materials.push_back(barrelMat);
+    model.materials.push_back(drumMat);
+    model.materials.push_back(gripMat);
+
+    BfresMesh barrelMesh; barrelMesh.name = "SubMesh_Barrel"; barrelMesh.materialIndex = 0;
+    BfresMesh drumMesh;   drumMesh.name = "SubMesh_Drum";     drumMesh.materialIndex = 1;
+    BfresMesh gripMesh;   gripMesh.name = "SubMesh_Grip";     gripMesh.materialIndex = 2;
+
+    auto addBox = [](BfresMesh& m, Vector3f center, Vector3f halfExtents, Vector4f col) {
+        Vector3f corners[8] = {
+            center + Vector3f(-halfExtents.x, -halfExtents.y, -halfExtents.z),
+            center + Vector3f( halfExtents.x, -halfExtents.y, -halfExtents.z),
+            center + Vector3f( halfExtents.x,  halfExtents.y, -halfExtents.z),
+            center + Vector3f(-halfExtents.x,  halfExtents.y, -halfExtents.z),
+            center + Vector3f(-halfExtents.x, -halfExtents.y,  halfExtents.z),
+            center + Vector3f( halfExtents.x, -halfExtents.y,  halfExtents.z),
+            center + Vector3f( halfExtents.x,  halfExtents.y,  halfExtents.z),
+            center + Vector3f(-halfExtents.x,  halfExtents.y,  halfExtents.z)
+        };
+        u32 faceIndices[6][4] = {
+            { 0, 3, 2, 1 }, { 4, 5, 6, 7 },
+            { 0, 1, 5, 4 }, { 2, 3, 7, 6 },
+            { 0, 4, 7, 3 }, { 1, 2, 6, 5 }
+        };
+        Vector3f faceNormals[6] = {
+            Vector3f(0, 0, -1), Vector3f(0, 0, 1),
+            Vector3f(0, -1, 0), Vector3f(0, 1, 0),
+            Vector3f(-1, 0, 0), Vector3f(1, 0, 0)
+        };
+        for (int f = 0; f < 6; ++f) {
+            u32 faceBase = static_cast<u32>(m.vertices.size());
+            for (int v = 0; v < 4; ++v) {
+                BfresVertex vert;
+                vert.position = corners[faceIndices[f][v]];
+                vert.normal = faceNormals[f];
+                vert.color = col;
+                vert.uv = (v == 0) ? Vector2f(0, 0) : (v == 1) ? Vector2f(1, 0) : (v == 2) ? Vector2f(1, 1) : Vector2f(0, 1);
+                m.vertices.push_back(vert);
+            }
+            m.indices.push_back(faceBase + 0); m.indices.push_back(faceBase + 1); m.indices.push_back(faceBase + 2);
+            m.indices.push_back(faceBase + 0); m.indices.push_back(faceBase + 2); m.indices.push_back(faceBase + 3);
+        }
+    };
+
+    // Bazooka Heavy Barrel (forward tube)
+    addBox(barrelMesh, Vector3f(0.0f, 0.0f, 0.25f), Vector3f(0.18f, 0.18f, 0.65f), Vector4f(0.20f, 0.20f, 0.22f, 1.0f));
+    // Muzzle Opening Rim
+    addBox(barrelMesh, Vector3f(0.0f, 0.0f, 0.90f), Vector3f(0.22f, 0.22f, 0.05f), Vector4f(0.15f, 0.15f, 0.15f, 1.0f));
+    // Ink Rotary Drum Magazine
+    addBox(drumMesh, Vector3f(0.0f, 0.08f, -0.15f), Vector3f(0.25f, 0.25f, 0.22f), teamColor);
+    // Grip Handle & Shoulder Rest
+    addBox(gripMesh, Vector3f(0.0f, -0.22f, 0.05f), Vector3f(0.06f, 0.15f, 0.08f), Vector4f(0.85f, 0.85f, 0.15f, 1.0f));
+    addBox(gripMesh, Vector3f(0.0f, -0.05f, -0.45f), Vector3f(0.12f, 0.12f, 0.16f), Vector4f(0.35f, 0.35f, 0.38f, 1.0f));
+
+    model.meshes.push_back(barrelMesh);
+    model.meshes.push_back(drumMesh);
+    model.meshes.push_back(gripMesh);
 
     return model;
 }

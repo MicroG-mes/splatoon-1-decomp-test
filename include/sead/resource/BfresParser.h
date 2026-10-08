@@ -118,6 +118,8 @@ public:
     static BfresModel createInklingSquidModel(const char* name = "InklingPlayerSquid", u32 teamId = 0);
     static BfresModel createInkBulletModel(const char* name = "InkBullet", f32 radius = 0.35f);
     static BfresModel createSighterTargetModel(const char* name = "SighterTarget");
+    static BfresModel createKillerWailModel(const char* name = "Weapon_KillerWail", u32 teamId = 0);
+    static BfresModel createInkzookaModel(const char* name = "Weapon_Inkzooka", u32 teamId = 0);
 
     bool loadFromSzsFile(const char* szsFilePath);
 

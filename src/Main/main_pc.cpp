@@ -78,6 +78,11 @@
 #include "Game/Shop/Npc_WeaponsShop.h"
 #include "Game/MiniGame/Obj_PlazaGame.h"
 #include "Game/Weapon/SuperWeaponShelter.h"
+#include "Game/Weapon/GameWeaponSuperShot.h"
+#include "Game/Weapon/GameWeaponMegaphone.h"
+#include "Game/Weapon/GameWeaponDaiouIka.h"
+#include "Game/Rule/Obj_QuarryBeltYagura.h"
+#include "Game/Net/AutoWarpPoint.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1073,6 +1078,77 @@ bool RunVerificationSuite() {
            specialMgrOk ? "PASSED" : "FAILED", spFlags);
     if (!specialMgrOk) allPassed = false;
 
+    // 21. Special Weapons Arsenal (Inkzooka, Killer Wail, Kraken)
+    printf("\n--- [21/22] SPECIAL WEAPONS ARSENAL (INKZOOKA, KILLER WAIL, KRAKEN) ---\n");
+
+    // GameWeaponSuperShot (Inkzooka)
+    Game::GameWeaponSuperShot superShot;
+    superShot.init();
+    superShot.activate(0, sead::Vector3f(0.0f, 1.0f, 0.0f));
+    bool ssCanFire = superShot.canFire();
+    bool ssFire = superShot.fire(sead::Vector3f(0.0f, 1.0f, 0.0f), sead::Vector3f(0.0f, 0.0f, 1.0f));
+    bool ssShotsOk = (superShot.getRemainingShots() == 5);
+    bool ssCooldownOk = (!superShot.canFire());
+    bool ssOk = (ssCanFire && ssFire && ssShotsOk && ssCooldownOk);
+    printf("  Inkzooka Launcher (GameWeaponSuperShot):     %s (Shots: %d/6, Cooldown: Active)\n",
+           ssOk ? "PASSED" : "FAILED", superShot.getRemainingShots());
+    if (!ssOk) allPassed = false;
+
+    // GameWeaponMegaphone (Killer Wail)
+    Game::GameWeaponMegaphone megaphone;
+    megaphone.init();
+    megaphone.deploy(0, sead::Vector3f(0.0f, 0.0f, 0.0f), 0.0f);
+    bool mgWarmup = megaphone.isWarmup();
+    for (int i = 0; i < 75; ++i) megaphone.update();
+    bool mgFiring = megaphone.isFiring();
+    f32 mgDmg = 0.0f;
+    bool mgHit = megaphone.checkDamageHit(sead::Vector3f(0.0f, 0.0f, 25.0f), 1.0f, &mgDmg);
+    bool mgOk = (mgWarmup && mgFiring && mgHit && mgDmg == 4.5f);
+    printf("  Killer Wail Megaphone (GameWeaponMegaphone): %s (Warmup: OK, Laser Firing: %s, Hit Dmg: %.1f)\n",
+           mgOk ? "PASSED" : "FAILED", mgFiring ? "YES" : "NO", mgDmg);
+    if (!mgOk) allPassed = false;
+
+    // GameWeaponDaiouIka (Kraken)
+    Game::GameWeaponDaiouIka daiouIka;
+    daiouIka.init();
+    daiouIka.activate(0, sead::Vector3f(0.0f, 0.0f, 0.0f));
+    bool krActive = daiouIka.isActive();
+    bool krSpin = daiouIka.triggerSpinAttack();
+    f32 krDmg = 0.0f;
+    bool krHit = daiouIka.checkSpinDamage(sead::Vector3f(0.5f, 0.0f, 0.5f), 1.0f, &krDmg);
+    bool krOk = (krActive && krSpin && krHit && krDmg == 160.0f);
+    printf("  Kraken Invincible Squid (GameWeaponDaiouIka):%s (Active: YES, Spin Attack: YES, Hit Dmg: %.0f HP)\n",
+           krOk ? "PASSED" : "FAILED", krDmg);
+    if (!krOk) allPassed = false;
+
+    // 22. Ranked Tower Control & Super Jump Ballistics
+    printf("\n--- [22/22] RANKED TOWER CONTROL & SUPER JUMP BALLISTICS ---\n");
+
+    // Obj_QuarryBeltYagura (Tower Control Spline Rail)
+    Game::Obj_QuarryBeltYagura towerActor;
+    towerActor.init();
+    towerActor.updateRiders(2, 0);
+    towerActor.update();
+    bool towerAdv = (towerActor.getCurrentRailProgress() > 0.0f);
+    bool towerScore = (towerActor.getDistanceScoreAlpha() < 100.0f);
+    bool towerRailOk = (towerAdv && towerScore);
+    printf("  Tower Control Rail (Obj_QuarryBeltYagura):   %s (Progress: %.4f, Score Alpha: %.1f)\n",
+           towerRailOk ? "PASSED" : "FAILED", towerActor.getCurrentRailProgress(), towerActor.getDistanceScoreAlpha());
+    if (!towerRailOk) allPassed = false;
+
+    // AutoWarpPoint (Super Jump Parabola)
+    Game::AutoWarpPoint superJumpActor;
+    superJumpActor.init();
+    superJumpActor.launchSuperJump(sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(20.0f, 0.0f, 40.0f), 0, false);
+    bool warpSquat = (superJumpActor.getState() == Game::SuperJumpState::cWindupSquat);
+    for (int i = 0; i < 125; ++i) superJumpActor.update();
+    bool warpFlight = (superJumpActor.getState() == Game::SuperJumpState::cAirborneParabola);
+    bool warpHigher = (superJumpActor.getCurrentSquidPos().y > 10.0f);
+    bool warpOk = (warpSquat && warpFlight && warpHigher);
+    printf("  Super Jump Parabola (AutoWarpPoint):         %s (Squat: OK, Flight Apex Y: %.1fm)\n",
+           warpOk ? "PASSED" : "FAILED", superJumpActor.getCurrentSquidPos().y);
+    if (!warpOk) allPassed = false;
+
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
     printf("=================================================================\n\n");
@@ -1091,7 +1167,7 @@ void ListAllStages() {
     printf("\n");
 }
 
-bool DumpSarcFile(const char* filePath) {
+bool DumpSarcFile(const char* filePath, const char* outDir = nullptr) {
     printf("[*] Inspecting SARC/SZS Archive: %s\n", filePath);
     std::ifstream file(filePath, std::ios::binary | std::ios::ate);
     if (!file.is_open()) {
@@ -1114,12 +1190,27 @@ bool DumpSarcFile(const char* filePath) {
         return false;
     }
 
+    if (outDir) {
+        CreateDirectoryA(outDir, nullptr);
+        printf("[+] Extracting files to directory: %s\n", outDir);
+    }
+
     printf("[+] Archive loaded successfully! File count: %zu\n", archive.getFileCount());
     for (size_t i = 0; i < archive.getFileCount(); ++i) {
         const auto* info = archive.getFileInfo(i);
         if (info) {
             printf("  [%03zu] %-40s | Size: %6zu bytes | Hash: 0x%08X\n",
                    i, info->name.c_str(), info->size, info->nameHash);
+
+            if (outDir && info->data && info->size > 0) {
+                std::string outPath = std::string(outDir) + "/" + info->name;
+                FILE* fp = fopen(outPath.c_str(), "wb");
+                if (fp) {
+                    fwrite(info->data, 1, info->size, fp);
+                    fclose(fp);
+                    printf("    -> Saved: %s\n", outPath.c_str());
+                }
+            }
         }
     }
     return true;
@@ -1138,6 +1229,8 @@ static bool s_KeyUp = false, s_KeyDown = false, s_KeyLeft = false, s_KeyRight = 
 static bool s_KeyShift = false, s_KeySpace = false;
 static bool s_IsFiring = false;
 static bool s_ThrowBombRequested = false;
+static bool s_ActivateSpecialRequested = false;
+static bool s_SuperJumpRequested = false;
 static bool s_ToggleCameraRequested = false;
 static bool s_CycleWeaponRequested = false;
 static int s_ActiveWeaponType = 0; // 0 = Splattershot, 1 = Splat Roller, 2 = Splat Charger
@@ -1164,6 +1257,10 @@ LRESULT CALLBACK SplatoonWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
             printf("[+] Switched Active Ink: Team Bravo (Neon Cyan)\n");
         } else if (wParam == 'E' || wParam == 'Q') {
             s_CycleWeaponRequested = true;
+        } else if (wParam == 'F' || wParam == 'V' || wParam == 'Z') {
+            s_ActivateSpecialRequested = true;
+        } else if (wParam == 'J') {
+            s_SuperJumpRequested = true;
         } else if (wParam == VK_SPACE) {
             s_KeySpace = true;
             s_SplattedThisFrame = true;
@@ -1208,6 +1305,9 @@ LRESULT CALLBACK SplatoonWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
         break;
     case WM_RBUTTONDOWN:
         s_ThrowBombRequested = true;
+        break;
+    case WM_MBUTTONDOWN:
+        s_ActivateSpecialRequested = true;
         break;
     case WM_MOUSEMOVE: {
         int mx = LOWORD(lParam);
@@ -1307,10 +1407,20 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
     sead::BfresModel inklingSquidModel = sead::BfresParser::createInklingSquidModel("PlayerSquid", s_CurrentPaintTeam);
     sead::BfresModel bulletModel = sead::BfresParser::createInkBulletModel("InkBullet", 0.35f);
     sead::BfresModel bombModel = sead::BfresParser::createInkBulletModel("SplatBomb", 0.65f);
+    sead::BfresModel killerWailModel = sead::BfresParser::createKillerWailModel("Weapon_KillerWail", s_CurrentPaintTeam);
+    sead::BfresModel inkzookaModel = sead::BfresParser::createInkzookaModel("Weapon_Inkzooka", s_CurrentPaintTeam);
 
     // Interactive Stage Objects
     std::vector<Game::Obj_GeneralBox> stageCrates;
     std::vector<Game::SighterTarget> stageTargets;
+
+    // Special Weapon Subsystems & Super Jump Actor
+    Game::GameWeaponSuperShot wepSuperShot;
+    Game::GameWeaponMegaphone wepMegaphone;
+    Game::GameWeaponDaiouIka wepKraken;
+    Game::AutoWarpPoint superJumpActor;
+    float specialGauge = 0.0f;
+    int activeSpecial = -1; // -1 = None, 0 = Inkzooka, 1 = Kraken, 2 = Killer Wail
 
     // Map Loading and Initialization
     std::string currentStage = (stageName && stageName[0]) ? stageName : "Fld_PlazaLobby";
@@ -1485,6 +1595,8 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
     printf("    - Left Click / Space:  Fire Weapon (Splattershot / Roller / Charger)\n");
     printf("    - Q / E:               Cycle Active Weapon (Shooter <-> Roller <-> Charger)\n");
     printf("    - Right Click / R:     Throw Splat Bomb (high lob trajectory)\n");
+    printf("    - F / V / Z / MMB:     Activate Special Weapon (Inkzooka / Kraken / Killer Wail)\n");
+    printf("    - J:                   Super Jump (High parabolic arc back to Stage Center)\n");
     printf("    - 1 / 2:               Switch Ink Team (Neon Orange <-> Cyan)\n");
     printf("    - TAB / M:             Switch Map (Inkopolis Plaza <-> Walleye Warehouse)\n");
     printf("    - C:                   Toggle Camera (3rd-Person Follow <-> Turntable)\n");
@@ -1580,7 +1692,10 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
 
         // Player Speed Computation
         float moveSpeed = 0.22f; // Base human run speed
-        if (isSquid) {
+        if (activeSpecial == 1) {
+            isSquid = true; // Kraken invincible giant squid
+            moveSpeed = 0.52f;
+        } else if (isSquid) {
             if (inFriendlyInk) {
                 moveSpeed = 0.46f; // Super-fast swimming in friendly ink
                 inkTank = (std::min)(1.0f, inkTank + 0.015f); // Rapid ink tank refill
@@ -1594,6 +1709,32 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
                 moveSpeed = 0.09f; // Stuck in enemy ink
             }
             inkTank = (std::min)(1.0f, inkTank + 0.003f); // Passive ink recharge
+        }
+
+        // Super Jump Launch (J key)
+        if (s_SuperJumpRequested && superJumpActor.getState() == Game::SuperJumpState::cIdle) {
+            s_SuperJumpRequested = false;
+            superJumpActor.launchSuperJump(playerPos, stageCenter + sead::Vector3f(0.0f, 1.2f, 0.0f), s_CurrentPaintTeam, false);
+            Game::PcAudioDriver::instance().playSound(Game::cSoundId_Squid_Dive, 1.0f, 0.4f);
+            printf("[*] SUPER JUMP LAUNCHED! Parabolic trajectory back to Stage Center (%.1f, %.1f).\n", stageCenter.x, stageCenter.z);
+        }
+
+        // Super Jump In-Flight Flight & Touchdown Physics
+        if (superJumpActor.getState() != Game::SuperJumpState::cIdle) {
+            superJumpActor.update();
+            if (superJumpActor.getState() == Game::SuperJumpState::cAirborneParabola) {
+                playerPos = superJumpActor.getCurrentSquidPos();
+                isSquid = true;
+                isGrounded = false;
+            } else if (superJumpActor.getState() == Game::SuperJumpState::cTouchdownSplash) {
+                playerPos = superJumpActor.getTargetLandingPos();
+                isGrounded = true;
+                isSquid = false;
+                paintMap.splatWorldSphere(playerPos, 4.0f, s_CurrentPaintTeam, 1.0f);
+                specialGauge = (std::min)(1.0f, specialGauge + 0.05f);
+                Game::PcAudioDriver::instance().playSound(Game::cSoundId_Hit_Confirm, 1.0f, 0.0f);
+                superJumpActor.init();
+            }
         }
 
         // Compute Movement Vector
@@ -1616,7 +1757,7 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
         }
 
         // Jump (Space)
-        if (s_KeySpace && isGrounded) {
+        if (s_KeySpace && isGrounded && superJumpActor.getState() == Game::SuperJumpState::cIdle) {
             s_KeySpace = false;
             playerVel.y = isSquid ? 0.48f : 0.40f;
             isGrounded = false;
@@ -1701,6 +1842,153 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
                         printf("[*] Octoling Rival SQUISHED by Splat Roller!\n");
                     }
                 }
+            }
+        }
+
+        // Activate Special Weapon (F / V / Z / MMB)
+        if (s_ActivateSpecialRequested) {
+            s_ActivateSpecialRequested = false;
+            if (specialGauge >= 1.0f && activeSpecial == -1) {
+                specialGauge = 0.0f;
+                activeSpecial = s_ActiveWeaponType;
+                if (activeSpecial == 0) {
+                    wepSuperShot.init();
+                    wepSuperShot.activate(s_CurrentPaintTeam, playerPos);
+                    Game::PcAudioDriver::instance().playSound(Game::cSoundId_Charger_Charge, 1.0f, 0.0f);
+                    printf("[*] SPECIAL ACTIVATED: INKZOOKA (Super Shot)! 6 whirlwind blasts ready. Left Click to fire!\n");
+                } else if (activeSpecial == 1) {
+                    wepKraken.init();
+                    wepKraken.activate(s_CurrentPaintTeam, playerPos);
+                    Game::PcAudioDriver::instance().playSound(Game::cSoundId_Squid_Dive, 1.0f, 0.0f);
+                    printf("[*] SPECIAL ACTIVATED: KRAKEN (Daiou Ika)! Invincible giant squid online! Left Click to Spin Squish!\n");
+                } else if (activeSpecial == 2) {
+                    sead::Vector3f deployPos = playerPos + camFwd * 2.2f;
+                    Game::KclHitResult dHit;
+                    if (stageKcl.raycast(deployPos + sead::Vector3f(0.0f, 5.0f, 0.0f), sead::Vector3f(0.0f, -1.0f, 0.0f), 10.0f, dHit)) {
+                        deployPos.y = dHit.hitPoint.y;
+                    }
+                    wepMegaphone.init();
+                    wepMegaphone.deploy(s_CurrentPaintTeam, deployPos, s_CamYaw);
+                    Game::PcAudioDriver::instance().playSound(Game::cSoundId_Charger_Fire, 1.0f, -0.2f);
+                    printf("[*] SPECIAL ACTIVATED: KILLER WAIL (Megaphone Laser)! Acoustic laser speaker deployed!\n");
+                }
+            }
+        }
+
+        // Inkzooka Active Super Shot Firing
+        if (activeSpecial == 0) {
+            wepSuperShot.update();
+            if (s_IsFiring && wepSuperShot.canFire() && fireCooldown == 0 && !isSquid) {
+                fireCooldown = 28;
+                sead::Vector3f aimDir(sinf(s_CamYaw), sinf(s_CamPitch), cosf(s_CamYaw));
+                aimDir = aimDir.normalized();
+                wepSuperShot.fire(playerPos, aimDir);
+                for (int j = -1; j <= 1; ++j) {
+                    InkBullet3D b;
+                    b.pos = playerPos + sead::Vector3f(0.0f, 1.2f + j * 0.45f, 0.0f) + aimDir * 0.9f;
+                    b.vel = aimDir * 2.5f + sead::Vector3f(0.0f, j * 0.08f + 0.05f, 0.0f);
+                    b.teamId = s_CurrentPaintTeam;
+                    b.radius = 4.2f;
+                    b.lifetime = 1.8f;
+                    b.isBomb = false;
+                    b.active = true;
+                    bullets.push_back(b);
+                }
+                Game::PcAudioDriver::instance().playSound(Game::cSoundId_Shoot_Splattershot, 1.0f, -0.3f);
+                printf("[*] Inkzooka FIRED whirlwind tornado! Shots remaining: %d\n", wepSuperShot.getRemainingShots());
+            }
+            if (!wepSuperShot.isActive()) {
+                activeSpecial = -1;
+                printf("[*] Inkzooka duration ended.\n");
+            }
+        }
+
+        // Kraken Active Giant Squid Attack
+        if (activeSpecial == 1) {
+            wepKraken.setPosition(playerPos);
+            wepKraken.update();
+            isSquid = true; // Invincible squid form
+            if (s_IsFiring) {
+                if (wepKraken.triggerSpinAttack()) {
+                    Game::PcAudioDriver::instance().playSound(Game::cSoundId_Roller_Fling, 1.0f, 0.2f);
+                    paintMap.splatWorldSphere(playerPos, 3.2f, s_CurrentPaintTeam, 1.0f);
+                    printf("[*] Kraken SPIN SQUISH ATTACK!\n");
+                }
+            }
+            if (wepKraken.isSpinning()) {
+                paintMap.splatWorldSphere(playerPos, 2.8f, s_CurrentPaintTeam, 1.0f);
+                for (auto& crate : stageCrates) {
+                    f32 d = 0;
+                    if (!crate.isBroken() && wepKraken.checkSpinDamage(crate.getPosition(), 1.2f, &d)) {
+                        crate.applyDamage(d, s_CurrentPaintTeam);
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Crate_Break, 1.0f, 0.0f);
+                    }
+                }
+                for (auto& dummy : stageTargets) {
+                    f32 d = 0;
+                    if (dummy.getState() != Game::TargetState::cPopped && wepKraken.checkSpinDamage(dummy.getPosition(), 1.2f, &d)) {
+                        dummy.applyDamage(d);
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Hit_Confirm, 1.0f, 0.0f);
+                    }
+                }
+                if (rivalBot.isAlive()) {
+                    f32 d = 0;
+                    if (wepKraken.checkSpinDamage(rivalBot.getPosition(), 1.2f, &d)) {
+                        rivalBot.applyDamage(d);
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Octoling_Splat, 1.0f, 0.0f);
+                        paintMap.splatWorldSphere(rivalBot.getPosition(), 5.0f, s_CurrentPaintTeam, 1.0f);
+                        rivalRespawnTimer = 180;
+                        printf("[*] Rival bot OBLITERATED by Kraken Spin Squish!\n");
+                    }
+                }
+            }
+            if (!wepKraken.isActive()) {
+                activeSpecial = -1;
+                printf("[*] Kraken transformation ended.\n");
+            }
+        }
+
+        // Killer Wail Active Acoustic Shockwave
+        if (wepMegaphone.isDeployed()) {
+            wepMegaphone.update();
+            if (wepMegaphone.isFiring()) {
+                sead::Vector3f mPos = wepMegaphone.getPosition();
+                sead::Vector3f mDir = wepMegaphone.getDirection();
+                if (frameCount % 4 == 0) {
+                    for (float dist = 4.0f; dist < 80.0f; dist += 6.0f) {
+                        sead::Vector3f pt = mPos + mDir * dist;
+                        paintMap.splatWorldSphere(pt, 3.2f, wepMegaphone.getTeamId(), 0.8f);
+                    }
+                }
+                for (auto& crate : stageCrates) {
+                    f32 d = 0.0f;
+                    if (!crate.isBroken() && wepMegaphone.checkDamageHit(crate.getPosition(), 1.2f, &d)) {
+                        crate.applyDamage(d, wepMegaphone.getTeamId());
+                    }
+                }
+                for (auto& dummy : stageTargets) {
+                    f32 d = 0.0f;
+                    if (dummy.getState() != Game::TargetState::cPopped && wepMegaphone.checkDamageHit(dummy.getPosition(), 1.2f, &d)) {
+                        dummy.applyDamage(d);
+                    }
+                }
+                if (rivalBot.isAlive()) {
+                    f32 d = 0.0f;
+                    if (wepMegaphone.checkDamageHit(rivalBot.getPosition(), 1.2f, &d)) {
+                        rivalBot.applyDamage(d);
+                        if (!rivalBot.isAlive()) {
+                            Game::PcAudioDriver::instance().playSound(Game::cSoundId_Octoling_Splat, 1.0f, 0.0f);
+                            paintMap.splatWorldSphere(rivalBot.getPosition(), 5.0f, wepMegaphone.getTeamId(), 1.0f);
+                            rivalRespawnTimer = 180;
+                            printf("[*] Rival bot VAPORIZED by Killer Wail acoustic laser!\n");
+                        }
+                    }
+                }
+            }
+            if (wepMegaphone.isFinished()) {
+                activeSpecial = -1;
+                wepMegaphone.cancel();
+                printf("[*] Killer Wail finished.\n");
             }
         }
 
@@ -2129,6 +2417,10 @@ int main(int argc, char* argv[]) {
             return 0;
         } else if (arg == "--dump-sarc" && i + 1 < argc) {
             return DumpSarcFile(argv[++i]) ? 0 : 1;
+        } else if (arg == "--extract-sarc" && i + 1 < argc) {
+            const char* szsFile = argv[++i];
+            const char* outDir = (i + 1 < argc && argv[i + 1][0] != '-') ? argv[++i] : "extracted";
+            return DumpSarcFile(szsFile, outDir) ? 0 : 1;
         } else if (arg == "--help" || arg == "-h") {
             PrintUsage();
             return 0;
