@@ -87,6 +87,7 @@
 #include "Game/Rule/GameRuleTurfWar.h"
 #include "Game/Camera/CameraCollision.h"
 #include "Game/Player/PlayerInkState.h"
+#include "Game/Player/GearBrandAffinity.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1297,7 +1298,7 @@ bool RunVerificationSuite() {
     for (int i = 0; i < 350; ++i) {
         rainmakerWep.updateAdvanced(0.01667f, true, &paintMap);
     }
-    bool turtleDrained = (rainmakerWep.getRemainingCarrierFrames() < startFrames - 350); // drained faster than 1:1
+    bool turtleDrained = (rainmakerWep.getRemainingCarrierFrames() < startFrames - 350u); // drained faster than 1:1
     bool hokoOk = (popped && fullCharge && shotStatsOk && burstExploded && turtleDrained);
     printf("  Rainmaker Tornado & Ballistics (Wsp_Shachihoko):%s (Dmg: 180 HP OHKO, Blast: 5.5m, Turtle 2x: YES)\n",
            hokoOk ? "PASSED" : "FAILED");
@@ -1340,6 +1341,60 @@ bool RunVerificationSuite() {
     printf("  Rainmaker Goal Pedestal (GachiHokoPedestal):   %s (Count: 50 -> Touchdown Knockout: 0)\n",
            pedestalOk ? "PASSED" : "FAILED");
     if (!pedestalOk) allPassed = false;
+
+    // 26. Gear Brand Affinity & Spyke (Downey) Reroll Subsystem
+    printf("\n--- [26/26] GEAR BRAND AFFINITY & SPYKE REROLL SUBSYSTEM ---\n");
+
+    // Test brand probabilities: Krak-On (Favors Swim Speed Up, Unfavors Defense Up)
+    f32 krakOnSwimProb = Game::GearBrandAffinity::getAbilityProbability(Game::GearBrand::cKrakOn, Game::SubAbilityType::cSwimSpeedUp);
+    f32 krakOnDefProb = Game::GearBrandAffinity::getAbilityProbability(Game::GearBrand::cKrakOn, Game::SubAbilityType::cDefenseUp);
+    bool krakOnProbOk = (krakOnSwimProb > 0.30f && krakOnDefProb < 0.035f);
+
+    // Test brand probabilities: Splash Mob (Favors Ink Saver Main, Unfavors Run Speed Up)
+    f32 splashMobInkProb = Game::GearBrandAffinity::getAbilityProbability(Game::GearBrand::cSplashMob, Game::SubAbilityType::cInkSaverMain);
+    f32 splashMobRunProb = Game::GearBrandAffinity::getAbilityProbability(Game::GearBrand::cSplashMob, Game::SubAbilityType::cRunSpeedUp);
+    bool splashMobProbOk = (splashMobInkProb > 0.30f && splashMobRunProb < 0.035f);
+
+    // Test brand probabilities: Amiibo (Neutral brand: 1/13 ~ 7.69% for all)
+    f32 amiiboProb = Game::GearBrandAffinity::getAbilityProbability(Game::GearBrand::cAmiibo, Game::SubAbilityType::cDamageUp);
+    bool amiiboNeutralOk = (amiiboProb > 0.07f && amiiboProb < 0.08f);
+
+    bool affinityMathOk = (krakOnProbOk && splashMobProbOk && amiiboNeutralOk);
+    printf("  Gear Brand Affinity Math (GearBrandAffinity):%s (Krak-On: 30.3%% Swim / 3.0%% Def, Splash Mob: 30.3%% Main Saver)\n",
+           affinityMathOk ? "PASSED" : "FAILED");
+    if (!affinityMathOk) allPassed = false;
+
+    // Spyke (Npc_CustomShop_Spyke) Slot Unlocking & Ability Rerolling
+    Game::Npc_CustomShop_Spyke spyke;
+    spyke.init(3, 100000); // 3 Super Sea Snails, 100,000 cash
+
+    // Create 2-star Krak-On gear with only 2 slots unlocked
+    Game::GearItem testGear;
+    testGear.name = "Krak-On 528";
+    testGear.brand = Game::GearBrand::cKrakOn;
+    testGear.stars = 2;
+    testGear.unlockedSlots = 2;
+    testGear.mainAbility = Game::SubAbilityType::cRunSpeedUp;
+    testGear.subAbilities[0] = Game::SubAbilityType::cInkSaverSub;
+    testGear.subAbilities[1] = Game::SubAbilityType::cDefenseUp;
+    testGear.subAbilities[2] = Game::SubAbilityType::cDamageUp;
+
+    // Unlock 3rd slot using 1 Super Sea Snail
+    bool slotAdded = spyke.addGearSlot(testGear, true);
+    bool slotOk = (slotAdded && testGear.unlockedSlots == 3 && spyke.getSuperSeaSnails() == 2);
+
+    // Reroll all 3 sub-abilities using 1 Super Sea Snail
+    bool rerollSnailOk = spyke.rerollGear(testGear, true, 42);
+    bool snailCharged = (rerollSnailOk && spyke.getSuperSeaSnails() == 1);
+
+    // Reroll using cash (30,000 coins)
+    bool rerollCashOk = spyke.rerollGear(testGear, false, 999);
+    bool cashCharged = (rerollCashOk && spyke.getCash() == 70000);
+
+    bool spykeOk = (slotOk && snailCharged && cashCharged);
+    printf("  Spyke Gear Custom Shop (Npc_CustomShop_Spyke): %s (Slot Unlock: 3/3, Snail Reroll: YES, Cash Reroll: 30k)\n",
+           spykeOk ? "PASSED" : "FAILED");
+    if (!spykeOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
