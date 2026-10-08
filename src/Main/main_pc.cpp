@@ -100,6 +100,7 @@
 #include "Game/Enemy/RailKingSchedule.h"
 #include "Game/Weapon/WeaponParamCatalog.h"
 #include "Game/System/AglParameter.h"
+#include "Game/Player/SkillTipsCatalog.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1936,6 +1937,46 @@ bool RunVerificationSuite() {
     printf("  AGL Parameter Engine (AglParameterObj):      %s (Rollers: Normal 20f/Dynamo 45f/Carbon 9f/Brush 1f, Wall: 30f, RM: 3600f)\n",
            fullAglParamOk ? "PASSED" : "FAILED");
     if (!fullAglParamOk) allPassed = false;
+
+    // 39. 26 Gear Ability Skill Icon Indexer & Level-Gated Tips Subsystem
+    printf("\n--- [39/39] GEAR SKILL ICONS & LEVEL-GATED GAME TIPS SUBSYSTEM ---\n");
+
+    Game::SkillTipsCatalog skillTips;
+    bool skillTipsLoaded = skillTips.loadFromByml("content/Static/Skill_Icon.byaml", "content/Static/TipsTextInfo.byaml");
+    bool skillTipsCountsOk = (skillTipsLoaded &&
+                              skillTips.getSkillCount() == 26 &&
+                              skillTips.getTipCount() == 83);
+
+    // Verify Skill Icon indexer
+    const auto* atkUp = skillTips.findSkillById(0);
+    bool atkOk = (atkUp && atkUp->name == "Attack_Up");
+
+    const auto* defUp = skillTips.findSkillById(1);
+    bool defOk = (defUp && defUp->name == "Defense_Up");
+
+    const auto* blankSkill = skillTips.findSkillById(-2);
+    bool blankOk = (blankSkill && blankSkill->name == "Blank");
+
+    const auto* unknownSkill = skillTips.findSkillById(-1);
+    bool unknownOk = (unknownSkill && unknownSkill->name == "Unknown");
+
+    // Verify Level-Gated Tips filtering
+    auto lvl1Tips = skillTips.getTipsForPlayerLevel(1);
+    auto lvl5Tips = skillTips.getTipsForPlayerLevel(5);
+    bool lvl1HasSp1 = false;
+    for (const auto* t : lvl1Tips) {
+        if (t->label == "Sp_1_1_00") lvl1HasSp1 = true;
+    }
+    bool lvl5HasSp2 = false;
+    for (const auto* t : lvl5Tips) {
+        if (t->label == "Sp_2_6_00") lvl5HasSp2 = true;
+    }
+
+    bool tipsFilterOk = (!lvl1Tips.empty() && lvl1HasSp1 && !lvl5Tips.empty() && lvl5HasSp2 && lvl1Tips.size() < skillTips.getTipCount());
+    bool fullSkillTipsOk = (skillTipsCountsOk && atkOk && defOk && blankOk && unknownOk && tipsFilterOk);
+    printf("  Skill Icons & Tips (SkillTipsCatalog):       %s (Skills: 26/26, Tips: 83/83, Level 1 Gated: %zu, Level 5: %zu)\n",
+           fullSkillTipsOk ? "PASSED" : "FAILED", lvl1Tips.size(), lvl5Tips.size());
+    if (!fullSkillTipsOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
