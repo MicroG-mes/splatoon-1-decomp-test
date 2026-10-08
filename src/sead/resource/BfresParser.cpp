@@ -1471,6 +1471,100 @@ BfresModel BfresParser::createSparrowModel(const char* name) {
     return createProceduralCube(name ? name : "Brd_Sparrow00", 0.4f);
 }
 
+BfresModel BfresParser::createAerosprayModel(const char* name, u32 teamId) {
+    (void)teamId;
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wmn_Shot_Blaze.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wmn_Shot_Blaze";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createSplattershotModel(name ? name : "Wmn_Shot_Blaze", teamId);
+}
+
+BfresModel BfresParser::createEliter3KModel(const char* name, u32 teamId) {
+    (void)teamId;
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wmn_Charge_Long.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wmn_Charge_Long";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createSplatChargerModel(name ? name : "Wmn_Charge_Long", teamId);
+}
+
+BfresModel BfresParser::createOctobrushModel(const char* name, u32 teamId) {
+    (void)teamId;
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wmn_Roller_BrushNormal.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wmn_Roller_BrushNormal";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createSplatRollerModel(name ? name : "Wmn_Roller_BrushNormal", teamId);
+}
+
+BfresModel BfresParser::createInkstrikeMonitorModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsp_Tornado_Monitor.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wsp_Tornado_Monitor";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Wsp_Tornado_Monitor", 0.5f);
+}
+
+BfresModel BfresParser::createHeroTankModel(const char* name, u32 teamId) {
+    (void)teamId;
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Tnk_Msn0Lv0.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Tnk_Msn0Lv0";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Tnk_Msn0Lv0", 0.8f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

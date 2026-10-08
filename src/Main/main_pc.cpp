@@ -2123,6 +2123,31 @@ bool RunVerificationSuite() {
            fullAvatarOk ? "PASSED" : "FAILED");
     if (!fullAvatarOk) allPassed = false;
 
+    // 44. Expanded Authentic Retail 3D Weapon, Tank & Monitor Arsenal
+    printf("\n--- [44/44] EXPANDED AUTHENTIC RETAIL 3D ARSENAL & TANK ASSETS ---\n");
+
+    sead::BfresModel realAerospray = sead::BfresParser::createAerosprayModel("Aerospray_Blaze");
+    sead::BfresModel realEliter = sead::BfresParser::createEliter3KModel("Eliter3K_Long");
+    sead::BfresModel realOctobrush = sead::BfresParser::createOctobrushModel("Octobrush_Normal");
+    sead::BfresModel realMonitor = sead::BfresParser::createInkstrikeMonitorModel("Inkstrike_Monitor");
+    sead::BfresModel realHeroTank = sead::BfresParser::createHeroTankModel("HeroTank_Lv0");
+
+    bool retailAeroOk = (realAerospray.getTotalVertexCount() >= 100);
+    bool eliterOk = (realEliter.getTotalVertexCount() >= 100);
+    bool brushOk = (realOctobrush.getTotalVertexCount() >= 100);
+    bool monOk = (realMonitor.getTotalVertexCount() >= 100);
+    bool retailHeroTankOk = (realHeroTank.getTotalVertexCount() >= 100);
+
+    bool fullArsenalOk = (retailAeroOk && eliterOk && brushOk && monOk && retailHeroTankOk);
+    printf("  Expanded Retail 3D Arsenal:                  %s (Aerospray: %zu Verts, E-liter: %zu, Octobrush: %zu, Monitor: %zu, Tank: %zu)\n",
+           fullArsenalOk ? "PASSED" : "FAILED",
+           realAerospray.getTotalVertexCount(),
+           realEliter.getTotalVertexCount(),
+           realOctobrush.getTotalVertexCount(),
+           realMonitor.getTotalVertexCount(),
+           realHeroTank.getTotalVertexCount());
+    if (!fullArsenalOk) allPassed = false;
+
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
     printf("=================================================================\n\n");

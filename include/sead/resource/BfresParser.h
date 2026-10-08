@@ -141,6 +141,11 @@ public:
     static BfresModel createOctocopterModel(const char* name = "Enm_Takopter");
     static BfresModel createSqueeGModel(const char* name = "Enm_Cleaner");
     static BfresModel createSparrowModel(const char* name = "Brd_Sparrow00");
+    static BfresModel createAerosprayModel(const char* name = "Wmn_Shot_Blaze", u32 teamId = 0);
+    static BfresModel createEliter3KModel(const char* name = "Wmn_Charge_Long", u32 teamId = 0);
+    static BfresModel createOctobrushModel(const char* name = "Wmn_Roller_BrushNormal", u32 teamId = 0);
+    static BfresModel createInkstrikeMonitorModel(const char* name = "Wsp_Tornado_Monitor");
+    static BfresModel createHeroTankModel(const char* name = "Tnk_Msn0Lv0", u32 teamId = 0);
 
     bool loadFromSzsFile(const char* szsFilePath);
 
