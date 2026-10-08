@@ -99,6 +99,7 @@
 #include "Game/Mission/AmiiboChallengeMgr.h"
 #include "Game/Enemy/RailKingSchedule.h"
 #include "Game/Weapon/WeaponParamCatalog.h"
+#include "Game/System/AglParameter.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1885,6 +1886,56 @@ bool RunVerificationSuite() {
            realSqueeG.getTotalVertexCount(),
            realSparrow.getTotalVertexCount());
     if (!octoArmyOk) allPassed = false;
+
+    // 38. Nintendo AGL Weapon & Gizmo Tuning Parameter Subsystem (.params)
+    printf("\n--- [38/38] NINTENDO AGL WEAPON & GIZMO PARAMETER SUBSYSTEM ---\n");
+
+    // Roller Family Physics & Timing
+    Game::RollerWeaponParams splatRollerParam, dynamoParam, carbonParam, brushParam;
+    bool normalRollerLoaded = splatRollerParam.load("content/Static/RollerNormal.params");
+    bool dynamoLoaded = dynamoParam.load("content/Static/RollerHeavy.params");
+    bool carbonLoaded = carbonParam.load("content/Static/RollerCompact.params");
+    bool brushLoaded = brushParam.load("content/Static/RollerBrushNormal.params");
+
+    bool rollerComparisonOk = (normalRollerLoaded && dynamoLoaded && carbonLoaded && brushLoaded &&
+                               splatRollerParam.swingLiftFrame == 20 &&
+                               dynamoParam.swingLiftFrame == 45 &&      // Heavy 45f windup
+                               carbonParam.swingLiftFrame == 9 &&       // Fast 9f flick
+                               brushParam.swingLiftFrame == 1 &&        // Instantaneous 1f brush swing
+                               dynamoParam.splashNum == 16 &&
+                               splatRollerParam.splashNum == 12 &&
+                               carbonParam.splashNum == 10 &&
+                               brushParam.splashNum == 3);
+
+    // Splash Wall Parameters
+    Game::ShieldParams shieldParam;
+    bool shieldLoaded = shieldParam.load("content/Static/Wsb_Shield.params");
+    bool shieldParamOk = (shieldLoaded &&
+                          shieldParam.preparationDurationFrame == 30 &&
+                          shieldParam.noDamageRunningDurationFrame == 370 &&
+                          shieldParam.boundVelLen == 2.0f &&
+                          shieldParam.paintRepeatFrame == 6);
+
+    // Rainmaker Objective Parameters
+    Game::ShachihokoParams shachihokoParam;
+    bool shachiLoaded = shachihokoParam.load("content/Static/Wsp_Shachihoko.params");
+    bool shachiParamOk = (shachiLoaded &&
+                          shachihokoParam.victoryPlayerTimeLimitFrame == 3600 && // 60s countdown
+                          shachihokoParam.barrierRadius == 15.0f &&
+                          shachihokoParam.barrierMaxScale == 3.0f);
+
+    // Ink Mine Parameters
+    Game::TrapParams trapParam;
+    bool trapLoaded = trapParam.load("content/Static/Trap.params");
+    bool trapParamOk = (trapLoaded &&
+                        trapParam.timerFrame == 600 &&    // 10s timeout
+                        trapParam.presageFrame == 60 &&   // 1s blink presage
+                        trapParam.playerColRadius == 20.0f);
+
+    bool fullAglParamOk = (rollerComparisonOk && shieldParamOk && shachiParamOk && trapParamOk);
+    printf("  AGL Parameter Engine (AglParameterObj):      %s (Rollers: Normal 20f/Dynamo 45f/Carbon 9f/Brush 1f, Wall: 30f, RM: 3600f)\n",
+           fullAglParamOk ? "PASSED" : "FAILED");
+    if (!fullAglParamOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
