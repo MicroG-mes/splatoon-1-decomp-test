@@ -93,6 +93,7 @@
 #include "Game/Weapon/GameWeaponSlosher.h"
 #include "Game/Weapon/WeaponCatalog.h"
 #include "Game/Player/UdemaeGradeMgr.h"
+#include "Game/Player/GearCatalog.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1604,6 +1605,44 @@ bool RunVerificationSuite() {
     printf("  Ranked Grade & EXP Engine (UdemaeGradeMgr):  %s (Grades: 9, Ranks: 20, Promo C- -> C: 30pt, Demo: 70pt)\n",
            gradeEngineOk ? "PASSED" : "FAILED");
     if (!gradeEngineOk) allPassed = false;
+
+    // 31. Authentic Nintendo Retail 344-Item Gear Catalog (Head, Clothes, Shoes BYML)
+    printf("\n--- [31/31] AUTHENTIC RETAIL 344-ITEM GEAR CATALOG & BRAND FILTERS ---\n");
+
+    Game::GearCatalog gearCatalog;
+    bool gearLoaded = gearCatalog.loadAllGear(
+        "content/Static/GearInfo_Head.byaml",
+        "content/Static/GearInfo_Clothes.byaml",
+        "content/Static/GearInfo_Shoes.byaml");
+    bool gearCountsOk = (gearLoaded &&
+                         gearCatalog.getHeadgearCount() == 88 &&
+                         gearCatalog.getClothesCount() == 170 &&
+                         gearCatalog.getShoesCount() == 86 &&
+                         gearCatalog.getTotalGearCount() == 344);
+
+    // Verify Starting Clothes: Basic Tee (Clt_First, SquidForce B00, RespawnTime_Save)
+    const auto* basicTee = gearCatalog.findGearByName("Clt_First");
+    bool teeOk = (basicTee && basicTee->brand == "B00" && basicTee->price == 0 &&
+                  basicTee->rarityStars == 1 && basicTee->mainAbility == "RespawnTime_Save");
+
+    // Verify Starting Shoes: Plum Casuals (Shs_First, Rockenberg B02, RespawnSpecialGauge_Save)
+    const auto* basicShoes = gearCatalog.findGearByName("Shs_First");
+    bool shoesOk = (basicShoes && basicShoes->brand == "B02" && basicShoes->price == 0 &&
+                    basicShoes->rarityStars == 1 && basicShoes->mainAbility == "RespawnSpecialGauge_Save");
+
+    // Verify Special 3-Star Headgear: Special Forces Beret (Hed_CAP004, Forge B07, StartAllUp)
+    const auto* beret = gearCatalog.findGearByName("Hed_CAP004");
+    bool beretOk = (beret && beret->brand == "B07" && beret->price == 8500 &&
+                    beret->rarityStars == 3 && beret->mainAbility == "StartAllUp");
+
+    // Verify Brand filtering (SquidForce brand "B00" - 50 items)
+    auto squidForceGear = gearCatalog.getGearByBrand("B00");
+    bool brandFilterOk = (!squidForceGear.empty() && squidForceGear.size() == 50);
+
+    bool fullGearOk = (gearCountsOk && teeOk && shoesOk && beretOk && brandFilterOk);
+    printf("  Retail Gear Catalog (GearCatalog):           %s (Head: 88, Clt: 170, Shs: 86, Total: 344/344, SquidForce: %zu)\n",
+           fullGearOk ? "PASSED" : "FAILED", squidForceGear.size());
+    if (!fullGearOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
