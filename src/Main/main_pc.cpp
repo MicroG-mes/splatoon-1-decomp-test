@@ -101,6 +101,7 @@
 #include "Game/Weapon/WeaponParamCatalog.h"
 #include "Game/System/AglParameter.h"
 #include "Game/Player/SkillTipsCatalog.h"
+#include "Game/Mission/CuttlefishDialogueMgr.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1977,6 +1978,40 @@ bool RunVerificationSuite() {
     printf("  Skill Icons & Tips (SkillTipsCatalog):       %s (Skills: 26/26, Tips: 83/83, Level 1 Gated: %zu, Level 5: %zu)\n",
            fullSkillTipsOk ? "PASSED" : "FAILED", lvl1Tips.size(), lvl5Tips.size());
     if (!fullSkillTipsOk) allPassed = false;
+
+    // 40. Cap'n Cuttlefish Octo Valley Sector Dialogue Progression Subsystem
+    printf("\n--- [40/40] CAP'N CUTTLEFISH SECTOR DIALOGUE PROGRESSION ---\n");
+
+    Game::CuttlefishDialogueMgr cuttlefish;
+    bool cuttlefishLoaded = cuttlefish.loadFromByml("content/Static/WorldTalkTextInfo.byaml");
+    bool cuttlefishCountsOk = (cuttlefishLoaded && cuttlefish.getTotalDialogueCount() == 31 && cuttlefish.getMaxArea() == 5);
+
+    // Verify Area 1 (Sector 1) dialogue progression:
+    const auto* d0 = cuttlefish.getDialogue(1, 0); // 0 clears
+    bool d0Ok = (d0 && d0->messageLabel == "A1_00_AT" && d0->isPermanent && d0->isFreeTalk);
+
+    const auto* d1 = cuttlefish.getDialogue(1, 1); // 1 clear
+    bool d1Ok = (d1 && d1->messageLabel == "A1_01_AT" && !d1->isPermanent);
+
+    const auto* d2 = cuttlefish.getDialogue(1, 2); // 2 clears
+    bool d2Ok = (d2 && d2->messageLabel == "A1_02_AT");
+
+    const auto* d3 = cuttlefish.getDialogue(1, 3); // 3 clears
+    bool d3Ok = (d3 && d3->messageLabel == "A1_03_AT");
+
+    // Verify Area 2 (Sector 2) dialogue progression:
+    const auto* dArea2Last = cuttlefish.getDialogue(2, 6);
+    bool dArea2Ok = (dArea2Last && dArea2Last->messageLabel == "A2_06_AT");
+
+    // Verify Sector counts: Area 1 has 4 dialogues, Area 2 has 6 dialogues
+    auto area1Dialogues = cuttlefish.getDialoguesForArea(1);
+    auto area2Dialogues = cuttlefish.getDialoguesForArea(2);
+    bool areasOk = (area1Dialogues.size() == 4 && area2Dialogues.size() == 6);
+
+    bool fullCuttlefishOk = (cuttlefishCountsOk && d0Ok && d1Ok && d2Ok && d3Ok && dArea2Ok && areasOk);
+    printf("  Cap'n Cuttlefish Dialogues (CuttlefishDialogueMgr): %s (Dialogues: 31/31, Areas: 5, Area 1: 4, Area 2: 6)\n",
+           fullCuttlefishOk ? "PASSED" : "FAILED");
+    if (!fullCuttlefishOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
