@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(splatoon_decomp CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Include directories
@@ -22,7 +22,7 @@ add_library(splatoon_lib STATIC ${LIB_SOURCES})
 # Target-specific compiler options
 if(MSVC)
     target_compile_definitions(splatoon_lib PRIVATE _CRT_SECURE_NO_WARNINGS)
-    target_compile_options(splatoon_lib PRIVATE /W3 /Zc:__cplusplus)
+    target_compile_options(splatoon_lib PRIVATE /W3 /Zc:__cplusplus /std:c++17)
 else()
     target_compile_options(splatoon_lib PRIVATE -Wall -Wextra -Wno-unused-parameter)
 endif()
@@ -35,7 +35,7 @@ if(MSVC)
     target_link_libraries(splatoon_lib PRIVATE d3d11 dxgi d3dcompiler)
     target_link_libraries(Gambit PRIVATE splatoon_lib d3d11 dxgi d3dcompiler)
     target_compile_definitions(Gambit PRIVATE _CRT_SECURE_NO_WARNINGS)
-    target_compile_options(Gambit PRIVATE /W3 /Zc:__cplusplus)
+    target_compile_options(Gambit PRIVATE /W3 /Zc:__cplusplus /std:c++17)
 else()
     target_link_libraries(Gambit PRIVATE splatoon_lib)
 endif()
