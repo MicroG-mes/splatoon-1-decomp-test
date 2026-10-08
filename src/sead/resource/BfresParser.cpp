@@ -1655,6 +1655,42 @@ BfresModel BfresParser::createWaterTankModel(const char* name) {
     return createProceduralCube(name ? name : "Obj_WaterTank", 2.0f);
 }
 
+BfresModel BfresParser::createSunkenScrollModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_AncientDocument.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_AncientDocument";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_AncientDocument", 1.0f);
+}
+
+BfresModel BfresParser::createSunkenScrollDummyModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_AncientDocumentDummy.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_AncientDocumentDummy";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_AncientDocumentDummy", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

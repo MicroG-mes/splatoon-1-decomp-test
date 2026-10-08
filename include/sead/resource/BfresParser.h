@@ -151,6 +151,8 @@ public:
     static BfresModel createOctoValleySkyWorldModel(const char* name = "VR_DomeMonitorSkyWorld");
     static BfresModel createBananaTreeModel(const char* name = "Obj_TreeBanana");
     static BfresModel createWaterTankModel(const char* name = "Obj_WaterTank");
+    static BfresModel createSunkenScrollModel(const char* name = "Obj_AncientDocument");
+    static BfresModel createSunkenScrollDummyModel(const char* name = "Obj_AncientDocumentDummy");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

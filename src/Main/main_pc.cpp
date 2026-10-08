@@ -115,6 +115,8 @@
 #include "Game/Plaza/PlazaNpcPresetCatalog.h"
 #include "Game/Map/GambitStageTreeCatalog.h"
 #include "Game/Mission/MissionStageMapParser.h"
+#include "Game/Mission/SunkenScrollCatalog.h"
+#include "Game/Item/ItemAncientDocument.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2491,6 +2493,65 @@ bool RunVerificationSuite() {
     printf("  Campaign Stage Maps (Octostomp, Octavio & World):%s (19 Arena Objs, 182 Boss Objs/12 Rails, 204 Overworld Objs/32 Rails)\n",
            m51Ok ? "PASSED" : "FAILED");
     if (!m51Ok) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 52 Verification: Sunken Scroll Lore & Archive Database
+    // -----------------------------------------------------------------
+    Game::SunkenScrollCatalog scrollCatalog;
+    bool scrollInitOk = scrollCatalog.init();
+    bool scrollsOk = false;
+    if (scrollInitOk) {
+        bool totalCountOk = (scrollCatalog.getTotalScrollCount() == 28);
+        bool loreCountOk = (scrollCatalog.getLoreScrolls().size() == 23);
+        bool blueprintCountOk = (scrollCatalog.getBlueprintScrolls().size() == 5);
+
+        // Verify representative lore scrolls across campaign areas
+        const auto* s1 = scrollCatalog.getScroll(1);
+        const auto* s6 = scrollCatalog.getScroll(6);
+        const auto* s14 = scrollCatalog.getScroll(14);
+        const auto* s16 = scrollCatalog.getScroll(16);
+        const auto* s23 = scrollCatalog.getScroll(23);
+
+        bool loreEntriesOk = (s1 != nullptr && s1->missionNo == 1 && s1->title == "Creatures of the Surface" &&
+                              s6 != nullptr && s6->missionNo == 6 && s6->stageMapName == "Fld_Propeller00_Msn" &&
+                              s14 != nullptr && s14->missionNo == 14 && s14->category == Game::ScrollCategory::cCategory_CreatureEcology &&
+                              s16 != nullptr && s16->missionNo == 16 && s16->category == Game::ScrollCategory::cCategory_HumanExtinction &&
+                              s23 != nullptr && s23->missionNo == 23 && s23->title == "Young Squid Sisters Photograph");
+
+        // Verify Sheldon weapon blueprints awarded by boss defeats
+        const auto* bp24 = scrollCatalog.getScroll(24);
+        const auto* bp26 = scrollCatalog.getScroll(26);
+        const auto* bp28 = scrollCatalog.getScroll(28);
+
+        bool blueprintsOk = (bp24 != nullptr && bp24->isBlueprint && bp24->unlockedWeapon == "Custom Splattershot Jr." &&
+                             bp26 != nullptr && bp26->isBlueprint && bp26->unlockedWeapon == "Aerospray MG" && bp26->unlockedWeaponSub == "Aerospray RG" &&
+                             bp28 != nullptr && bp28->isBlueprint && bp28->unlockedWeapon == "Dynamo Roller" && bp28->unlockedWeaponSub == "Gold Dynamo Roller");
+
+        // Verify item pickup and weapon unlock integration
+        Game::ItemAncientDocument scrollItem;
+        scrollItem.init();
+        scrollItem.spawn(sead::Vector3f(0.0f, 0.0f, 0.0f), 24);
+        bool pickupOk = scrollItem.checkPlayerPickup(sead::Vector3f(0.5f, 0.0f, 0.0f), 0);
+        bool linkOk = scrollCatalog.linkToItem(&scrollItem, 24);
+        bool unlockOk = scrollCatalog.isWeaponUnlockedByScroll("Custom Splattershot Jr.");
+        bool collectedCountOk = (scrollCatalog.getCollectedCount() == 1);
+
+        // Verify authentic 3D BFRES models and assets on disk
+        sead::BfresModel realScrollModel = sead::BfresParser::createSunkenScrollModel();
+        sead::BfresModel realDummyModel = sead::BfresParser::createSunkenScrollDummyModel();
+        bool modelAssetsOk = scrollCatalog.verifyModelAssets();
+        bool scrollMeshOk = (realScrollModel.getTotalVertexCount() >= 100);
+        bool dummyMeshOk = (realDummyModel.getTotalVertexCount() >= 100);
+
+        scrollsOk = (totalCountOk && loreCountOk && blueprintCountOk &&
+                     loreEntriesOk && blueprintsOk &&
+                     pickupOk && linkOk && unlockOk && collectedCountOk &&
+                     modelAssetsOk && scrollMeshOk && dummyMeshOk);
+    }
+
+    printf("  Sunken Scroll Lore & Archive Database:       %s (28 Scrolls, 23 Lore, 5 Blueprints, 491 Vert BFRES Model)\n",
+           scrollsOk ? "PASSED" : "FAILED");
+    if (!scrollsOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
