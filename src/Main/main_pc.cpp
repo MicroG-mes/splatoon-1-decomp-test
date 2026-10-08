@@ -112,6 +112,8 @@
 #include "Game/Effect/ELinkDatabase.h"
 #include "Game/Npc/NewsScriptEngine.h"
 #include "Game/MiniGame/MiniGameCatalog.h"
+#include "Game/Plaza/PlazaNpcPresetCatalog.h"
+#include "Game/Map/GambitStageTreeCatalog.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2400,6 +2402,53 @@ bool RunVerificationSuite() {
     printf("  News Script & Retro Arcade Mini Games:       %s (36 Broadcasts, 30 VBall, 25 Race, 27 JukeBox Tracks)\n",
            m49Ok ? "PASSED" : "FAILED");
     if (!m49Ok) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 50 Verification: Plaza NPC Presets & Gambit Master Stage Tree
+    // -----------------------------------------------------------------
+    Game::PlazaNpcPresetCatalog npcCatalog;
+    bool npcLoaded = npcCatalog.loadFromSzs("content/Static/PlayerInfo.szs");
+    bool npcPresetsOk = false;
+    if (npcLoaded) {
+        bool npcCountOk = (npcCatalog.getPresetCount() == 30);
+
+        const auto* erick = npcCatalog.getPresetByName("Erick");
+        const auto* polly = npcCatalog.getPresetByName("Polly");
+        const auto* susie = npcCatalog.getPresetByName("Susie");
+        const auto* rui = npcCatalog.getPresetByName("Rui");
+
+        bool namesAndGearOk = (erick != nullptr && erick->weaponId == 1070 && erick->headGearId == 115 &&
+                               polly != nullptr && polly->weaponId == 1040 &&
+                               susie != nullptr && susie->weaponId == 2010 && susie->headGearId == 202 &&
+                               rui != nullptr && rui->weaponId == 4010);
+
+        npcPresetsOk = (npcCountOk && namesAndGearOk);
+    }
+
+    Game::GambitStageTreeCatalog stageTree;
+    bool treeLoaded = stageTree.loadFromSzs("content/Static/Gambit.mutre.szs");
+    bool stageTreeOk = false;
+    if (treeLoaded) {
+        bool treeCountOk = (stageTree.getStageCount() == 375);
+
+        const auto* tf00 = stageTree.findStageByName("TF00_PlayerTest");
+        const auto* tf01 = stageTree.findStageByName("TF01_ObjTest");
+        const auto* tf04 = stageTree.findStageByName("TF04_EnemyTest");
+
+        bool stagesFoundOk = (tf00 != nullptr && tf00->location == "Root/Test/TF 00-19" &&
+                              tf01 != nullptr && tf01->filePath.find("TestField01") != std::string::npos &&
+                              tf04 != nullptr && tf04->filePath.find("TestField04") != std::string::npos);
+
+        auto testStages = stageTree.findByLocationPrefix("Root/Test");
+        bool filterOk = (!testStages.empty() && testStages.size() >= 20);
+
+        stageTreeOk = (treeCountOk && stagesFoundOk && filterOk);
+    }
+
+    bool m50Ok = (npcPresetsOk && stageTreeOk);
+    printf("  Plaza NPCs & Master Stage Tree (Gambit.mutre):%s (30 Plaza Walkers, 375 Developer & Retail Stages)\n",
+           m50Ok ? "PASSED" : "FAILED");
+    if (!m50Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
