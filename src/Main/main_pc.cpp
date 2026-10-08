@@ -95,6 +95,7 @@
 #include "Game/Player/UdemaeGradeMgr.h"
 #include "Game/Player/GearCatalog.h"
 #include "Game/Dojo/DuelItemTable.h"
+#include "Game/Map/MapInfoCatalog.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1684,6 +1685,44 @@ bool RunVerificationSuite() {
     printf("  Battle Dojo Parameters (DuelItemTable):      %s (Tiers: 4, Presets: 8, Comeback Barrier: 30%%, Leader: 0%%)\n",
            fullDuelOk ? "PASSED" : "FAILED");
     if (!fullDuelOk) allPassed = false;
+
+    // 33. Master 129-Stage Map Catalog & Camera Parameter Engine (MapInfo.byaml)
+    printf("\n--- [33/33] MASTER 129-STAGE MAP CATALOG & CAMERA PARAMETER ENGINE ---\n");
+
+    Game::MapInfoCatalog mapCatalog;
+    bool mapCatalogLoaded = mapCatalog.loadFromByml("content/Static/MapInfo.byaml");
+    bool mapCountOk = (mapCatalogLoaded && mapCatalog.getTotalEntryCount() == 129);
+
+    // Verify Urchin Underpass (Fld_Crank00_Vss, Id: 0, Pitch: 35.0, Yaw: 140.0, Scale: 0.80, Trans: -428, -40, 0)
+    const auto* urchin = mapCatalog.findEntryByName("Fld_Crank00_Vss");
+    bool urchinOk = (urchin && urchin->id == 0 && urchin->mapCameraRotPitchDeg == 35.0f &&
+                     urchin->mapCameraRotYawDeg == 140.0f && urchin->mapCameraScale == 0.80f &&
+                     urchin->mapCameraTrans.x == -428.0f && urchin->mapCameraTrans.y == -40.0f);
+
+    // Verify Walleye Warehouse (Fld_Warehouse00_Vss, Id: 1, Pitch: 20.0, Yaw: -135.0, Scale: 0.80, Trans: -490, -40, 8)
+    const auto* warehouseStage = mapCatalog.findEntryByName("Fld_Warehouse00_Vss");
+    bool warehouseOk = (warehouseStage && warehouseStage->id == 1 && warehouseStage->mapCameraRotPitchDeg == 20.0f &&
+                        warehouseStage->mapCameraRotYawDeg == -135.0f && warehouseStage->mapCameraTrans.z == 8.0f);
+
+    // Verify Saltspray Rig (Fld_SeaPlant00_Vss, Id: 2, BravoInversion: 1, SndSceneEnv: seaPlant)
+    const auto* seaPlant = mapCatalog.findEntryByName("Fld_SeaPlant00_Vss");
+    bool seaPlantOk = (seaPlant && seaPlant->id == 2 && seaPlant->mapCameraBravoInversionType == 1 &&
+                       seaPlant->sndSceneEnv == "seaPlant");
+
+    // Verify Octo Valley Campaign Mission 1 (MsnStageNo: 1, TeamColor: Green)
+    const auto* mission1 = mapCatalog.findEntryByMissionNo(1);
+    bool mission1Ok = (mission1 && mission1->mapFileName == "Fld_EasyHide00_Msn" && mission1->teamColorMsn == "Green");
+
+    // Verify Category breakdown
+    auto vssMaps = mapCatalog.getVersusEntries();
+    auto msnMaps = mapCatalog.getMissionEntries();
+    auto dulMaps = mapCatalog.getDuelEntries();
+    bool categoriesOk = (!vssMaps.empty() && !msnMaps.empty() && !dulMaps.empty());
+
+    bool fullMapInfoOk = (mapCountOk && urchinOk && warehouseOk && seaPlantOk && mission1Ok && categoriesOk);
+    printf("  Retail Stage Catalog (MapInfoCatalog):       %s (Entries: 129/129, Versus: %zu, Missions: %zu, Dojo: %zu)\n",
+           fullMapInfoOk ? "PASSED" : "FAILED", vssMaps.size(), msnMaps.size(), dulMaps.size());
+    if (!fullMapInfoOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
