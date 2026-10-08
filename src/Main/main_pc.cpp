@@ -98,6 +98,7 @@
 #include "Game/Map/MapInfoCatalog.h"
 #include "Game/Mission/AmiiboChallengeMgr.h"
 #include "Game/Enemy/RailKingSchedule.h"
+#include "Game/Weapon/WeaponParamCatalog.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1808,6 +1809,58 @@ bool RunVerificationSuite() {
     printf("  DJ Octavio Timeline (RailKingSchedule):      %s (Events: 72/72, Phase Patterns: %u, RallyPunch: Frame 240)\n",
            fullScheduleOk ? "PASSED" : "FAILED", octavioSchedule.getMaxPattern() + 1);
     if (!fullScheduleOk) allPassed = false;
+
+    // 36. Full 134-Item Sub, Special, Main & Tank Asset Parameter Engine
+    printf("\n--- [36/36] WEAPON & TANK ASSET LINKING PARAMETER ENGINE ---\n");
+
+    Game::WeaponParamCatalog weaponParams;
+    bool paramsLoaded = weaponParams.loadAll(
+        "content/Static/WeaponInfo_Main.byaml",
+        "content/Static/WeaponInfo_Sub.byaml",
+        "content/Static/WeaponInfo_Special.byaml",
+        "content/Static/TankInfo.byaml");
+    bool counts134Ok = (paramsLoaded &&
+                        weaponParams.getMainCount() == 94 &&
+                        weaponParams.getSubCount() == 26 &&
+                        weaponParams.getSpecialCount() == 8 &&
+                        weaponParams.getTankCount() == 6 &&
+                        weaponParams.getTotalAssetCount() == 134);
+
+    // Verify Main weapon asset resolution
+    const auto* jrAsset = weaponParams.findMainByName("Shot_First_00");
+    bool jrAssetOk = (jrAsset && jrAsset->arcName == "Wmn_Shot_First" && jrAsset->modelName == "Wmn_Shot_First" && jrAsset->type == "Shot");
+
+    const auto* splattershotAsset = weaponParams.findMainByName("Shot_Normal_00");
+    bool ssAssetOk = (splattershotAsset && splattershotAsset->arcName == "Wmn_Shot_Normal" && splattershotAsset->modelName == "Wmn_Shot_Normal");
+
+    // Verify Sub weapon asset resolution
+    const auto* wpBombThrow = weaponParams.findSubByName("Bomb_Throw");
+    bool wpBombOk = (wpBombThrow && wpBombThrow->arcName == "Wsb_Bomb_Throw");
+
+    const auto* wpSplashWall = weaponParams.findSubByName("Shield");
+    bool wpWallOk = (wpSplashWall && wpSplashWall->arcName == "Wsb_Shield");
+
+    const auto* wpDisruptor = weaponParams.findSubByName("DevilBall");
+    bool wpDevilOk = (wpDisruptor && wpDisruptor->arcName == "Wsb_DevilBall");
+
+    // Verify Special weapon asset resolution
+    const auto* wpSuperShot = weaponParams.findSpecialByName("SuperShot");
+    bool wpZookaOk = (wpSuperShot && wpSuperShot->arcName == "Wsp_SuperShot");
+
+    const auto* wpBigLaser = weaponParams.findSpecialByName("BigLaser");
+    bool wpWailOk = (wpBigLaser && wpBigLaser->arcName == "Wsp_BigLaser");
+
+    // Verify Tank asset resolution
+    const auto* wpSimpleTank = weaponParams.findTankByName("Tnk_Simple");
+    bool wpTankOk = (wpSimpleTank && wpSimpleTank->arcName == "Tnk_Simple");
+
+    const auto* wpHeroTankLv3 = weaponParams.findTankByName("Tnk_Msn0Lv3");
+    bool wpHeroTankOk = (wpHeroTankLv3 && wpHeroTankLv3->arcName == "Tnk_Msn0Lv0" && wpHeroTankLv3->modelName == "Tnk_Msn0Lv3");
+
+    bool fullParamsOk = (counts134Ok && jrAssetOk && ssAssetOk && wpBombOk && wpWallOk && wpDevilOk && wpZookaOk && wpWailOk && wpTankOk && wpHeroTankOk);
+    printf("  Weapon & Tank Asset Engine (WeaponParamCatalog): %s (Main: 94, Sub: 26, Special: 8, Tanks: 6, Total: %zu)\n",
+           fullParamsOk ? "PASSED" : "FAILED", weaponParams.getTotalAssetCount());
+    if (!fullParamsOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
