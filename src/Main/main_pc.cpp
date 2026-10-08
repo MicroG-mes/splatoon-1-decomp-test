@@ -114,6 +114,7 @@
 #include "Game/MiniGame/MiniGameCatalog.h"
 #include "Game/Plaza/PlazaNpcPresetCatalog.h"
 #include "Game/Map/GambitStageTreeCatalog.h"
+#include "Game/Mission/MissionStageMapParser.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2449,6 +2450,47 @@ bool RunVerificationSuite() {
     printf("  Plaza NPCs & Master Stage Tree (Gambit.mutre):%s (30 Plaza Walkers, 375 Developer & Retail Stages)\n",
            m50Ok ? "PASSED" : "FAILED");
     if (!m50Ok) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 51 Verification: Octo Valley Mission Stage Maps & Boss Arenas
+    // -----------------------------------------------------------------
+    Game::MissionStageMapParser stampMap;
+    bool stampMapLoaded = stampMap.loadFromSzs("content/Static/Fld_BossStampKing_Bos_Msn.szs");
+    bool stampMapOk = false;
+    if (stampMapLoaded) {
+        bool actCountOk = (stampMap.getActorCount() == 19);
+        bool hasBossOk = stampMap.hasBoss();
+        bool hasGoalOk = stampMap.hasGoalZapfish();
+        bool hasScrollOk = stampMap.hasSunkenScroll();
+        bool hasRespawnOk = stampMap.hasRespawnPoint();
+        bool railCountOk = (stampMap.getRailCount() == 1);
+
+        stampMapOk = (actCountOk && hasBossOk && hasGoalOk && hasScrollOk && hasRespawnOk && railCountOk);
+    }
+
+    Game::MissionStageMapParser octavioMap;
+    bool octavioMapLoaded = octavioMap.loadFromSzs("content/Static/Fld_BossRailKing_Bos_Msn.szs");
+    bool octavioMapOk = false;
+    if (octavioMapLoaded) {
+        bool actCountOk = (octavioMap.getActorCount() == 182);
+        bool railCountOk = (octavioMap.getRailCount() == 12);
+        bool hasBossOk = octavioMap.hasBoss();
+        bool hasRespawnOk = octavioMap.hasRespawnPoint();
+
+        octavioMapOk = (actCountOk && railCountOk && hasBossOk && hasRespawnOk);
+    }
+
+    Game::MissionStageMapParser worldMap;
+    bool worldMapLoaded = worldMap.loadFromSzs("content/Static/Fld_World00_Wld.szs");
+    bool worldMapOk = false;
+    if (worldMapLoaded) {
+        worldMapOk = (worldMap.getActorCount() == 204 && worldMap.getRailCount() == 32);
+    }
+
+    bool m51Ok = (stampMapOk && octavioMapOk && worldMapOk);
+    printf("  Campaign Stage Maps (Octostomp, Octavio & World):%s (19 Arena Objs, 182 Boss Objs/12 Rails, 204 Overworld Objs/32 Rails)\n",
+           m51Ok ? "PASSED" : "FAILED");
+    if (!m51Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
