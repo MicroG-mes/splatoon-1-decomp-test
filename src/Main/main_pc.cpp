@@ -89,6 +89,8 @@
 #include "Game/Player/PlayerInkState.h"
 #include "Game/Player/GearBrandAffinity.h"
 #include "Game/Npc/PlazaNewsBroadcast.h"
+#include "Game/Bullet/DevilBall.h"
+#include "Game/Weapon/GameWeaponSlosher.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1472,6 +1474,68 @@ bool RunVerificationSuite() {
     printf("  Inkopolis News (PlazaNewsBroadcast):         %s (Intro: YES, Banter Lines: %zu, Fest: Cats vs Dogs, Skip: YES)\n",
            broadcastOk ? "PASSED" : "FAILED", news.getTotalLines());
     if (!broadcastOk) allPassed = false;
+
+    // 28. Tactical Sub Disruptor, Bubbler Pass & Slosher Ballistics
+    printf("\n--- [28/28] DISRUPTOR DEBUFF, BUBBLER PASS & SLOSHER BALLISTICS ---\n");
+
+    // Disruptor Poison Debuff (Game::DevilBall)
+    Game::DevilBall devilBall;
+    devilBall.init();
+    devilBall.throwBall(sead::Vector3f(0.0f, 2.0f, 0.0f), sead::Vector3f(0.0f, 0.0f, 1.0f), 0, 1);
+    devilBall.detonate(sead::Vector3f(0.0f, 0.0f, 10.0f));
+
+    // Enemy target within 3.0m (< 4.5m radius) without Cold-Blooded
+    Game::DisruptedDebuff enemyDebuff;
+    enemyDebuff.reset();
+    bool debuffApplied = devilBall.checkHitAndDebuff(sead::Vector3f(0.0f, 0.0f, 12.0f), 1, enemyDebuff, false);
+    bool disruptPenaltyOk = (debuffApplied && enemyDebuff.speedFactor == 0.50f && enemyDebuff.inkRecoveryFactor == 0.40f && enemyDebuff.remainingFrames == 300);
+
+    // Enemy target with Cold-Blooded gear ability (75 frames duration)
+    Game::DisruptedDebuff coldBloodedDebuff;
+    coldBloodedDebuff.reset();
+    devilBall.checkHitAndDebuff(sead::Vector3f(0.0f, 0.0f, 12.0f), 1, coldBloodedDebuff, true);
+    bool coldBloodedOk = (coldBloodedDebuff.remainingFrames == 75);
+
+    // Friendly teammate within blast radius (must NOT be debuffed)
+    Game::DisruptedDebuff friendDebuff;
+    friendDebuff.reset();
+    bool friendlyImmune = (!devilBall.checkHitAndDebuff(sead::Vector3f(0.0f, 0.0f, 11.0f), 0, friendDebuff, false) && !friendDebuff.active);
+
+    bool disruptorTestOk = (disruptPenaltyOk && coldBloodedOk && friendlyImmune);
+    printf("  Disruptor Poison Debuff (DevilBall):         %s (Speed: 0.50x, Ink: 0.40x, Standard: 300f, ColdBlooded: 75f)\n",
+           disruptorTestOk ? "PASSED" : "FAILED");
+    if (!disruptorTestOk) allPassed = false;
+
+    // Bubbler Knockback & Teammate Propagation (Game::Obj_Barrier)
+    Game::Obj_Barrier barrierShield;
+    barrierShield.init();
+    barrierShield.activate(4.5f);
+    bool barrierActive = barrierShield.isActive();
+
+    // Bullet impact applies knockback force
+    barrierShield.applyKnockback(sead::Vector3f(0.0f, 0.0f, 2.5f));
+    bool barrierKnockbackOk = (barrierShield.getKnockbackVelocity().z == 2.5f);
+
+    // Proximity teammate sharing (within 2.0m shares, > 2.0m does not)
+    bool closeTeammateShared = barrierShield.checkTeammateShare(sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(1.2f, 0.0f, 0.0f), 2.0f);
+    bool distantTeammateShared = barrierShield.checkTeammateShare(sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(3.5f, 0.0f, 0.0f), 2.0f);
+    bool barrierPassOk = (barrierActive && barrierKnockbackOk && closeTeammateShared && !distantTeammateShared);
+    printf("  Bubbler Shield & Teammate Pass (Obj_Barrier):%s (Shield: 4.5s, Knockback: 2.5 m/s, Pass: 1.2m YES / 3.5m NO)\n",
+           barrierPassOk ? "PASSED" : "FAILED");
+    if (!barrierPassOk) allPassed = false;
+
+    // Slosher (Bucket) Volley & Damage (Game::GameWeaponSlosher)
+    Game::GameWeaponSlosher bucketSlosher;
+    bucketSlosher.init();
+    bucketSlosher.triggerSlosh();
+    bool slosherSwinging = (bucketSlosher.getState() == Game::SlosherState::cSwingThrow);
+    bool slosherDmgOk = (bucketSlosher.getDirectDamage() == 70.0f);
+    for (int i = 0; i < 30; ++i) bucketSlosher.update();
+    bool slosherResetOk = (bucketSlosher.getState() == Game::SlosherState::cIdle);
+    bool bucketOk = (slosherSwinging && slosherDmgOk && slosherResetOk);
+    printf("  Slosher Bucket Volley (GameWeaponSlosher):   %s (Direct: 70.0 HP (2-Hit Splat), Volley Cadence: 18f)\n",
+           bucketOk ? "PASSED" : "FAILED");
+    if (!bucketOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
