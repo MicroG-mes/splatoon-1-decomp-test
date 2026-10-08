@@ -1691,6 +1691,78 @@ BfresModel BfresParser::createSunkenScrollDummyModel(const char* name) {
     return createProceduralCube(name ? name : "Obj_AncientDocumentDummy", 1.0f);
 }
 
+BfresModel BfresParser::createGreatZapfishModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_BigNamazu.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_BigNamazu";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_BigNamazu", 4.0f);
+}
+
+BfresModel BfresParser::createMiniZapfishModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_Namazu.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_Namazu";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_Namazu", 1.0f);
+}
+
+BfresModel BfresParser::createZapfishDummyModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_NamazuDummy.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_NamazuDummy";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_NamazuDummy", 1.0f);
+}
+
+BfresModel BfresParser::createGoalPedestalModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_Goal.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_Goal";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_Goal", 2.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

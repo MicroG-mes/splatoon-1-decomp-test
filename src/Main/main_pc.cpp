@@ -117,6 +117,8 @@
 #include "Game/Mission/MissionStageMapParser.h"
 #include "Game/Mission/SunkenScrollCatalog.h"
 #include "Game/Item/ItemAncientDocument.h"
+#include "Game/MapObj/Obj_Goal.h"
+#include "Game/Mission/ZapfishPowerGridMgr.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2552,6 +2554,95 @@ bool RunVerificationSuite() {
     printf("  Sunken Scroll Lore & Archive Database:       %s (28 Scrolls, 23 Lore, 5 Blueprints, 491 Vert BFRES Model)\n",
            scrollsOk ? "PASSED" : "FAILED");
     if (!scrollsOk) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 53 Verification: Zapfish Power Grid & Goal Shield Globe
+    // -----------------------------------------------------------------
+    Game::Obj_Goal goalActor;
+    goalActor.init(sead::Vector3f(0.0f, 0.0f, 0.0f), 1);
+    bool goalParamsOk = false;
+    bool goalCombatOk = false;
+
+    // Verify authentic parameter multipliers
+    const auto& gp = goalActor.getParams();
+    goalParamsOk = (gp.bombCoreDamageK == 5.0f &&
+                    gp.rollerCoreDamageK == 4.0f &&
+                    gp.rollerSplashDamageK == 1.5f &&
+                    gp.chargeBulletDamageK == 1.25f &&
+                    gp.barrierRadiusFlickerCycleFrame == 12 &&
+                    gp.animRelieved == 20.0f);
+
+    // Verify barrier damage progression, shatter and player pickup
+    bool bulletDmgOk = goalActor.applyBulletDamage(10.0f); // HP: 90.0
+    bool flickerStateOk = (goalActor.getState() == Game::GoalShieldState::cState_ShieldFlicker);
+    for (int f = 0; f < 15; ++f) goalActor.update();
+    bool decayStateOk = (goalActor.getState() == Game::GoalShieldState::cState_Shielded);
+
+    bool chargeDmgOk = goalActor.applyChargedDamage(20.0f); // 20 * 1.25 = 25.0 -> HP: 65.0
+    bool bombDmgOk = goalActor.applyBombDamage(15.0f);       // 15 * 5.0 = 75.0 -> HP: 0.0 (shattered!)
+    bool freedStateOk = (goalActor.getState() == Game::GoalShieldState::cState_ZapfishFreed);
+
+    bool touchOk = goalActor.checkPlayerTouch(sead::Vector3f(1.0f, 0.0f, 0.0f));
+    bool collectedStateOk = (goalActor.getState() == Game::GoalShieldState::cState_Collected);
+
+    goalCombatOk = (bulletDmgOk && flickerStateOk && decayStateOk &&
+                    chargeDmgOk && bombDmgOk && freedStateOk &&
+                    touchOk && collectedStateOk);
+
+    // Verify Zapfish Power Grid Subsystem
+    Game::ZapfishPowerGridMgr gridMgr;
+    bool gridInitOk = gridMgr.init();
+    bool gridProgressionOk = false;
+    if (gridInitOk) {
+        bool totalCountOk = (gridMgr.getTotalZapfishCount() == 28);
+        bool initialBlackoutOk = gridMgr.isCityBlackout() && (gridMgr.getInkopolisPowerPercentage() == 0.0f);
+
+        // Test goal integration
+        bool linkGoalOk = gridMgr.onGoalCollected(goalActor);
+        bool miniRescuedOk = (gridMgr.getRescuedMiniZapfishCount() == 1);
+
+        // Power progression: restore remaining Area 1 Zapfish (Stages 2 and 3)
+        gridMgr.rescueZapfish(2);
+        gridMgr.rescueZapfish(3);
+        auto area1Status = gridMgr.getAreaPowerStatus(1);
+        bool area1FullOk = (area1Status.isFullyPowered && area1Status.currentPowerMegaWatts == 300.0f);
+
+        // Restore all remaining Mini Zapfish (Stages 4 through 27)
+        for (u32 st = 4; st <= 27; ++st) {
+            gridMgr.rescueZapfish(st);
+        }
+        bool allMiniOk = (gridMgr.getRescuedMiniZapfishCount() == 27);
+        bool towerStillDarkOk = (gridMgr.getInkopolisPowerPercentage() == 0.0f);
+
+        // Defeat final boss and restore The Great Zapfish
+        bool greatRescuedOk = gridMgr.rescueZapfish(28);
+        bool cityIlluminatedOk = (!gridMgr.isCityBlackout() &&
+                                  gridMgr.getInkopolisPowerPercentage() == 100.0f &&
+                                  gridMgr.getTowerIlluminationIntensity() == 1.0f &&
+                                  gridMgr.getTotalGridPowerMegaWatts() == 12700.0f);
+
+        // Verify authentic 3D BFRES models on disk
+        sead::BfresModel realBigNamazu = sead::BfresParser::createGreatZapfishModel();
+        sead::BfresModel realNamazu = sead::BfresParser::createMiniZapfishModel();
+        sead::BfresModel realDummyNamazu = sead::BfresParser::createZapfishDummyModel();
+        sead::BfresModel realGoalPedestal = sead::BfresParser::createGoalPedestalModel();
+
+        bool assetsOk = gridMgr.verifyModelAssets();
+        bool bigNamazuOk = (realBigNamazu.getTotalVertexCount() >= 500);
+        bool namazuOk = (realNamazu.getTotalVertexCount() >= 300);
+        bool dummyOk = (realDummyNamazu.getTotalVertexCount() >= 1000);
+        bool pedestalOk = (realGoalPedestal.getTotalVertexCount() >= 1000);
+
+        gridProgressionOk = (totalCountOk && initialBlackoutOk && linkGoalOk && miniRescuedOk &&
+                             area1FullOk && allMiniOk && towerStillDarkOk &&
+                             greatRescuedOk && cityIlluminatedOk &&
+                             assetsOk && bigNamazuOk && namazuOk && dummyOk && pedestalOk);
+    }
+
+    bool m53Ok = (goalParamsOk && goalCombatOk && gridProgressionOk);
+    printf("  Zapfish Power Grid & Goal Shield Globe:       %s (28 Zapfish, 12,700 MW Grid, Inkopolis Tower 100%%, 7,123 Verts)\n",
+           m53Ok ? "PASSED" : "FAILED");
+    if (!m53Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

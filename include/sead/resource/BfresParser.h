@@ -153,6 +153,10 @@ public:
     static BfresModel createWaterTankModel(const char* name = "Obj_WaterTank");
     static BfresModel createSunkenScrollModel(const char* name = "Obj_AncientDocument");
     static BfresModel createSunkenScrollDummyModel(const char* name = "Obj_AncientDocumentDummy");
+    static BfresModel createGreatZapfishModel(const char* name = "Obj_BigNamazu");
+    static BfresModel createMiniZapfishModel(const char* name = "Obj_Namazu");
+    static BfresModel createZapfishDummyModel(const char* name = "Obj_NamazuDummy");
+    static BfresModel createGoalPedestalModel(const char* name = "Obj_Goal");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
