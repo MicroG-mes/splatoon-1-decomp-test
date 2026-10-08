@@ -87,6 +87,10 @@ public:
     size_t getNormalCount() const { return mNormals.size(); }
     size_t getPrismCount() const { return mPrisms.size(); }
 
+    const std::vector<sead::Vector3f>& getPositions() const { return mPositions; }
+    const std::vector<sead::Vector3f>& getNormals() const { return mNormals; }
+    const std::vector<KclPrismRaw>& getPrisms() const { return mPrisms; }
+
     const sead::Vector3f& getMinBounds() const { return mMinBounds; }
     const sead::Vector3f& getMaxBounds() const { return mMaxBounds; }
 

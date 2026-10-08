@@ -193,19 +193,19 @@ bool KclFile::raycast(const sead::Vector3f& origin, const sead::Vector3f& direct
         const sead::Vector3f& nrm = mNormals[p.dirIndex];
 
         // Reconstruct triangle points from prism normal components
-        if (p.nrmAIndex >= mNormals.size() || p.nrmBIndex >= mNormals.size()) continue;
-        const sead::Vector3f& nA = mNormals[p.nrmAIndex];
-        const sead::Vector3f& nB = mNormals[p.nrmBIndex];
+        if (p.nrmAIndex >= mNormals.size() || p.nrmBIndex >= mNormals.size() || p.nrmCIndex >= mNormals.size()) continue;
+        const sead::Vector3f& na = mNormals[p.nrmAIndex];
+        const sead::Vector3f& nb = mNormals[p.nrmBIndex];
+        const sead::Vector3f& nc = mNormals[p.nrmCIndex];
 
-        // Cross product nA x nB gives triangle base
-        sead::Vector3f cross(
-            nA.y * nB.z - nA.z * nB.y,
-            nA.z * nB.x - nA.x * nB.z,
-            nA.x * nB.y - nA.y * nB.x
-        );
+        sead::Vector3f crossA = nrm.cross(na);
+        sead::Vector3f crossB = nrm.cross(nb);
+        f32 denomA = nc.dot(crossA);
+        f32 denomB = nc.dot(crossB);
+        if (std::abs(denomA) < 1e-6f || std::abs(denomB) < 1e-6f) continue;
 
-        sead::Vector3f v1 = v0 + cross * (p.length > 0.0f ? p.length : 1.0f);
-        sead::Vector3f v2 = v0 + nrm * (p.length > 0.0f ? p.length : 1.0f);
+        sead::Vector3f v1 = v0 + crossB * (p.length / denomB);
+        sead::Vector3f v2 = v0 + crossA * (p.length / denomA);
 
         f32 t = 0.0f, u = 0.0f, v = 0.0f;
         if (IntersectRayTriangle(origin, direction, v0, v1, v2, t, u, v)) {
