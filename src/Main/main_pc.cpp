@@ -94,6 +94,7 @@
 #include "Game/Weapon/WeaponCatalog.h"
 #include "Game/Player/UdemaeGradeMgr.h"
 #include "Game/Player/GearCatalog.h"
+#include "Game/Dojo/DuelItemTable.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1643,6 +1644,46 @@ bool RunVerificationSuite() {
     printf("  Retail Gear Catalog (GearCatalog):           %s (Head: 88, Clt: 170, Shs: 86, Total: 344/344, SquidForce: %zu)\n",
            fullGearOk ? "PASSED" : "FAILED", squidForceGear.size());
     if (!fullGearOk) allPassed = false;
+
+    // 32. Battle Dojo Dynamic D100 Item Table & 8 Preset Loadouts
+    printf("\n--- [32/32] BATTLE DOJO D100 ITEM PROBABILITY & PRESET LOADOUTS ---\n");
+
+    Game::DuelItemTableMgr duelTable;
+    bool duelLoaded = duelTable.loadFromByml("content/Static/DuelItemTable.byaml", "content/Static/DuelPlayerSetting.byaml");
+    bool duelCountsOk = (duelLoaded &&
+                         duelTable.getProbabilityEntryCount() == 4 &&
+                         duelTable.getPresetLoadoutCount() == 8);
+
+    // Test Point Differential Tiers:
+    // Case A: Leader ahead by +15 points (Min: 10, Max: 99) -> Barrier 0, SuperShot 0, Sprinkler 30
+    const auto* leaderTier = duelTable.getEntryForPointDiff(15);
+    bool leaderTierOk = (leaderTier && leaderTier->barrier == 0 && leaderTier->superShot == 0 &&
+                         leaderTier->sprinkler == 30 && leaderTier->devil == 18);
+    auto dropA0 = duelTable.rollDropItem(15, 0);  // roll 0 in Devil [0..17]
+    auto dropA50 = duelTable.rollDropItem(15, 50); // roll 50 in Sprinkler [30..59]
+    bool leaderRollsOk = (dropA0 == Game::DuelDropItemType::cDevil &&
+                          dropA50 == Game::DuelDropItemType::cSprinkler);
+
+    // Case B: Underdog trailing by -25 points (Min: -99, Max: -10) -> Barrier 30, PowerUp 25, SuperShot 20
+    const auto* underdogTier = duelTable.getEntryForPointDiff(-25);
+    bool underdogTierOk = (underdogTier && underdogTier->barrier == 30 && underdogTier->powerUp == 25 &&
+                           underdogTier->superShot == 20 && underdogTier->sprinkler == 0);
+    auto dropB0 = duelTable.rollDropItem(-25, 10);  // roll 10 in Barrier [0..29]
+    auto dropB80 = duelTable.rollDropItem(-25, 80); // roll in SuperShot [65..84]
+    bool underdogRollsOk = (dropB0 == Game::DuelDropItemType::cBarrier &&
+                            dropB80 == Game::DuelDropItemType::cSuperShot);
+
+    // Test Dojo Preset Loadouts (8 total)
+    const auto* loadout0 = duelTable.getPresetLoadout(0);
+    bool l0Ok = (loadout0 && loadout0->weaponSet == "Shot_Normal00" && loadout0->clothes == "TES000");
+
+    const auto* loadout1 = duelTable.getPresetLoadout(1);
+    bool l1Ok = (loadout1 && loadout1->weaponSet == "Roller_Normal00" && loadout1->shoes == "SLP000");
+
+    bool fullDuelOk = (duelCountsOk && leaderTierOk && leaderRollsOk && underdogTierOk && underdogRollsOk && l0Ok && l1Ok);
+    printf("  Battle Dojo Parameters (DuelItemTable):      %s (Tiers: 4, Presets: 8, Comeback Barrier: 30%%, Leader: 0%%)\n",
+           fullDuelOk ? "PASSED" : "FAILED");
+    if (!fullDuelOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
