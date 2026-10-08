@@ -92,6 +92,7 @@
 #include "Game/Bullet/DevilBall.h"
 #include "Game/Weapon/GameWeaponSlosher.h"
 #include "Game/Weapon/WeaponCatalog.h"
+#include "Game/Player/UdemaeGradeMgr.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1566,6 +1567,43 @@ bool RunVerificationSuite() {
     printf("  Retail Weapon Catalog (WeaponCatalog):       %s (Loaded: 71/71 Weapons, Jr: Free/Lv1, Tentatek: 2000/Lv4, Aero: 4500/Lv7)\n",
            fullCatalogOk ? "PASSED" : "FAILED");
     if (!fullCatalogOk) allPassed = false;
+
+    // 30. Ranked Battle Grade & Player Level Progression Engine
+    printf("\n--- [30/30] RANKED GRADE & PLAYER LEVEL PROGRESSION ENGINE ---\n");
+
+    Game::UdemaeGradeMgr gradeMgr;
+    bool gradeFilesLoaded = gradeMgr.loadFromByml("content/Static/UdemaeGrade.byaml", "content/Static/PlayerRank.byaml");
+    bool gradeCountsOk = (gradeFilesLoaded && gradeMgr.getLoadedGradeCount() >= 9 && gradeMgr.getLoadedRankThresholdCount() == 20);
+
+    // Test Level EXP progression (Level 1 requires 700 EXP)
+    u32 initLvl = gradeMgr.getPlayerLevel();
+    u32 neededExpLvl1 = gradeMgr.getNextLevelExp();
+    bool lvl1ExpOk = (initLvl == 1 && neededExpLvl1 == 700);
+
+    // Award 1000 EXP -> Leveled up to Level 2 with 300 EXP rollover
+    bool lvlUp = gradeMgr.addExp(1000);
+    bool lvl2Ok = (lvlUp && gradeMgr.getPlayerLevel() == 2 && gradeMgr.getCurrentExp() == 300 && gradeMgr.getNextLevelExp() == 1600);
+
+    // Test Ranked Grade Promotion (Start C- 0pt)
+    u32 winCash = 0;
+    gradeMgr.applyMatchOutcome(true, 10, false, winCash); // Win regular: +10 pts, 1000 cash
+    bool win1Ok = (gradeMgr.getGradeName() == "C-" && gradeMgr.getGradePoints() == 10 && winCash == 1000);
+
+    gradeMgr.applyMatchOutcome(true, 20, true, winCash); // Knockout win: +20 pts, 1300 cash
+    bool koOk = (gradeMgr.getGradePoints() == 30 && winCash == 1300);
+
+    // Push past 100 points -> Promoted to C rank with 30 point buffer!
+    gradeMgr.applyMatchOutcome(true, 75, false, winCash); // 30 + 75 = 105 >= 100
+    bool promoOk = (gradeMgr.getGradeName() == "C" && gradeMgr.getGradePoints() == 30);
+
+    // Test Demotion: lose 40 points -> drops below 0 -> Demoted back to C- with 70 point buffer!
+    gradeMgr.applyMatchOutcome(false, 40, false, winCash); // 30 - 40 = -10 < 0
+    bool demoOk = (gradeMgr.getGradeName() == "C-" && gradeMgr.getGradePoints() == 70);
+
+    bool gradeEngineOk = (gradeCountsOk && lvl1ExpOk && lvl2Ok && win1Ok && koOk && promoOk && demoOk);
+    printf("  Ranked Grade & EXP Engine (UdemaeGradeMgr):  %s (Grades: 9, Ranks: 20, Promo C- -> C: 30pt, Demo: 70pt)\n",
+           gradeEngineOk ? "PASSED" : "FAILED");
+    if (!gradeEngineOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
