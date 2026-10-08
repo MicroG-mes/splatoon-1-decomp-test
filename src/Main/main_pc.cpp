@@ -1562,6 +1562,7 @@ static bool s_ActivateSpecialRequested = false;
 static bool s_SuperJumpRequested = false;
 static bool s_ToggleCameraRequested = false;
 static bool s_CycleWeaponRequested = false;
+static bool s_TriggerNewsRequested = false;
 static int s_ActiveWeaponType = 0; // 0 = Splattershot, 1 = Splat Roller, 2 = Splat Charger
 static float s_ChargerChargeRatio = 0.0f;
 static bool s_FiredChargerThisFrame = false;
@@ -1597,6 +1598,8 @@ LRESULT CALLBACK SplatoonWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
             s_KeyShift = true;
         } else if (wParam == 'C') {
             s_ToggleCameraRequested = true;
+        } else if (wParam == 'N') {
+            s_TriggerNewsRequested = true;
         } else if (wParam == 'R') {
             s_ThrowBombRequested = true;
         } else if (wParam == VK_TAB || wParam == 'M') {
@@ -1741,9 +1744,26 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
     sead::BfresModel krakenModel = sead::BfresParser::createKrakenModel("Weapon_Kraken", s_CurrentPaintTeam);
     sead::BfresModel rainmakerGoalModel = sead::BfresParser::createRainmakerPedestalModel("Obj_ShrBasketGoal");
     sead::BfresModel bulletModel = sead::BfresParser::createInkBulletModel("InkBullet", 0.35f);
-    sead::BfresModel bombModel = sead::BfresParser::createInkBulletModel("SplatBomb", 0.65f);
+    sead::BfresModel bombModel = sead::BfresParser::createSplatBombModel("Wsb_Bomb_Throw", s_CurrentPaintTeam);
     sead::BfresModel killerWailModel = sead::BfresParser::createKillerWailModel("Weapon_KillerWail", s_CurrentPaintTeam);
     sead::BfresModel inkzookaModel = sead::BfresParser::createInkzookaModel("Weapon_Inkzooka", s_CurrentPaintTeam);
+
+    // Authentic Retail Inkopolis Plaza NPCs
+    sead::BfresModel callieModel = sead::BfresParser::createCallieModel("Callie_Retail");
+    sead::BfresModel marieModel = sead::BfresParser::createMarieModel("Marie_Retail");
+    sead::BfresModel spykeModel = sead::BfresParser::createSpykeModel("Spyke_Retail");
+    sead::BfresModel juddModel = sead::BfresParser::createJuddModel("Judd_Retail");
+    sead::BfresModel sheldonModel = sead::BfresParser::createSheldonModel("Sheldon_Retail");
+
+    // Inkopolis News Stage Rotation Broadcast Engine
+    Game::PlazaNewsBroadcast plazaNews;
+    Game::RotationSchedule liveSchedule;
+    liveSchedule.regularStageIdA = 0; // Walleye Warehouse
+    liveSchedule.regularStageIdB = 2; // Urchin Underpass
+    liveSchedule.rankedStageIdA = 1;  // Blackbelly Skatepark
+    liveSchedule.rankedStageIdB = 3;  // Saltspray Rig
+    liveSchedule.rankedRule = Game::RankedModeType::cSplatZones;
+    liveSchedule.isSplatfestActive = false;
 
     // Interactive Stage Objects
     std::vector<Game::Obj_GeneralBox> stageCrates;
@@ -2713,6 +2733,54 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
             }
         }
 
+        // 7. Render Inkopolis Plaza Retail NPCs (Squid Sisters, Judd, Spyke, Sheldon)
+        if (currentStage.find("Plaza") != std::string::npos) {
+            // Callie (Npc_IdolA) in Studio Booth
+            sead::Matrix44f callieWorld;
+            callieWorld.setTranslation(-15.2f, 3.2f, 18.0f);
+            renderer.submitModel(callieModel, callieWorld, 0);
+
+            // Marie (Npc_IdolB) in Studio Booth
+            sead::Matrix44f marieWorld;
+            marieWorld.setTranslation(-13.6f, 3.2f, 18.0f);
+            renderer.submitModel(marieModel, marieWorld, 1);
+
+            // Judd the Cat (Npc_Judge) near Battle Lobby
+            sead::Matrix44f juddWorld;
+            juddWorld.setTranslation(2.5f, 0.0f, 12.0f);
+            renderer.submitModel(juddModel, juddWorld, 255);
+
+            // Spyke (Npc_CustomShop) in alleyway
+            sead::Matrix44f spykeWorld;
+            spykeWorld.setTranslation(-18.5f, 0.0f, -4.0f);
+            renderer.submitModel(spykeModel, spykeWorld, 255);
+
+            // Sheldon (Npc_WeaponsShop) Ammo Knights
+            sead::Matrix44f sheldonWorld;
+            sheldonWorld.setTranslation(16.0f, 0.0f, 8.0f);
+            renderer.submitModel(sheldonModel, sheldonWorld, 255);
+        }
+
+        // Handle Inkopolis News Interactive Broadcast (N key)
+        if (s_TriggerNewsRequested) {
+            s_TriggerNewsRequested = false;
+            if (!plazaNews.isBroadcasting()) {
+                plazaNews.init(liveSchedule);
+                printf("\n===================================================\n");
+                printf("[*] INKOPOLIS NEWS BROADCAST STARTED (Squid Sisters)!\n");
+                printf("===================================================\n");
+            } else {
+                plazaNews.advanceDialogue();
+            }
+            const auto* line = plazaNews.getCurrentLine();
+            if (line) {
+                printf("[%s]: \"%s\"\n", line->speaker, line->text.c_str());
+            }
+        }
+        if (plazaNews.isBroadcasting()) {
+            plazaNews.update(0.01667f);
+        }
+
         renderer.endFrame();
         renderer.present();
 
@@ -2721,15 +2789,22 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
             Game::PaintStats stats = paintMap.calculateStats();
             const char* wNamesShort[] = { "Splattershot", "Splat Roller", "Splat Charger" };
             char titleBuf[256];
-            snprintf(titleBuf, sizeof(titleBuf),
-                     "Splatoon 1 (Gambit PC) | %s | Wep: %s | Ink: %d%% | Turf: Org %.1f%% / Cyan %.1f%% | Rival: %s (HP: %.0f) [60 FPS]",
-                     currentStage.c_str(),
-                     wNamesShort[s_ActiveWeaponType],
-                     static_cast<int>(inkTank * 100.0f),
-                     stats.alphaPercent,
-                     stats.bravoPercent,
-                     rivalBot.isAlive() ? "ALIVE" : "RESPAWN",
-                     rivalBot.getHealth());
+            if (plazaNews.isBroadcasting() && plazaNews.getCurrentLine()) {
+                const auto* nLine = plazaNews.getCurrentLine();
+                snprintf(titleBuf, sizeof(titleBuf),
+                         "Splatoon 1 (Gambit PC) | [NEWS] %s: \"%s\" (Press N to advance)",
+                         nLine->speaker, nLine->text.c_str());
+            } else {
+                snprintf(titleBuf, sizeof(titleBuf),
+                         "Splatoon 1 (Gambit PC) | %s | Wep: %s | Ink: %d%% | Turf: Org %.1f%% / Cyan %.1f%% | Rival: %s (HP: %.0f) [60 FPS]",
+                         currentStage.c_str(),
+                         wNamesShort[s_ActiveWeaponType],
+                         static_cast<int>(inkTank * 100.0f),
+                         stats.alphaPercent,
+                         stats.bravoPercent,
+                         rivalBot.isAlive() ? "ALIVE" : "RESPAWN",
+                         rivalBot.getHealth());
+            }
             SetWindowTextA(hWnd, titleBuf);
         }
 
