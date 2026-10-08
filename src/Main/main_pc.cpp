@@ -103,6 +103,7 @@
 #include "Game/Player/SkillTipsCatalog.h"
 #include "Game/Mission/CuttlefishDialogueMgr.h"
 #include "Game/Camera/CameraParamEngine.h"
+#include "Game/Effect/ParticleBindCatalog.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2058,6 +2059,36 @@ bool RunVerificationSuite() {
     printf("  Cinematic Cameras (CameraParamEngine):       %s (Presets: 85/85, Friend: FOV 55, News: Studio Cut, Dist: %.1fm)\n",
            fullCamOk ? "PASSED" : "FAILED", dist);
     if (!fullCamOk) allPassed = false;
+
+    // 42. Particle & Debris Model VFX Binding Subsystem (ParticleBindModel.byaml)
+    printf("\n--- [42/42] PARTICLE & DEBRIS MODEL VFX BINDING SUBSYSTEM ---\n");
+
+    Game::ParticleBindCatalog particleCatalog;
+    bool particleLoaded = particleCatalog.loadFromByml("content/Static/ParticleBindModel.byaml");
+    bool particleCountsOk = (particleLoaded && particleCatalog.getEntryCount() == 64 && particleCatalog.getUniqueParentCount() == 28);
+
+    // 1. Verify Entry 0: Destructible Crate Debris binding (Obj_Box00L -> Obj_Break00, Pattern 3)
+    const auto* e0 = particleCatalog.getEntryByIndex(0);
+    bool e0Ok = (e0 && e0->modelName == "Obj_Break00" && e0->parentModelName == "Obj_Box00L" && e0->pattern == 3);
+
+    // 2. Verify Octostomp Boss debris bindings (Enm_Stamp has 3 broken mesh parts: Break00, 01, 02)
+    auto stampBindings = particleCatalog.getEntriesByParent("Enm_Stamp");
+    bool stampOk = (stampBindings.size() == 3 && stampBindings[0]->modelName == "Enm_Break00");
+
+    // 3. Verify DJ Octavio Boss Deflection SFX bindings (RailKing arm & punch deflection debris)
+    auto armBindings = particleCatalog.getEntriesByParent("Enm_RailKingArm");
+    auto punchBindings = particleCatalog.getEntriesByParent("Enm_RailKingPunch");
+    bool railKingSfxOk = (!armBindings.empty() && armBindings[0]->se == "BrokenPiece_RailKingArm" &&
+                          !punchBindings.empty() && punchBindings[0]->se == "BrokenPiece_RailKingPunch");
+
+    // 4. Verify Total Audio-Enabled Debris Triggers (39 entries)
+    auto audioBindings = particleCatalog.getEntriesWithSoundEffect();
+    bool debrisAudioOk = (audioBindings.size() == 39);
+
+    bool fullParticleOk = (particleCountsOk && e0Ok && stampOk && railKingSfxOk && debrisAudioOk);
+    printf("  Particle & VFX Debris (ParticleBindCatalog): %s (Bindings: 64/64, Parents: 28, Audio FX: %zu/39, Deflection: YES)\n",
+           fullParticleOk ? "PASSED" : "FAILED", audioBindings.size());
+    if (!fullParticleOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
