@@ -91,6 +91,7 @@
 #include "Game/Npc/PlazaNewsBroadcast.h"
 #include "Game/Bullet/DevilBall.h"
 #include "Game/Weapon/GameWeaponSlosher.h"
+#include "Game/Weapon/WeaponCatalog.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1537,6 +1538,35 @@ bool RunVerificationSuite() {
            bucketOk ? "PASSED" : "FAILED");
     if (!bucketOk) allPassed = false;
 
+    // 29. Authentic Nintendo Retail 71-Weapon Catalog (Mush/WeaponSet.byaml)
+    printf("\n--- [29/29] RETAIL 71-WEAPON CATALOG & PARAMETER BYML SUBSYSTEM ---\n");
+
+    Game::WeaponCatalog catalog;
+    bool catalogLoaded = catalog.loadFromByml("content/Static/WeaponSet.byaml");
+    bool count71Ok = (catalogLoaded && catalog.getWeaponCount() == 71);
+
+    // Verify Splattershot Jr (Shot_First00)
+    const auto* jr = catalog.findWeaponByName("Shot_First00");
+    bool jrOk = (jr && jr->subWeapon == "Bomb_Throw" && jr->specialWeapon == "Barrier" && jr->unlockRank == 1 && jr->price == 0);
+
+    // Verify Tentatek Splattershot (Shot_Normal01)
+    const auto* tentatek = catalog.findWeaponByName("Shot_Normal01");
+    bool tentatekOk = (tentatek && tentatek->subWeapon == "Bomb_Hold" && tentatek->specialWeapon == "SuperShot" && tentatek->unlockRank == 4 && tentatek->price == 2000);
+
+    // Verify Aerospray MG (Shot_Blaze00)
+    const auto* aeroMG = catalog.findWeaponByName("Shot_Blaze00");
+    bool aeroOk = (aeroMG && aeroMG->subWeapon == "Bomb_Chase" && aeroMG->specialWeapon == "SuperShot" && aeroMG->unlockRank == 7 && aeroMG->price == 4500);
+
+    // Verify Rank level gate filtering
+    auto rank1Weps = catalog.getUnlockedWeapons(1);
+    auto rank20Weps = catalog.getUnlockedWeapons(20);
+    bool levelGatesOk = (!rank1Weps.empty() && rank20Weps.size() >= 60 && rank1Weps.size() < rank20Weps.size());
+
+    bool fullCatalogOk = (count71Ok && jrOk && tentatekOk && aeroOk && levelGatesOk);
+    printf("  Retail Weapon Catalog (WeaponCatalog):       %s (Loaded: 71/71 Weapons, Jr: Free/Lv1, Tentatek: 2000/Lv4, Aero: 4500/Lv7)\n",
+           fullCatalogOk ? "PASSED" : "FAILED");
+    if (!fullCatalogOk) allPassed = false;
+
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
     printf("=================================================================\n\n");
@@ -1606,6 +1636,72 @@ bool DumpSarcFile(const char* filePath, const char* outDir = nullptr) {
             }
         }
     }
+    return true;
+}
+
+void PrintBymlNode(const Game::BymlNode* node, int indent = 0) {
+    if (!node || indent > 3) return;
+    std::string pad(indent * 2, ' ');
+    if (node->isDictionary()) {
+        for (const auto& kv : node->getDictMembers()) {
+            if (kv.second->isInt()) {
+                printf("%s%s: %d\n", pad.c_str(), kv.first.c_str(), kv.second->getInt());
+            } else if (kv.second->isFloat()) {
+                printf("%s%s: %.2f\n", pad.c_str(), kv.first.c_str(), kv.second->getFloat());
+            } else if (kv.second->isString()) {
+                printf("%s%s: \"%s\"\n", pad.c_str(), kv.first.c_str(), kv.second->asString().c_str());
+            } else if (kv.second->isBool()) {
+                printf("%s%s: %s\n", pad.c_str(), kv.first.c_str(), kv.second->getBool() ? "true" : "false");
+            } else if (kv.second->isDictionary() || kv.second->isArray()) {
+                printf("%s%s:\n", pad.c_str(), kv.first.c_str());
+                PrintBymlNode(kv.second.get(), indent + 1);
+            }
+        }
+    } else if (node->isArray()) {
+        for (size_t i = 0; i < node->getArraySize() && i < 10; ++i) {
+            const auto* elem = node->getElement(i);
+            if (elem) {
+                printf("%s[%zu]:\n", pad.c_str(), i);
+                PrintBymlNode(elem, indent + 1);
+            }
+        }
+        if (node->getArraySize() > 10) {
+            printf("%s... (%zu total elements)\n", pad.c_str(), node->getArraySize());
+        }
+    }
+}
+
+bool DumpBymlFile(const char* filePath) {
+    printf("[*] Inspecting Nintendo BYML Parameter File: %s\n", filePath);
+    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        printf("[-] Error: Unable to open file '%s'\n", filePath);
+        return false;
+    }
+
+    std::streamsize fileSize = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    std::vector<u8> buffer(static_cast<size_t>(fileSize));
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), fileSize)) {
+        printf("[-] Error: Failed to read file data\n");
+        return false;
+    }
+
+    Game::BymlParser parser;
+    if (!parser.parse(buffer.data(), buffer.size())) {
+        printf("[-] Error: Failed to parse BYML (invalid magic or corrupted format)\n");
+        return false;
+    }
+
+    if (!parser.isValid() || !parser.getRoot()) {
+        printf("[-] Error: Empty or invalid root node\n");
+        return false;
+    }
+
+    printf("[+] BYML parsed successfully! Root Node: %s\n",
+           parser.getRoot()->isDictionary() ? "Dictionary" : (parser.getRoot()->isArray() ? "Array" : "Scalar"));
+    PrintBymlNode(parser.getRoot(), 1);
     return true;
 }
 
@@ -2932,6 +3028,8 @@ int main(int argc, char* argv[]) {
             const char* szsFile = argv[++i];
             const char* outDir = (i + 1 < argc && argv[i + 1][0] != '-') ? argv[++i] : "extracted";
             return DumpSarcFile(szsFile, outDir) ? 0 : 1;
+        } else if (arg == "--dump-byml" && i + 1 < argc) {
+            return DumpBymlFile(argv[++i]) ? 0 : 1;
         } else if (arg == "--help" || arg == "-h") {
             PrintUsage();
             return 0;
