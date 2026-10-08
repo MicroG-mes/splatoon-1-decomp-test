@@ -127,6 +127,16 @@ public:
     static BfresModel createOctotrooperModel(const char* name = "Enemy_Octotrooper", u32 teamId = 1);
     static BfresModel createRainmakerPedestalModel(const char* name = "Obj_ShrBasketGoal");
     static BfresModel createOctolingModel(const char* name = "RivalOctoling", u32 teamId = 1);
+    static BfresModel createCallieModel(const char* name = "Npc_IdolA");
+    static BfresModel createMarieModel(const char* name = "Npc_IdolB");
+    static BfresModel createSpykeModel(const char* name = "Npc_CustomShop");
+    static BfresModel createJuddModel(const char* name = "Npc_Judge");
+    static BfresModel createSheldonModel(const char* name = "Npc_WeaponsShop");
+    static BfresModel createSplatBombModel(const char* name = "Wsb_Bomb_Throw", u32 teamId = 0);
+    static BfresModel createBurstBombModel(const char* name = "Wsb_Bomb_Handy", u32 teamId = 0);
+    static BfresModel createSplashWallModel(const char* name = "Wsb_Shield", u32 teamId = 0);
+    static BfresModel createSprinklerModel(const char* name = "Wsb_Sprinkler", u32 teamId = 0);
+    static BfresModel createInkstrikeModel(const char* name = "Wsp_Tornado", u32 teamId = 0);
 
     bool loadFromSzsFile(const char* szsFilePath);
 

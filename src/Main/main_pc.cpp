@@ -88,6 +88,7 @@
 #include "Game/Camera/CameraCollision.h"
 #include "Game/Player/PlayerInkState.h"
 #include "Game/Player/GearBrandAffinity.h"
+#include "Game/Npc/PlazaNewsBroadcast.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1192,6 +1193,32 @@ bool RunVerificationSuite() {
            realKwOk ? "PASSED" : "FAILED", realKillerWail.getTotalVertexCount(), realKillerWail.meshes.size());
     if (!realKwOk) allPassed = false;
 
+    // Squid Sisters: Callie (Npc_IdolA) & Marie (Npc_IdolB)
+    sead::BfresModel realCallie = sead::BfresParser::createCallieModel("Callie_Retail");
+    sead::BfresModel realMarie = sead::BfresParser::createMarieModel("Marie_Retail");
+    bool idolsOk = (realCallie.getTotalVertexCount() >= 1000 && realMarie.getTotalVertexCount() >= 1000);
+    printf("  Squid Sisters Idols (Npc_IdolA & B):         %s (Callie: %zu Verts, Marie: %zu Verts)\n",
+           idolsOk ? "PASSED" : "FAILED", realCallie.getTotalVertexCount(), realMarie.getTotalVertexCount());
+    if (!idolsOk) allPassed = false;
+
+    // Inkopolis Plaza NPCs: Spyke, Judd, Sheldon
+    sead::BfresModel realSpyke = sead::BfresParser::createSpykeModel("Spyke_Retail");
+    sead::BfresModel realJudd = sead::BfresParser::createJuddModel("Judd_Retail");
+    sead::BfresModel realSheldon = sead::BfresParser::createSheldonModel("Sheldon_Retail");
+    bool npcsOk = (realSpyke.getTotalVertexCount() >= 500 && realJudd.getTotalVertexCount() >= 500 && realSheldon.getTotalVertexCount() >= 500);
+    printf("  Inkopolis Plaza Retail NPCs:                 %s (Spyke: %zu Verts, Judd: %zu, Sheldon: %zu)\n",
+           npcsOk ? "PASSED" : "FAILED", realSpyke.getTotalVertexCount(), realJudd.getTotalVertexCount(), realSheldon.getTotalVertexCount());
+    if (!npcsOk) allPassed = false;
+
+    // Sub Weapons & Specials: Splat Bomb, Splash Wall, Inkstrike
+    sead::BfresModel realSplatBomb = sead::BfresParser::createSplatBombModel("SplatBomb_Retail", 0);
+    sead::BfresModel realSplashWall = sead::BfresParser::createSplashWallModel("SplashWall_Retail", 0);
+    sead::BfresModel realInkstrike = sead::BfresParser::createInkstrikeModel("Inkstrike_Retail", 0);
+    bool subsOk = (realSplatBomb.getTotalVertexCount() >= 200 && realSplashWall.getTotalVertexCount() >= 200 && realInkstrike.getTotalVertexCount() >= 200);
+    printf("  Sub & Special Retail Arsenal:                %s (Bomb: %zu Verts, Wall: %zu, Strike: %zu)\n",
+           subsOk ? "PASSED" : "FAILED", realSplatBomb.getTotalVertexCount(), realSplashWall.getTotalVertexCount(), realInkstrike.getTotalVertexCount());
+    if (!subsOk) allPassed = false;
+
     // 24. Turf War Match Rules, Camera Occlusion & Ink Dynamics
     printf("\n--- [24/25] TURF WAR MATCH RULES, CAMERA OCCLUSION & INK DYNAMICS ---\n");
 
@@ -1395,6 +1422,56 @@ bool RunVerificationSuite() {
     printf("  Spyke Gear Custom Shop (Npc_CustomShop_Spyke): %s (Slot Unlock: 3/3, Snail Reroll: YES, Cash Reroll: 30k)\n",
            spykeOk ? "PASSED" : "FAILED");
     if (!spykeOk) allPassed = false;
+
+    // 27. Squid Sisters Inkopolis News Stage Rotation Broadcast Engine
+    printf("\n--- [27/27] SQUID SISTERS INKOPOLIS NEWS BROADCAST ENGINE ---\n");
+
+    // Standard Rotation: Turf War (Warehouse, Underpass), Ranked: Splat Zones (Skatepark, Rig)
+    Game::RotationSchedule testSchedule;
+    testSchedule.regularStageIdA = 0; // Walleye Warehouse
+    testSchedule.regularStageIdB = 2; // Urchin Underpass
+    testSchedule.rankedStageIdA = 1;  // Blackbelly Skatepark
+    testSchedule.rankedStageIdB = 3;  // Saltspray Rig
+    testSchedule.rankedRule = Game::RankedModeType::cSplatZones;
+    testSchedule.isSplatfestActive = false;
+
+    Game::PlazaNewsBroadcast news;
+    news.init(testSchedule);
+    bool broadcastStarted = news.isBroadcasting();
+    bool introStateOk = (news.getState() == Game::NewsBroadcastState::cStudioIntro);
+    const auto* introLine = news.getCurrentLine();
+    bool introLineOk = (introLine && strcmp(introLine->speaker, "Callie") == 0);
+
+    // Advance through all dialogue lines to sign-off
+    size_t linesRead = 0;
+    while (news.advanceDialogue()) {
+        linesRead++;
+    }
+    bool finishedStateOk = (news.getState() == Game::NewsBroadcastState::cFinished);
+    bool scriptLengthOk = (linesRead >= 7 && news.getTotalLines() >= 8);
+
+    // Splatfest Announcement Broadcast test
+    testSchedule.isSplatfestActive = true;
+    testSchedule.splatfestThemeAlpha = "Cats";
+    testSchedule.splatfestThemeBravo = "Dogs";
+
+    Game::PlazaNewsBroadcast festNews;
+    festNews.init(testSchedule);
+    festNews.advanceDialogue(); // Callie intro
+    festNews.advanceDialogue(); // Marie intro
+    festNews.update(0.01667f);
+    bool festStateOk = (festNews.getState() == Game::NewsBroadcastState::cAnnounceSplatfest);
+    const auto* festLine = festNews.getCurrentLine();
+    bool festContentOk = (festLine && festLine->text.find("Cats vs Dogs") != std::string::npos);
+
+    // Fast-skip broadcast
+    festNews.skipBroadcast();
+    bool skipOk = (!festNews.isBroadcasting() && festNews.getState() == Game::NewsBroadcastState::cFinished);
+
+    bool broadcastOk = (broadcastStarted && introStateOk && introLineOk && finishedStateOk && scriptLengthOk && festStateOk && festContentOk && skipOk);
+    printf("  Inkopolis News (PlazaNewsBroadcast):         %s (Intro: YES, Banter Lines: %zu, Fest: Cats vs Dogs, Skip: YES)\n",
+           broadcastOk ? "PASSED" : "FAILED", news.getTotalLines());
+    if (!broadcastOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

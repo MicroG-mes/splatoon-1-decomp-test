@@ -1197,6 +1197,221 @@ BfresModel BfresParser::createOctolingModel(const char* name, u32 teamId) {
     return createInklingHumanModel(name, teamId);
 }
 
+BfresModel BfresParser::createCallieModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Npc_IdolA.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 1.8f / 14.8f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = (v.position - Vector3f(0.0f, -0.5f, 0.0f)) * scale;
+                }
+            }
+            return copy;
+        }
+    }
+    return createInklingHumanModel(name ? name : "Npc_IdolA", 0);
+}
+
+BfresModel BfresParser::createMarieModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Npc_IdolB.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 1.8f / 14.8f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = (v.position - Vector3f(0.0f, -0.5f, 0.0f)) * scale;
+                }
+            }
+            return copy;
+        }
+    }
+    return createInklingHumanModel(name ? name : "Npc_IdolB", 1);
+}
+
+BfresModel BfresParser::createSpykeModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Npc_CustomShop.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.12f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                }
+            }
+            return copy;
+        }
+    }
+    return createProceduralCube(name ? name : "Npc_CustomShop", 1.5f);
+}
+
+BfresModel BfresParser::createJuddModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Npc_Judge.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.14f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                }
+            }
+            return copy;
+        }
+    }
+    return createProceduralCube(name ? name : "Npc_Judge", 1.2f);
+}
+
+BfresModel BfresParser::createSheldonModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Npc_WeaponsShop.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.14f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                }
+            }
+            return copy;
+        }
+    }
+    return createProceduralCube(name ? name : "Npc_WeaponsShop", 1.2f);
+}
+
+BfresModel BfresParser::createSplatBombModel(const char* name, u32 teamId) {
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsb_Bomb_Throw.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.15f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                    v.color = teamColor;
+                }
+            }
+            return copy;
+        }
+    }
+    return createInkBulletModel(name ? name : "Wsb_Bomb_Throw", 0.35f);
+}
+
+BfresModel BfresParser::createBurstBombModel(const char* name, u32 teamId) {
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsb_Bomb_Handy.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.15f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                    v.color = teamColor;
+                }
+            }
+            return copy;
+        }
+    }
+    return createInkBulletModel(name ? name : "Wsb_Bomb_Handy", 0.30f);
+}
+
+BfresModel BfresParser::createSplashWallModel(const char* name, u32 teamId) {
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsb_Shield.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.18f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                    v.color = teamColor;
+                }
+            }
+            return copy;
+        }
+    }
+    return createProceduralCube(name ? name : "Wsb_Shield", 0.8f);
+}
+
+BfresModel BfresParser::createSprinklerModel(const char* name, u32 teamId) {
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsb_Sprinkler.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.18f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                    v.color = teamColor;
+                }
+            }
+            return copy;
+        }
+    }
+    return createProceduralCube(name ? name : "Wsb_Sprinkler", 0.6f);
+}
+
+BfresModel BfresParser::createInkstrikeModel(const char* name, u32 teamId) {
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsp_Tornado.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.20f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                    v.color = teamColor;
+                }
+            }
+            return copy;
+        }
+    }
+    return createProceduralCube(name ? name : "Wsp_Tornado", 1.5f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");
