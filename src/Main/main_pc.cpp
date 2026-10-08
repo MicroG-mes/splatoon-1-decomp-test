@@ -96,6 +96,7 @@
 #include "Game/Player/GearCatalog.h"
 #include "Game/Dojo/DuelItemTable.h"
 #include "Game/Map/MapInfoCatalog.h"
+#include "Game/Mission/AmiiboChallengeMgr.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1723,6 +1724,52 @@ bool RunVerificationSuite() {
     printf("  Retail Stage Catalog (MapInfoCatalog):       %s (Entries: 129/129, Versus: %zu, Missions: %zu, Dojo: %zu)\n",
            fullMapInfoOk ? "PASSED" : "FAILED", vssMaps.size(), msnMaps.size(), dulMaps.size());
     if (!fullMapInfoOk) allPassed = false;
+
+    // 34. Single-Player Amiibo Challenge Subsystem (AmiiboChallengeMapInfo.byaml)
+    printf("\n--- [34/34] 60-MISSION AMIIBO CHALLENGE ENGINE & REWARDS ---\n");
+
+    Game::AmiiboChallengeMgr amiiboMgr;
+    bool amiiboLoaded = amiiboMgr.loadFromByml("content/Static/AmiiboChallengeMapInfo.byaml");
+    bool amiiboTotalOk = (amiiboLoaded && amiiboMgr.getTotalMissionCount() == 60);
+
+    // Verify 20 missions per figure
+    auto girlMissions = amiiboMgr.getMissionsByFigure("Girl");
+    auto boyMissions = amiiboMgr.getMissionsByFigure("Boy");
+    auto squidMissions = amiiboMgr.getMissionsByFigure("Squid");
+    bool figureCountsOk = (girlMissions.size() == 20 && boyMissions.size() == 20 && squidMissions.size() == 20);
+
+    // Verify Girl Mission 0: Charger weapon, 600 cash first clear, 100 repeat clear
+    const auto* g0 = amiiboMgr.findMission("Girl", 0);
+    bool g0Ok = (g0 && g0->weapon == "Charge" && g0->moneyFirstClear == 600 &&
+                 g0->moneyRepeatClear == 100 && g0->challengeMapFile == "Fld_EasyHide00_Msn");
+
+    // Verify Girl Boss 1 (Button 3): Headgear Prize "AMB000" (Squid Hairclip)
+    const auto* gBoss1 = amiiboMgr.findMission("Girl", 3);
+    bool gBossOk = (gBoss1 && gBoss1->prizeType == "Head" && gBoss1->prizeName == "AMB000" &&
+                    gBoss1->challengeMapFile == "Fld_BossStampKing_Bos_Msn");
+
+    // Verify Boy Boss 1 (Button 3): Headgear Prize "AMB001" (Samurai Helmet), Roller weapon
+    const auto* bBoss1 = amiiboMgr.findMission("Boy", 3);
+    bool bBossOk = (bBoss1 && bBoss1->weapon == "Roller" && bBoss1->prizeType == "Head" && bBoss1->prizeName == "AMB001");
+
+    // Verify Squid Kraken Challenge (e.g. Kraken active / special rules)
+    bool hasKrakenMission = false;
+    for (const auto* sm : squidMissions) {
+        if (sm->kingSquid) {
+            hasKrakenMission = true;
+            break;
+        }
+    }
+
+    // Verify reward calculation logic
+    u32 firstClearReward = amiiboMgr.calculateReward(g0, true);
+    u32 repeatClearReward = amiiboMgr.calculateReward(g0, false);
+    bool rewardMathOk = (firstClearReward == 600 && repeatClearReward == 100);
+
+    bool fullAmiiboOk = (amiiboTotalOk && figureCountsOk && g0Ok && gBossOk && bBossOk && hasKrakenMission && rewardMathOk);
+    printf("  Amiibo Mission Engine (AmiiboChallengeMgr):  %s (Missions: 60/60, Girl: 20, Boy: 20, Squid: 20, Rewards: YES)\n",
+           fullAmiiboOk ? "PASSED" : "FAILED");
+    if (!fullAmiiboOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
