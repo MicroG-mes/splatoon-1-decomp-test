@@ -22,9 +22,13 @@ public:
     virtual void init(sead::Heap* heap, u32 mapWidth, u32 mapHeight);
     virtual void update();
     virtual void clear();
+    inline void clearBuffer() { clear(); }
 
     // Painting commands
     void paintSplat(const sead::Vector3f& worldPos, f32 radius, PaintColor color);
+    inline void splatInk(const sead::Vector3f& worldPos, f32 radius, u32 teamId) {
+        paintSplat(worldPos, radius, static_cast<PaintColor>((teamId % 2) + 1));
+    }
 
     // Queries (used by Player to check if standing in friendly or enemy ink)
     PaintColor getColorAt(const sead::Vector3f& worldPos) const;
@@ -33,6 +37,10 @@ public:
 
     // Turf War percentage calculation
     f32 getTurfPercentage(PaintColor color) const;
+
+    const u8* getPaintBuffer() const { return mPaintBuffer; }
+    u32 getMapWidth() const { return mMapWidth; }
+    u32 getMapHeight() const { return mMapHeight; }
 
     static PaintTextureMgr* sInstance;
 

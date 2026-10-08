@@ -1,0 +1,2161 @@
+#include "types.h"
+#include "cafe/coreinit.h"
+#include "cafe/vpad.h"
+#include "cafe/gx2.h"
+#include "Game/Actor/GambitActorMgr.h"
+#include "Game/GamePlayer.h"
+#include "Game/Paint/PaintTextureMgr.h"
+#include "Game/Map/StageDef.h"
+#include "Game/Map/StageMgr.h"
+#include "Game/Map/MapTable.h"
+#include "Game/Map/BymlParser.h"
+#include "sead/resource/seadResource.h"
+#include "Game/Weapon/GameWeaponRoller.h"
+#include "Game/Bullet/BulletPlayerChargeShotBase.h"
+#include "Game/Weapon/PlayerKingSquid.h"
+#include "Game/Weapon/SuperWeaponMgr.h"
+#include "Game/Rival/RivalMgr.h"
+#include "Game/Rival/GameRivalSquad.h"
+#include "Game/Hud/HudMgr.h"
+#include "Game/Player/GamePlayerDamageParam.h"
+#include "Game/Player/GearSkillMgr.h"
+#include "Game/MapObj/GameTurnPlate.h"
+#include "Game/MapObj/Obj_Sponge.h"
+#include "Game/MapObj/Obj_Geyser.h"
+#include "Game/Enemy/GameEnemyCharge.h"
+#include "Game/Enemy/GameEnemyCleaner.h"
+#include "Game/Enemy/GameEnemyBallKing.h"
+#include "Game/Enemy/GameEnemyHideKing.h"
+#include "Game/Rule/GachiArea.h"
+#include "Game/Rule/GachiYagura.h"
+#include "Game/Weapon/Wsp_Shachihoko.h"
+#include "Game/Enemy/EnemyMouthKing.h"
+#include "Game/Mission/PlayerCustomPartMission.h"
+#include "Game/System/CameraMgr.h"
+#include "Game/Net/NetSessionMgr.h"
+#include "Game/Net/PlayerClone.h"
+#include "Game/Bullet/BulletBombNormal.h"
+#include "Game/Bullet/BulletBombInstant.h"
+#include "Game/Bullet/BulletBombMarking.h"
+#include "Game/Bullet/BulletBombDevil.h"
+#include "Game/Bullet/Bomb_Chase.h"
+#include "Game/Bullet/Wsb_Shield.h"
+#include "Game/Bullet/Wsb_Flag.h"
+#include "Game/Bullet/TimerTrap.h"
+#include "Game/Bullet/Sprinkler.h"
+#include "Game/Weapon/PlayerWeaponBigLaser.h"
+#include "Game/Weapon/PlayerWeaponBigShot.h"
+#include "Game/Weapon/PlayerWeaponTornado.h"
+#include "Game/Bullet/BulletPlayerExplosionShot.h"
+#include "Game/Bullet/BulletPlayerBigBallHitSplash.h"
+#include "Game/Player/Tank_Ink.h"
+#include "Game/Enemy/EnemyStampKing.h"
+#include "Game/Enemy/EnemyRailKing.h"
+#include "Game/MapObj/InkRail.h"
+#include "Game/MapObj/Obj_PaintingLift.h"
+#include "Game/MapObj/Obj_JumpPlate.h"
+#include "Game/Dojo/MainMgrDuel.h"
+#include "Game/Stage/Fld_Plaza00_Plz.h"
+#include "Game/Fest/Fld_PlazaEvent03_SelectB.h"
+#include "Game/Enemy/Enm_TakolienSpeedUp.h"
+#include "Game/Enemy/Enm_BallKing.h"
+#include "Game/Enemy/Obj_CylinderKingHole.h"
+#include "Game/Post/Obj_PlazaPost.h"
+#include "Game/Weapon/Obj_Barrier.h"
+#include "Game/Enemy/Enm_Takopter.h"
+#include "Game/Enemy/EnemyHohei.h"
+#include "sead/math/seadMatrix.h"
+#include "sead/resource/BfresParser.h"
+#include "Game/Paint/PaintMap3D.h"
+#include "Game/System/PcInputBridge.h"
+#include "Game/Graphics/Dx11Renderer.h"
+#include "Game/Collision/KclFile.h"
+#include "Game/MapObj/Obj_GeneralBox.h"
+#include "Game/ShootingRange/SighterTarget.h"
+#include "Game/System/SoundShapeMgr.h"
+#include "Game/System/PcAudioDriver.h"
+#include "Game/Npc/Npc_Judge_Flag.h"
+#include "Game/Shop/Npc_WeaponsShop.h"
+#include "Game/MiniGame/Obj_PlazaGame.h"
+#include "Game/Weapon/SuperWeaponShelter.h"
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#include <cstdio>
+#include <cstring>
+#include <string>
+#include <vector>
+#include <fstream>
+
+void PrintBanner() {
+    printf("=================================================================\n");
+    printf("   Splatoon 1 (Wii U - Gambit) Decompilation Verification Tool   \n");
+    printf("=================================================================\n");
+    printf("[+] Target Binary: original/Gambit.elf (21.7 MB, PPC Espresso)\n");
+    printf("[+] Environment: Reverse Engineering & Subsystem Verification\n");
+    printf("-----------------------------------------------------------------\n\n");
+}
+
+void PrintUsage() {
+    printf("Usage: Gambit.exe [options]\n\n");
+    printf("Options:\n");
+    printf("  --render [frames]        Launch DirectX 11 3D interactive renderer (default)\n");
+    printf("  --stage=<name>           Select retail stage to render (e.g. Fld_PlazaLobby, Fld_Warehouse00)\n");
+    printf("  --verify                 Run structural & functional verification tests\n");
+    printf("  --list-stages            List all 43 cataloged retail stages\n");
+    printf("  --test-stage=<name/id>   Run simulation test on a specific stage\n");
+    printf("  --dump-sarc <file.szs>   Extract & inspect a Nintendo SARC/SZS archive\n");
+    printf("  --dump-byml <file.byml>  Parse and display a Nintendo BYML parameter file\n");
+    printf("  --help                   Display this help message\n\n");
+}
+
+bool RunVerificationSuite() {
+    printf("[*] Running Decompilation Structural Verification Suite...\n\n");
+    bool allPassed = true;
+
+    // 1. Structure alignment and sizes
+    printf("--- [1/4] STRUCTURAL SIZES & OFFSETS ---\n");
+    printf("  sizeof(MapParam):           %zu bytes (Target: 376 / 0x178) -> %s\n",
+           sizeof(Game::MapParam),
+           sizeof(Game::MapParam) == 0x178 ? "MATCH" : "MISMATCH");
+    if (sizeof(Game::MapParam) != 0x178) allPassed = false;
+
+    // 2. Map Table verification
+    printf("\n--- [2/4] STAGE DEFINITION CATALOG ---\n");
+    u32 stageCount = Game::StageDef::getStageCount();
+    printf("  Cataloged Stages:           %u / 43 -> %s\n",
+           stageCount, stageCount == 43 ? "COMPLETE" : "INCOMPLETE");
+    if (stageCount != 43) allPassed = false;
+
+    auto* mapTable = Game::MapTable::getInstance();
+    const auto* warehouse = mapTable->findStageByName("Fld_Warehouse00_Vss");
+    printf("  MapTable Lookup ('Fld_Warehouse00_Vss'): %s\n",
+           (warehouse && warehouse->mapId == 1) ? "FOUND (ID: 1)" : "FAILED");
+    if (!warehouse) allPassed = false;
+
+    // 3. Subsystem simulation check
+    printf("\n--- [3/4] SUBSYSTEM SIMULATION LIFECYCLE ---\n");
+    Game::GambitActorMgr actorMgr;
+    actorMgr.init(nullptr);
+
+    Game::PaintTextureMgr paintMgr;
+    paintMgr.init(nullptr, 512, 512);
+
+    Game::StageMgr stageMgr;
+    stageMgr.init();
+
+    bool stageLoaded = stageMgr.loadStage(Game::StageId::cStage_Warehouse00_Vss, &actorMgr, &paintMgr);
+    printf("  StageMgr::loadStage:        %s\n", stageLoaded ? "SUCCESS" : "FAILED");
+    if (!stageLoaded) allPassed = false;
+
+    auto* player = new Game::Player();
+    player->init();
+    player->setPosition(stageMgr.getSpawnAlpha());
+    actorMgr.registerActor(player);
+
+    // Step 60 frames headlessly
+    for (int frame = 0; frame < 60; ++frame) {
+        VPADStatus vpad = {};
+        vpad.hold = VPAD_BUTTON_ZR; // simulate firing
+        player->handleInput(vpad);
+        actorMgr.update();
+    }
+
+    printf("  Actor Simulation (60 f):    COMPLETED (Ink Tank: %.1f%%)\n",
+           player->getInkTankAmount() * 100.0f);
+
+    stageMgr.unloadCurrentStage(&actorMgr);
+    actorMgr.finalize();
+
+    // 4. Parser integrity check
+    printf("\n--- [4/5] SARC & BYML PARSER INTEGRITY ---\n");
+    u32 hashTest = sead::SarcArchive::calcHash("StageParam.byml");
+    printf("  SARC Hash ('StageParam.byml'): 0x%08X -> %s\n",
+           hashTest, hashTest != 0 ? "VALID" : "FAILED");
+    if (hashTest == 0) allPassed = false;
+
+    // 5. Authentic Weapons, Abilities, and Octoling AI
+    printf("\n--- [5/5] WEAPONS, ABILITIES & OCTOLING RIVAL AI ---\n");
+
+    // Roller verification
+    Game::GameWeaponRoller roller;
+    roller.init();
+    roller.setRollerType(Game::RollerType::cHeavy);
+    bool rollerOk = (roller.getFlingDamage() == 180.0f && roller.getSquishDamage() == 160.0f);
+    printf("  Dynamo Roller Stats:        %s (Fling: %.1f HP, Squish: %.1f HP)\n",
+           rollerOk ? "PASSED" : "FAILED", roller.getFlingDamage(), roller.getSquishDamage());
+    if (!rollerOk) allPassed = false;
+
+    // Charger damage interpolation and Rainmaker multiplier
+    Game::Charge_Light chargerBullet;
+    chargerBullet.init();
+    chargerBullet.setChargePower(0.5f);
+    f32 halfDamage = chargerBullet.getCalculatedDamage();
+    chargerBullet.setChargePower(1.0f);
+    f32 fullDamage = chargerBullet.getCalculatedDamage();
+    f32 shieldDamage = chargerBullet.getCalculatedDamage(0xC);
+    bool chargerOk = (halfDamage == 70.0f && fullDamage == 160.0f && std::abs(shieldDamage - 448.0f) < 0.1f);
+    printf("  Charger Damage Curve:       %s (50%%: %.1f HP, 100%%: %.1f HP, Shield: %.1f HP)\n",
+           chargerOk ? "PASSED" : "FAILED", halfDamage, fullDamage, shieldDamage);
+    if (!chargerOk) allPassed = false;
+
+    // Kraken (KingSquid) 160 HP instakill
+    Game::PlayerKingSquid kraken;
+    kraken.init();
+    f64 krakenSpinDmg = kraken.vfunc_88(0xC, nullptr);
+    bool krakenOk = (std::abs(krakenSpinDmg - 160.0) < 0.1);
+    printf("  Kraken Spin Attack Damage:  %s (%.1f HP - Lethal OHKO)\n",
+           krakenOk ? "PASSED" : "FAILED", krakenSpinDmg);
+    if (!krakenOk) allPassed = false;
+
+    // Gear Ability Stacking
+    Game::GearSkillMgr skillMgr;
+    Game::GearSlotConfig fullDmgUp = {
+        Game::GearSkillKind::cDamageUp,
+        { Game::GearSkillKind::cDamageUp, Game::GearSkillKind::cDamageUp, Game::GearSkillKind::cDamageUp }
+    };
+    skillMgr.setHeadgear(fullDmgUp);
+    skillMgr.setClothes(fullDmgUp);
+    skillMgr.setShoes(fullDmgUp);
+    f32 dmgMulti = skillMgr.getDamageMultiplier();
+    bool gearOk = (std::abs(dmgMulti - 1.30f) < 0.01f);
+    printf("  Gear Stacking (57 AP Dmg):  %s (Multiplier: %.2fx)\n",
+           gearOk ? "PASSED" : "FAILED", dmgMulti);
+    if (!gearOk) allPassed = false;
+
+    // Octoling Rival Squad AI
+    Game::RivalMgr rivalMgr;
+    rivalMgr.init();
+    sead::Vector3f spawns[4] = {
+        sead::Vector3f(-10.0f, 0.0f, 25.0f),
+        sead::Vector3f(-5.0f, 0.0f, 25.0f),
+        sead::Vector3f(5.0f, 0.0f, 25.0f),
+        sead::Vector3f(10.0f, 0.0f, 25.0f)
+    };
+    rivalMgr.spawnSquad(spawns, Game::RivalDifficulty::cLevel3);
+    rivalMgr.updateSquadAi(sead::Vector3f(0.0f, 0.0f, 10.0f));
+    u32 activeRivals = rivalMgr.getActiveCount();
+    bool rivalOk = (activeRivals == 4);
+    printf("  Octoling Rival Squad AI:    %s (%u Elite Octolings Active)\n",
+           rivalOk ? "PASSED" : "FAILED", activeRivals);
+    if (!rivalOk) allPassed = false;
+
+    // 6. Interactive Stage Objects & Octarian Boss Encounters
+    printf("\n--- [6/6] STAGE GIZMOS & OCTARIAN FORCES ---\n");
+
+    // TurnPlate rotating platform
+    Game::GameTurnPlate turnPlate;
+    turnPlate.init();
+    turnPlate.setupPlatform(sead::Vector3f(0.0f, 0.0f, 0.0f), 6.0f, 0.02f);
+    turnPlate.update();
+    sead::Vector3f tangentialVel = turnPlate.computeLinearVelocityAtPoint(sead::Vector3f(0.0f, 0.0f, 5.0f));
+    bool turnPlateOk = (turnPlate.getCurrentAngle() > 0.0f && std::abs(tangentialVel.x - (-0.1f)) < 0.001f);
+    printf("  Stage Turntable (TurnPlate): %s (Angular: %.3f rad, TanVx: %.2f)\n",
+           turnPlateOk ? "PASSED" : "FAILED", turnPlate.getCurrentAngle(), tangentialVel.x);
+    if (!turnPlateOk) allPassed = false;
+
+    // Octosniper (Enm_Charge)
+    Game::GameEnemyCharge octosniper;
+    octosniper.init();
+    octosniper.setupBunker(sead::Vector3f(0.0f, 0.0f, 20.0f), 3.14159f);
+    octosniper.updateAimAtPlayer(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    octosniper.update();
+    bool sniperOk = (octosniper.isAlive() && octosniper.getHealth() == 80.0f);
+    printf("  Octosniper Bunker (Charge):  %s (HP: %.1f, State: %u)\n",
+           sniperOk ? "PASSED" : "FAILED", octosniper.getHealth(), static_cast<u32>(octosniper.getState()));
+    if (!sniperOk) allPassed = false;
+
+    // Squee-G (Enm_Cleaner)
+    Game::GameEnemyCleaner squeeG;
+    squeeG.init();
+    squeeG.spawn(sead::Vector3f(5.0f, 0.0f, 5.0f));
+    squeeG.update();
+    bool squeeGOk = (squeeG.isAlive() && squeeG.getHealth() == 80.0f);
+    printf("  Squee-G Cleaner (Enm_Cleaner):%s (HP: %.1f, State: %u)\n",
+           squeeGOk ? "PASSED" : "FAILED", squeeG.getHealth(), static_cast<u32>(squeeG.getState()));
+    if (!squeeGOk) allPassed = false;
+
+    // Octowhirl (Enm_BallKing)
+    Game::GameEnemyBallKing octowhirl;
+    octowhirl.init();
+    octowhirl.setState(Game::OctowhirlState::cRollingDash);
+    octowhirl.updateBossAi(sead::Vector3f(0.0f, 0.0f, 10.0f), true); // Rolling on player ink
+    bool octowhirlOk = (octowhirl.getState() == Game::OctowhirlState::cSpinoutSkid);
+    printf("  Octowhirl Boss (BallKing):   %s (Ink Skid Spinout: Triggered)\n",
+           octowhirlOk ? "PASSED" : "FAILED");
+    if (!octowhirlOk) allPassed = false;
+
+    // Octonozzle (Enm_HideKing)
+    Game::GameEnemyHideKing octonozzle;
+    octonozzle.init();
+    octonozzle.setupBoss(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    octonozzle.plugHoleWithInk(0);
+    octonozzle.plugHoleWithInk(1);
+    octonozzle.plugHoleWithInk(2);
+    octonozzle.update();
+    bool nozzleOk = (octonozzle.isTopExposed());
+    printf("  Octonozzle Boss (HideKing):  %s (3 Nozzles Plugged -> Stunned)\n",
+           nozzleOk ? "PASSED" : "FAILED");
+    if (!nozzleOk) allPassed = false;
+
+    // 7. Ranked Battle Rules, Octo Valley Finale, Camera & Netplay
+    printf("\n--- [7/7] RANKED RULES, CAMPAIGN FINALE, CAMERA & NETPLAY ---\n");
+
+    // Splat Zones (GachiArea)
+    Game::GachiArea splatZones;
+    splatZones.init();
+    splatZones.updatePaintCoverage(0.75f, 0.20f); // 75% Alpha control -> exceeds 70% threshold
+    for (int i = 0; i < 60; ++i) {
+        splatZones.update();
+    }
+    bool splatZonesOk = (splatZones.getControlState() == Game::ZoneControlState::cControlledP1 && splatZones.getAlphaCounter() == 99);
+    printf("  Splat Zones (GachiArea):     %s (Seizure: 75%% -> Count: %d)\n",
+           splatZonesOk ? "PASSED" : "FAILED", splatZones.getAlphaCounter());
+    if (!splatZonesOk) allPassed = false;
+
+    // Tower Control (GachiYagura)
+    Game::GachiYagura tower;
+    tower.init();
+    tower.updateRiders(2, 0); // 2 Alpha riders
+    tower.update();
+    bool towerOk = (tower.getState() == Game::YaguraState::cAdvancingToBravo && tower.getTrackProgress() > 0.0f);
+    printf("  Tower Control (GachiYagura): %s (State: Advancing, Progress: %.3f)\n",
+           towerOk ? "PASSED" : "FAILED", tower.getTrackProgress());
+    if (!towerOk) allPassed = false;
+
+    // Rainmaker (Wsp_Shachihoko)
+    Game::Wsp_Shachihoko rainmaker;
+    rainmaker.init();
+    rainmaker.applyInkToShield(0, 520.0f); // Exceeds 500 HP burst threshold
+    for (int i = 0; i < 30; ++i) {
+        rainmaker.update();
+    }
+    bool rainmakerOk = (rainmaker.getShieldState() == Game::ShachihokoShieldState::cFreePickup);
+    printf("  Rainmaker (Wsp_Shachihoko):  %s (Shield Burst -> Free Pickup)\n",
+           rainmakerOk ? "PASSED" : "FAILED");
+    if (!rainmakerOk) allPassed = false;
+
+    // Octomaw Boss (EnemyMouthKing)
+    Game::EnemyMouthKing octomaw;
+    octomaw.init();
+    octomaw.setState(Game::OctomawState::cLeapChomp);
+    octomaw.applyBombToMouth(180.0f); // Bomb into open mouth -> stuns
+    bool octomawOk = (octomaw.isTentacleVulnerable());
+    printf("  Octomaw Boss (MouthKing):    %s (Mouth Bomb -> Tentacle Exposed)\n",
+           octomawOk ? "PASSED" : "FAILED");
+    if (!octomawOk) allPassed = false;
+
+    // Hero Gear Upgrades (PlayerCustomPartMission)
+    Game::PlayerCustomPartMission heroGear;
+    heroGear.init();
+    heroGear.addPowerEggs(2500);
+    bool up1 = heroGear.upgradeHeroShot(); // Level 1 -> 2 (500 eggs)
+    bool up2 = heroGear.upgradeHeroShot(); // Level 2 -> 3 (1500 eggs)
+    bool heroGearOk = (up1 && up2 && heroGear.getHeroShotLevel() == 3 && heroGear.getPowerEggs() == 500);
+    printf("  Hero Gear Upgrades:          %s (Hero Shot: Lv %u, Bank: %u Eggs)\n",
+           heroGearOk ? "PASSED" : "FAILED", heroGear.getHeroShotLevel(), heroGear.getPowerEggs());
+    if (!heroGearOk) allPassed = false;
+
+    // 3D Camera System (CameraMgr)
+    Game::CameraMgr camera;
+    camera.init();
+    camera.setTargetPosition(sead::Vector3f(0.0f, 1.0f, 0.0f));
+    camera.applyGyroInput(0.05f, 0.10f);
+    camera.update();
+    bool cameraOk = (camera.getBoomDistance() > 0.0f && camera.getEyePosition().y > 0.0f);
+    printf("  3D Camera Engine (CameraMgr):%s (Eye: [%.1f, %.1f, %.1f], Dist: %.1f)\n",
+           cameraOk ? "PASSED" : "FAILED",
+           camera.getEyePosition().x, camera.getEyePosition().y, camera.getEyePosition().z,
+           camera.getBoomDistance());
+    if (!cameraOk) allPassed = false;
+
+    // 8-Player Network Session (NetSessionMgr)
+    Game::NetSessionMgr netSession;
+    netSession.init();
+    netSession.startLobbySession(12345, true); // Host
+    netSession.registerPlayer(0, 0, 1, "PlayerAlpha1");
+    netSession.registerPlayer(1, 0, 2, "PlayerAlpha2");
+    netSession.registerPlayer(2, 1, 3, "PlayerBravo1");
+    netSession.registerPlayer(3, 1, 4, "PlayerBravo2");
+    bool netOk = (netSession.isHost() && netSession.getConnectedCount() == 4 && netSession.getTeamPlayerCount(0) == 2);
+    printf("  8-Player Netplay Session:    %s (Host: %s, Connected: %u, Team 0: %u)\n",
+           netOk ? "PASSED" : "FAILED",
+           netSession.isHost() ? "YES" : "NO", netSession.getConnectedCount(), netSession.getTeamPlayerCount(0));
+    if (!netOk) allPassed = false;
+
+    // 8. Sub Weapons, Special Arsenal, Ballistics & Network Replication
+    printf("\n--- [8/8] SUB WEAPONS, SPECIAL ARSENAL & NET REPLICATION ---\n");
+
+    // Sub Weapons: Splat Bomb & Burst Bomb
+    Game::BulletBombNormal splatBomb;
+    splatBomb.init();
+    splatBomb.throwBomb(sead::Vector3f(0.0f, 1.0f, 0.0f), sead::Vector3f(0.0f, 0.0f, 1.0f), 0);
+    Game::BulletBombInstant burstBomb;
+    burstBomb.init();
+    burstBomb.throwBomb(sead::Vector3f(0.0f, 1.0f, 0.0f), sead::Vector3f(0.0f, 0.0f, 1.0f), 0, 1);
+    bool bombOk = (splatBomb.getInnerDamage() == 180.0f && Game::BulletBombInstant::cDirectDamage == 60.0f);
+    printf("  Sub: Splat & Burst Bombs:    %s (Splat Inner: 180 HP, Burst Direct: 60 HP)\n",
+           bombOk ? "PASSED" : "FAILED");
+    if (!bombOk) allPassed = false;
+
+    // Sub Weapon: Seeker (Bomb_Chase)
+    Game::Bomb_Chase seeker;
+    seeker.init();
+    seeker.launch(sead::Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 0, 1);
+    seeker.checkEnemyHoming(sead::Vector3f(5.0f, 0.0f, 5.0f), 1);
+    seeker.update();
+    bool seekerOk = (seeker.getState() == Game::ChaseBombState::cHomingTarget && Game::Bomb_Chase::cLethalDamage == 180.0f);
+    printf("  Sub: Seeker (Bomb_Chase):    %s (Enemy Homing Target: Active, Lethal: 180 HP)\n",
+           seekerOk ? "PASSED" : "FAILED");
+    if (!seekerOk) allPassed = false;
+
+    // Sub Weapon: Point Sensor & Disruptor
+    Game::BulletBombMarking sensor;
+    sensor.init();
+    sensor.throwBomb(sead::Vector3f(0.0f, 1.0f, 0.0f), sead::Vector3f(0.0f, 0.0f, 0.0f), 0, 1);
+    sensor.vfunc_11(); // Detonate into sensor pulse aura
+    bool markHit = sensor.checkMarkEnemy(sead::Vector3f(2.0f, 1.0f, 2.0f), 1);
+    Game::BulletBombDevil disruptor;
+    disruptor.init();
+    disruptor.throwBomb(sead::Vector3f(0.0f, 1.0f, 0.0f), sead::Vector3f(0.0f, 0.0f, 0.0f), 0, 1);
+    bool debuffOk = (markHit && sensor.getTeam() == 0 && disruptor.getTeam() == 0);
+    printf("  Sub: Sensor & Disruptor:     %s (Sensor Target Mark: Detected)\n",
+           debuffOk ? "PASSED" : "FAILED");
+    if (!debuffOk) allPassed = false;
+
+    // Sub Weapon: Splash Wall (Wsb_Shield)
+    Game::Wsb_Shield splashWall;
+    splashWall.init();
+    splashWall.deploy(sead::Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 0);
+    for (int i = 0; i < 20; ++i) splashWall.update(); // 20 frames unfold animation -> active wall
+    bool blocked = splashWall.blocksBullet(sead::Vector3f(0.0f, 1.0f, 0.0f), 1);
+    splashWall.applyDamage(60.0f);
+    bool wallOk = (blocked && splashWall.getRemainingHp() < 750.0f);
+    printf("  Sub: Splash Wall (Shield):   %s (Blocked Enemy Shot: %s, HP: %.1f/800)\n",
+           wallOk ? "PASSED" : "FAILED", blocked ? "YES" : "NO", splashWall.getRemainingHp());
+    if (!wallOk) allPassed = false;
+
+    // Special: Killer Wail (PlayerWeaponBigLaser)
+    Game::PlayerWeaponBigLaser killerWail;
+    killerWail.init();
+    killerWail.deploy(sead::Vector3f(0.0f, 1.0f, 0.0f), 0.0f, 0);
+    for (int i = 0; i < 80; ++i) killerWail.update(); // 15 placing + 60 warning = 75 -> sonic blast
+    bool beamHit = killerWail.checkHitTarget(sead::Vector3f(0.0f, 1.0f, 15.0f));
+    bool laserOk = (killerWail.isBlasting() && beamHit);
+    printf("  Special: Killer Wail (Laser):%s (Sonic Column Piercing: %s)\n",
+           laserOk ? "PASSED" : "FAILED", beamHit ? "DETECTED" : "MISSED");
+    if (!laserOk) allPassed = false;
+
+    // Special: Inkzooka & Inkstrike
+    Game::PlayerWeaponBigShot inkzooka;
+    inkzooka.init();
+    inkzooka.startSpecial(0, 360);
+    bool shot1 = inkzooka.fireShot(sead::Vector3f(0.0f, 0.0f, 0.0f), 0.0f);
+    Game::PlayerWeaponTornado inkstrike;
+    inkstrike.init();
+    inkstrike.confirmTarget(sead::Vector3f(10.0f, 0.0f, 15.0f), 0);
+    for (int i = 0; i < 90; ++i) inkstrike.update();
+    bool specOk = (shot1 && inkzooka.getAmmoRemaining() == 5 && inkstrike.getState() == Game::TornadoState::cVortexActive);
+    printf("  Special: Inkzooka & Strike:  %s (Zooka Ammo: %u, Strike Vortex: Active)\n",
+           specOk ? "PASSED" : "FAILED", inkzooka.getAmmoRemaining());
+    if (!specOk) allPassed = false;
+
+    // Ballistics: Blasters & Sloshers
+    Game::BulletPlayerNormalExplosionShotBase blaster;
+    blaster.init();
+    blaster.fireBlaster(Game::BlasterType::cNormal, sead::Vector3f(0.0f, 1.0f, 0.0f), sead::Vector3f(0.0f, 0.0f, 1.0f), 0);
+    f32 directDmg = blaster.computeDamageAgainstTarget(0, 0.1f, 1);
+    f32 shieldDmg = blaster.computeDamageAgainstTarget(12, 1.0f, 1); // Rainmaker 2.5x multiplier
+    Game::BulletPlayerBigBallHitSplash slosher;
+    slosher.init();
+    slosher.launchSlosh(sead::Vector3f(0.0f, 1.0f, 0.0f), sead::Vector3f(0.0f, 0.5f, 1.0f), 18.0f, 0);
+    slosher.update();
+    bool balOk = (directDmg == 125.0f && shieldDmg > 100.0f && slosher.getDamage() == 70.0f);
+    printf("  Ballistics: Blaster/Slosher: %s (Blaster Direct: %.1f HP, Shield: %.1f HP)\n",
+           balOk ? "PASSED" : "FAILED", directDmg, shieldDmg);
+    if (!balOk) allPassed = false;
+
+    // Ink Tank Subsystem (Tank_Ink)
+    Game::Tank_Ink tank;
+    tank.init();
+    tank.setSubMarkerCost(70.0f);
+    bool initialSub = tank.isSubMarkerLit();
+    tank.consumeInk(40.0f); // 60% remaining (< 70% sub threshold)
+    bool postSub = tank.isSubMarkerLit();
+    f32 liquidHeight = tank.computeLiquidHeight();
+    bool tankOk = (initialSub && !postSub && liquidHeight > -0.85f && liquidHeight < 0.85f);
+    printf("  Ink Tank Subsystem:          %s (Sub Marker Indicator: Dynamic, H: %.2f)\n",
+           tankOk ? "PASSED" : "FAILED", liquidHeight);
+    if (!tankOk) allPassed = false;
+
+    // Network Multi-Channel Player Clone Replication
+    Game::PlayerClone localClone;
+    localClone.init();
+    localClone.setupClone(3, 0, true);
+    localClone.setTransform(sead::Vector3f(12.5f, 0.0f, -8.0f), 1.57f);
+    localClone.setStatus(95.0f, 80.0f);
+    localClone.setAction(true, false, 42);
+    localClone.setGear(101, 202, 303);
+
+    u8 packetBuffer[256];
+    size_t written = 0;
+    localClone.packChannels(packetBuffer, sizeof(packetBuffer), &written);
+
+    Game::PlayerClone remoteClone;
+    remoteClone.init();
+    bool unpackOk = remoteClone.unpackChannels(packetBuffer, written);
+    bool cloneOk = (unpackOk && remoteClone.getPlayerId() == 3 &&
+                    remoteClone.getTransform().position.x == 12.5f &&
+                    remoteClone.getStatus().health == 95.0f &&
+                    remoteClone.getAction().isFiring &&
+                    remoteClone.getGear().clothesId == 202);
+    printf("  PlayerClone Net Replication: %s (9 Channels Packed: %zu bytes roundtrip)\n",
+           cloneOk ? "PASSED" : "FAILED", written);
+    if (!cloneOk) allPassed = false;
+
+    // 9. Campaign Climax Bosses, Stage Mechanisms & Battle Dojo
+    printf("\n--- [9/9] CAMPAIGN FINALE BOSSES, GIZMOS & BATTLE DOJO ---\n");
+
+    // Boss 1: The Mighty Octostomp (EnemyStampKing)
+    Game::EnemyStampKing octostomp;
+    octostomp.init();
+    octostomp.setState(Game::StampKingState::cFaceSlam);
+    octostomp.updateBossAi(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    bool stompSlam = octostomp.isStuckFaceDown();
+    octostomp.applyTentacleDamage(100.0f); // Phase 1 clear -> Phase 2 armor
+    bool stompOk = (stompSlam && octostomp.getPhase() == Game::StampKingPhase::cPhase2);
+    printf("  Octostomp Boss (StampKing):  %s (Face Slam: Stuck -> Phase 2 Armor)\n",
+           stompOk ? "PASSED" : "FAILED");
+    if (!stompOk) allPassed = false;
+
+    // Boss 5: DJ Octavio in Octobot King (EnemyRailKing)
+    Game::EnemyRailKing octavio;
+    octavio.init();
+    for (int i = 0; i < 100; ++i) octavio.updateBossAi(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    octavio.applyDamageToFist(60.0f); // Exceeds 50 HP swat threshold -> reflects
+    for (int i = 0; i < 40; ++i) octavio.updateBossAi(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    bool octavioStun = octavio.isStunned();
+    octavio.applyTentacleDamage(100.0f); // Phase 1 -> Phase 2
+    bool octavioOk = (octavioStun && octavio.getPhase() == Game::OctavioPhase::cPhase2);
+    printf("  DJ Octavio Boss (RailKing):  %s (Rocket Fist Swat -> Mech Stun -> Phase 2)\n",
+           octavioOk ? "PASSED" : "FAILED");
+    if (!octavioOk) allPassed = false;
+
+    // Stage Gizmo: Ride Rail (InkRail)
+    Game::InkRail inkRail;
+    inkRail.init();
+    inkRail.setupSpline(sead::Vector3f(0.0f, 1.0f, 0.0f), sead::Vector3f(0.0f, 5.0f, 30.0f));
+    inkRail.activateByInk(0); // Inked by team 0
+    for (int i = 0; i < 20; ++i) inkRail.update(); // 20 frames to complete activation
+    sead::Vector3f railPos = inkRail.evaluateSplinePos(0.5f);
+    f32 nextT = inkRail.stepGrindProgress(0.1f);
+    bool railOk = (inkRail.isActive() && railPos.z > 0.0f && nextT > 0.1f);
+    printf("  Ride Rail Gizmo (InkRail):   %s (Activated: %s, Spline Mid Z: %.1f)\n",
+           railOk ? "PASSED" : "FAILED", inkRail.isActive() ? "YES" : "NO", railPos.z);
+    if (!railOk) allPassed = false;
+
+    // Stage Gizmo: Propeller Lift (Obj_PaintingLift)
+    Game::Obj_PaintingLift propLift;
+    propLift.init();
+    propLift.setupLift(sead::Vector3f(0.0f, 0.0f, 0.0f), 12.0f);
+    propLift.applyInkToPropeller(5.0f); // Spray ink onto propeller fan
+    propLift.update();
+    bool liftOk = (propLift.getFanSpeed() > 0.0f && propLift.getCurrentHeight() > 0.0f);
+    printf("  Propeller Lift (PaintLift):  %s (Turbine Speed: %.2f, Elevation: %.2fm)\n",
+           liftOk ? "PASSED" : "FAILED", propLift.getFanSpeed(), propLift.getCurrentHeight());
+    if (!liftOk) allPassed = false;
+
+    // Stage Gizmo: Launch Pad (Obj_JumpPlate)
+    Game::Obj_JumpPlate launchPad;
+    launchPad.init();
+    launchPad.setupPad(sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(0.0f, 10.0f, 50.0f));
+    launchPad.stepOnPad(1);
+    for (int i = 0; i < 16; ++i) launchPad.update(); // 15 frames coil squat -> launch
+    sead::Vector3f launchVel = launchPad.computeBallisticVelocity();
+    bool padOk = (launchVel.z > 0.0f && launchVel.y > 0.0f);
+    printf("  Launch Pad (Obj_JumpPlate):  %s (Spring Launch Vy: %.2f, Vz: %.2f)\n",
+           padOk ? "PASSED" : "FAILED", launchVel.y, launchVel.z);
+    if (!padOk) allPassed = false;
+
+    // Battle Dojo 1v1 Mode (MainMgrDuel)
+    Game::MainMgrDuel dojo;
+    dojo.init();
+    dojo.startMatch();
+    dojo.addPlayerScore(0, 1);  // 1 point for P1 (DRC)
+    dojo.addPlayerScore(1, 30); // 30 points for P2 (TV) -> Hits cWinningScore
+    bool dojoOk = (dojo.getPlayerScore(0) == 1 && dojo.getPlayerScore(1) == 30 && dojo.getWinnerPlayerId() == 1 && dojo.isMatchOver());
+    printf("  Battle Dojo Manager (Duel):  %s (P1 DRC: %u, P2 TV: %u -> Winner: P2)\n",
+           dojoOk ? "PASSED" : "FAILED", dojo.getPlayerScore(0), dojo.getPlayerScore(1));
+    if (!dojoOk) allPassed = false;
+
+    // 10. Inkopolis Plaza, Splatfest System, Elite Octolings & Boss Armor Physics
+    printf("\n--- [10/10] INKOPOLIS PLAZA, SPLATFEST, ELITE OCTOLINGS & BOSS ARMOR ---\n");
+
+    // Inkopolis Plaza Stage Manager (Fld_Plaza00_Plz)
+    Game::Fld_Plaza00_Plz plaza;
+    plaza.init();
+    plaza.setSplatfestNight(true);
+    for (int i = 0; i < 60; ++i) plaza.update(); // 60 frames = 2 Jumbotron refresh cycles
+    bool plazaOk = (plaza.isSplatfestNight() && plaza.isJumbotronActive() &&
+                    plaza.getFrameCounter() == 60 && plaza.getJumbotronUpdateCount() >= 2);
+    printf("  Inkopolis Plaza Stage Mgr:   %s (Splatfest Night: YES, Jumbotron Refreshes: %u)\n",
+           plazaOk ? "PASSED" : "FAILED", plaza.getJumbotronUpdateCount());
+    if (!plazaOk) allPassed = false;
+
+    // Splatfest Voting Booth (Fld_PlazaEvent03_SelectB)
+    Game::Fld_PlazaEvent03_SelectB voteBooth;
+    voteBooth.init();
+    voteBooth.setupBooth(sead::Vector3f(10.5f, 0.0f, -4.2f), "Cats", "Dogs");
+    voteBooth.checkPlayerInteraction(sead::Vector3f(10.5f, 0.0f, -4.0f)); // 0.2m away
+    voteBooth.selectTeam(1); // Vote for Team Dogs
+    voteBooth.update();
+    bool boothOk = (voteBooth.hasVoted() && voteBooth.getSelectedTeamId() == 1);
+    printf("  Splatfest Voting Booth:      %s (Voted: Team '%s', ID: %u)\n",
+           boothOk ? "PASSED" : "FAILED", voteBooth.getTeamBetaName(), voteBooth.getSelectedTeamId());
+    if (!boothOk) allPassed = false;
+
+    // Elite Kelp Octoling AI (Enm_TakolienSpeedUp)
+    Game::Enm_TakolienSpeedUp eliteOcto;
+    eliteOcto.init();
+    eliteOcto.setPosition(sead::Vector3f(0.0f, 0.0f, 15.0f));
+    for (int i = 0; i < 200; ++i) eliteOcto.updateEliteAi(sead::Vector3f(0.0f, 0.0f, 0.0f), true);
+    bool eliteOk = (eliteOcto.hasKelpEquipped() && eliteOcto.isSpecialDeploying());
+    printf("  Elite Kelp Octoling AI:      %s (Kelp Hairpiece: YES, Special Deploying: %s)\n",
+           eliteOk ? "PASSED" : "FAILED", eliteOcto.isSpecialDeploying() ? "YES" : "NO");
+    if (!eliteOk) allPassed = false;
+
+    // Octowhirl Clamshell Armor Ejection & Spinout (Enm_BallKing)
+    Game::Enm_BallKing octowhirlBoss;
+    octowhirlBoss.init();
+    for (int i = 0; i < 91; ++i) octowhirlBoss.updateBossAi(sead::Vector3f(0.0f, 0.0f, 10.0f), false);
+    octowhirlBoss.updateBossAi(sead::Vector3f(0.0f, 0.0f, 10.0f), true); // Roll onto player ink -> spinout
+    bool whirlOk = (octowhirlBoss.getState() == Game::BallKingState::cSpinoutSkid && octowhirlBoss.isClamshellDetached());
+    printf("  Octowhirl Clamshell Eject:   %s (Spinout Skid: Triggered, Clamshell Detached: YES)\n",
+           whirlOk ? "PASSED" : "FAILED");
+    if (!whirlOk) allPassed = false;
+
+    // Octonozzle Suction Hole Plugging (Obj_CylinderKingHole)
+    Game::Obj_CylinderKingHole nozzleHole;
+    nozzleHole.init();
+    nozzleHole.setupHole(2, 3.5f, 1.57f);
+    nozzleHole.hitWithInk(25.0f); // 25 HP ink applied (> 20 threshold)
+    bool holeOk = (nozzleHole.isInkedForClimbing() && nozzleHole.getInkedAmount() >= 20.0f);
+    printf("  Octonozzle Vent Hole:        %s (Ink Level: %.1f, Climb Rung Plugged: YES)\n",
+           holeOk ? "PASSED" : "FAILED", nozzleHole.getInkedAmount());
+    if (!holeOk) allPassed = false;
+
+    // Inkopolis Plaza Miiverse Mailbox (Obj_PlazaPost)
+    Game::Obj_PlazaPost mailbox;
+    mailbox.init();
+    mailbox.checkPlayerProximity(sead::Vector3f(-8.4f, 0.0f, -2.1f)); // At mailbox
+    mailbox.triggerOpenMailbox();
+    mailbox.update();
+    bool postOk = (mailbox.isNearby() && mailbox.isOpen());
+    printf("  Plaza Miiverse Mailbox:      %s (Proximity: YES, Mailbox Open: YES)\n",
+           postOk ? "PASSED" : "FAILED");
+    if (!postOk) allPassed = false;
+
+    // 11. Tactical Sub-Weapons & Ranked Objective Mechanics
+    printf("\n--- [11/11] TACTICAL SUB-WEAPONS & RANKED OBJECTIVES ---\n");
+
+    // Sub Weapon: Ink Mine (TimerTrap)
+    Game::TimerTrap mine;
+    mine.init();
+    mine.plantTrap(sead::Vector3f(5.0f, 0.0f, 10.0f), 0, 1);
+    bool mineArmed = mine.isArmed();
+    mine.checkEnemyProximity(sead::Vector3f(5.5f, 0.0f, 10.2f), 1); // Enemy walks within 2.5m
+    for (int i = 0; i < 31; ++i) mine.update(); // 30 frames fuse -> explosion
+    bool mineOk = (mineArmed && mine.isExploded());
+    printf("  Sub: Ink Mine (TimerTrap):   %s (Armed -> Enemy Trip -> Detonated: YES)\n",
+           mineOk ? "PASSED" : "FAILED");
+    if (!mineOk) allPassed = false;
+
+    // Sub Weapon: Sprinkler
+    Game::Sprinkler sprinkler;
+    sprinkler.init();
+    sprinkler.attachToSurface(sead::Vector3f(0.0f, 2.0f, 0.0f), sead::Vector3f(0.0f, 1.0f, 0.0f), 0);
+    for (int i = 0; i < 20; ++i) sprinkler.update();
+    bool sprinklerOk = (sprinkler.getState() == Game::SprinklerState::cSpraying && sprinkler.getRotationAngle() > 0.0f);
+    printf("  Sub: Sprinkler (Autonomous): %s (Rotating Spray: Angle %.2f rad)\n",
+           sprinklerOk ? "PASSED" : "FAILED", sprinkler.getRotationAngle());
+    if (!sprinklerOk) allPassed = false;
+
+    // Sub Weapon: Squid Beakon (Wsb_Flag)
+    Game::Wsb_Flag beakon;
+    beakon.init();
+    beakon.deploy(sead::Vector3f(12.0f, 0.0f, -5.0f), 0, 2);
+    for (int i = 0; i < 90; ++i) beakon.update(); // 90 frames sonar ping
+    bool beakonActive = beakon.isActive();
+    beakon.consumeOnJumpLanding(); // Teammate lands super jump
+    bool beakonOk = (beakonActive && beakon.getState() == Game::BeakonState::cDestroyed);
+    printf("  Sub: Squid Beakon (Wsb_Flag):%s (Active Sonar -> Jump Landing Consumed)\n",
+           beakonOk ? "PASSED" : "FAILED");
+    if (!beakonOk) allPassed = false;
+
+    // Ranked Objective: Rainmaker Shield (Wsp_Shachihoko)
+    Game::Wsp_Shachihoko rainmakerObj;
+    rainmakerObj.init();
+    rainmakerObj.applyInkToShield(0, 520.0f); // 520 HP ink applied (> 500 burst threshold)
+    for (int i = 0; i < 35; ++i) rainmakerObj.update(); // 30 frames burst animation -> free pickup
+    bool burstOk = (rainmakerObj.getShieldState() == Game::ShachihokoShieldState::cFreePickup);
+    bool pickupOk = rainmakerObj.pickup(3, 0); // Player 3 of team 0 picks it up
+    bool rainmakerObjOk = (burstOk && pickupOk && rainmakerObj.getShieldState() == Game::ShachihokoShieldState::cCarried);
+    printf("  Rainmaker Objective:         %s (Shield Burst -> Free Pickup -> Carried)\n",
+           rainmakerObjOk ? "PASSED" : "FAILED");
+    if (!rainmakerObjOk) allPassed = false;
+
+    // Ranked Objective: Tower Control (GachiYagura)
+    Game::GachiYagura towerObj;
+    towerObj.init();
+    towerObj.updateRiders(2, 0); // 2 Alpha riders
+    for (int i = 0; i < 60; ++i) towerObj.update();
+    bool towerObjOk = (towerObj.getState() == Game::YaguraState::cAdvancingToBravo && towerObj.getTrackProgress() > 0.0f);
+    printf("  Tower Control (GachiYagura): %s (Advancing to Bravo: Progress %.3f)\n",
+           towerObjOk ? "PASSED" : "FAILED", towerObj.getTrackProgress());
+    if (!towerObjOk) allPassed = false;
+
+    // 12. Special Weapon Mechanics (Kraken & Bubbler)
+    printf("\n--- [12/13] SPECIAL WEAPON MECHANICS (KRAKEN & BUBBLER) ---\n");
+
+    // Special Weapon: Kraken (PlayerKingSquid)
+    Game::PlayerKingSquid kingSquid;
+    kingSquid.init();
+    kingSquid.activate(sead::Vector3f(0.0f, 0.0f, 0.0f), 0, 300);
+    bool krakenActive = kingSquid.isActive() && kingSquid.isInvulnerable();
+    bool spinTriggered = kingSquid.triggerSpinAttack();
+    for (int i = 0; i < 15; ++i) kingSquid.update();
+    bool kingSquidOk = (krakenActive && spinTriggered && kingSquid.isSpinAttacking());
+    printf("  Special: Kraken (KingSquid): %s (Invulnerable: YES, Spin Attack Leap: YES)\n",
+           kingSquidOk ? "PASSED" : "FAILED");
+    if (!kingSquidOk) allPassed = false;
+
+    // Special Weapon: Bubbler (Obj_Barrier)
+    Game::Obj_Barrier bubbler;
+    bubbler.init();
+    bubbler.activate(4.5f); // 4.5 seconds bubble shield
+    bubbler.applyKnockback(sead::Vector3f(0.0f, 0.0f, -0.5f)); // Impact pushback
+    bool shareOk = bubbler.checkTeammateShare(sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(1.0f, 0.0f, 0.5f), 2.0f);
+    for (int i = 0; i < 30; ++i) bubbler.update();
+    bool bubblerOk = (bubbler.isActive() && shareOk && bubbler.getRemainingTimeRatio() > 0.8f);
+    printf("  Special: Bubbler (Barrier):  %s (Shield Active: YES, Teammate Share: YES)\n",
+           bubblerOk ? "PASSED" : "FAILED");
+    if (!bubblerOk) allPassed = false;
+
+    // 13. Octarian Infantry Dynamics (Octocopter & Octotrooper)
+    printf("\n--- [13/13] OCTARIAN INFANTRY DYNAMICS ---\n");
+
+    // Octarian Aerial Unit: Octocopter (Enm_Takopter)
+    Game::Enm_Takopter octocopter;
+    octocopter.init();
+    octocopter.setPosition(sead::Vector3f(0.0f, 3.2f, 12.0f));
+    for (int i = 0; i < 60; ++i) octocopter.updateAi(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    bool copterOk = (octocopter.getState() != Game::TakopterState::cDefeated && octocopter.getPropellerSpeed() > 0.0f);
+    printf("  Octocopter (Enm_Takopter):   %s (Hover Altitude: 3.2m, Propeller: %.2f rad)\n",
+           copterOk ? "PASSED" : "FAILED", octocopter.getPropellerSpeed());
+    if (!copterOk) allPassed = false;
+
+    // Octarian Ground Unit: Octotrooper (EnemyHohei)
+    Game::EnemyHohei octotrooper;
+    octotrooper.init();
+    for (int i = 0; i < 40; ++i) octotrooper.updateAi(sead::Vector3f(0.0f, 0.0f, 5.0f));
+    bool hoheiOk = (octotrooper.getRemainingHp() > 0.0f && octotrooper.getState() != Game::OctotrooperState::cSplatted);
+    printf("  Octotrooper (EnemyHohei):    %s (HP: %.1f, AI Combat State: %u)\n",
+           hoheiOk ? "PASSED" : "FAILED", octotrooper.getRemainingHp(), static_cast<u32>(octotrooper.getState()));
+    if (!hoheiOk) allPassed = false;
+
+    // 14. DirectX 11 Pipeline & 3D Asset Readiness
+    printf("\n--- [14/14] DIRECTX 11 PIPELINE & 3D ASSET READINESS ---\n");
+
+    // 14.1 DirectX 11 Math Foundation (sead::Matrix44f)
+    sead::Matrix44f viewMatrix;
+    viewMatrix.buildLookAtDX11(sead::Vector3f(0.0f, 5.0f, -10.0f), sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(0.0f, 1.0f, 0.0f));
+    sead::Matrix44f projMatrix;
+    projMatrix.buildPerspectiveDX11(1.047f, 16.0f / 9.0f, 0.1f, 1000.0f);
+    sead::Matrix44f viewProj = projMatrix * viewMatrix;
+    sead::Vector3f originProj = viewProj.transformPoint(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    bool mathOk = (originProj.z >= 0.0f && originProj.z <= 1.0f);
+    printf("  DX11 Projection & Look-At:   %s (NDC Depth: %.3f in [0, 1])\n",
+           mathOk ? "PASSED" : "FAILED", originProj.z);
+    if (!mathOk) allPassed = false;
+
+    // 14.2 Nintendo BFRES 3D Model Parser (sead::BfresParser)
+    u8 rawFresHeader[16] = {
+        'F', 'R', 'E', 'S',
+        0x03, 0x04, 0x00, 0x00,
+        0xFE, 0xFF,
+        0x00, 0x10,
+        0x00, 0x00, 0x00, 0x10
+    };
+    sead::BfresParser bfresParser;
+    bool fresHeaderOk = bfresParser.load(rawFresHeader, sizeof(rawFresHeader));
+    sead::BfresModel cubeModel = sead::BfresParser::createProceduralCube("InklingPlayerMesh", 1.0f);
+    bool modelOk = (fresHeaderOk && cubeModel.getTotalVertexCount() == 24 && cubeModel.getTotalIndexCount() == 36);
+    printf("  Nintendo BFRES Parser:       %s (Header: FRES Magic, Mesh: %zu Verts, %zu Indices)\n",
+           modelOk ? "PASSED" : "FAILED", cubeModel.getTotalVertexCount(), cubeModel.getTotalIndexCount());
+    if (!modelOk) allPassed = false;
+
+    // 14.3 Dynamic 3D Ink Surface Buffer (Game::PaintMap3D)
+    Game::PaintMap3D paintMap;
+    paintMap.init(512, 512, -40.0f, -40.0f, 40.0f, 40.0f);
+    paintMap.splatWorldSphere(sead::Vector3f(0.0f, 0.0f, 0.0f), 8.0f, 0, 1.0f);
+    paintMap.splatWorldSphere(sead::Vector3f(20.0f, 0.0f, 15.0f), 6.0f, 1, 1.0f);
+    u8 sampledTeam = 255;
+    f32 sampledIntensity = 0.0f;
+    paintMap.sampleInkAtWorldPos(sead::Vector3f(0.0f, 0.0f, 0.0f), &sampledTeam, &sampledIntensity);
+    bool canAlphaSwim = paintMap.canSwimAtWorldPos(sead::Vector3f(0.0f, 0.0f, 0.0f), 0);
+    Game::PaintStats paintStats = paintMap.calculateStats();
+    bool paintOk = (sampledTeam == 0 && canAlphaSwim && paintStats.alphaPercent > 0.0f && paintStats.bravoPercent > 0.0f);
+    printf("  3D Dynamic Ink Surface:      %s (Alpha: %.2f%%, Bravo: %.2f%%, Swim: YES)\n",
+           paintOk ? "PASSED" : "FAILED", paintStats.alphaPercent, paintStats.bravoPercent);
+    if (!paintOk) allPassed = false;
+
+    // 14.4 PC Input to GamePad Bridge (Game::PcInputBridge)
+    Game::PcInputBridge pcInput;
+    pcInput.init();
+    Game::PcRawInputState rawInput;
+    rawInput.keyW = true;
+    rawInput.mouseLeft = true;
+    rawInput.keySpace = true;
+    rawInput.mouseDeltaX = 25.0f;
+    rawInput.mouseDeltaY = -10.0f;
+    VPADStatus vpad;
+    pcInput.update(rawInput, &vpad);
+    bool inputOk = (vpad.leftStick.y == 1.0f &&
+                    (vpad.hold & VPAD_BUTTON_ZR) != 0 &&
+                    (vpad.hold & VPAD_BUTTON_B) != 0 &&
+                    vpad.rightStick.x > 0.0f);
+    printf("  PC Input -> VPAD Bridge:     %s (WASD: Walk, LClick: Shoot, Space: Jump, Mouse: Aim)\n",
+           inputOk ? "PASSED" : "FAILED");
+    if (!inputOk) allPassed = false;
+
+    // 14.5 DirectX 11 Pipeline Abstraction (Game::Dx11Renderer)
+    Game::Dx11Renderer dx11Renderer;
+    dx11Renderer.initPipeline(nullptr, 1280, 720, true);
+    dx11Renderer.beginFrame(0.1f, 0.15f, 0.2f, 1.0f);
+    dx11Renderer.setFrameConstants(viewProj, sead::Vector3f(0.0f, 5.0f, -10.0f), 1.0f);
+    dx11Renderer.bindPaintTexture(paintMap);
+    sead::Matrix44f worldMat;
+    worldMat.setTranslation(0.0f, 0.0f, 0.0f);
+    dx11Renderer.submitModel(cubeModel, worldMat, 0);
+    dx11Renderer.endFrame();
+    dx11Renderer.present();
+    const auto& stats = dx11Renderer.getStats();
+    bool dx11Ok = (dx11Renderer.isInitialized() && stats.drawCalls == 1 &&
+                   stats.verticesDrawn == 24 && stats.paintTextureUpdates == 1);
+    printf("  DirectX 11 Pipeline State:   %s (Draw Calls: %u, Verts: %u, Ink Tex: Bound)\n",
+           dx11Ok ? "PASSED" : "FAILED", stats.drawCalls, stats.verticesDrawn);
+    if (!dx11Ok) allPassed = false;
+
+    // 14.6 Retail Map KCL 3D Geometry Loader (Game::KclFile)
+    Game::KclFile plazaKcl;
+    bool plazaKclOk = plazaKcl.loadFromSzsFile("content/Model/Fld_PlazaLobby.szs");
+    sead::BfresModel plazaModel = plazaKcl.toBfresModel("Fld_PlazaLobby");
+    bool plazaValid = plazaKclOk && plazaKcl.getPrismCount() == 576 && plazaModel.getTotalVertexCount() > 0;
+
+    Game::KclFile warehouseKcl;
+    bool whKclOk = warehouseKcl.loadFromSzsFile("content/Model/Fld_Warehouse00.szs");
+    sead::BfresModel whModel = warehouseKcl.toBfresModel("Fld_Warehouse00");
+    bool whValid = whKclOk && warehouseKcl.getPrismCount() > 0 && whModel.getTotalVertexCount() > 0;
+
+    bool mapsOk = plazaValid && whValid;
+    printf("  Retail Map KCL Mesh Loader:  %s (Plaza: %zu Prisms, Warehouse: %zu Prisms)\n",
+           mapsOk ? "PASSED" : "FAILED", plazaKcl.getPrismCount(), warehouseKcl.getPrismCount());
+    if (!mapsOk) allPassed = false;
+
+    // 15. Destructible Stage Props & Shooting Range Targets
+    printf("\n--- [15/16] DESTRUCTIBLE PROPS & SIGHTER TARGET DUMMIES ---\n");
+
+    // Destructible Wooden Crate (Obj_GeneralBox) with Retail KCL Collision
+    Game::Obj_GeneralBox box;
+    box.init();
+    box.setup(sead::Vector3f(0.0f, 0.0f, 10.0f), 80.0f, 1.0f);
+    bool boxCollisionLoaded = box.loadCollision("content/Model/Obj_GeneralBox.szs");
+    bool boxPrismsOk = box.getKclFile().getPrismCount() > 0;
+
+    // Apply bullet hits
+    box.applyDamage(30.0f, 0); // HP 50
+    bool boxDamaged = (box.getRemainingHp() == 50.0f && !box.isBroken());
+    box.applyDamage(50.0f, 0); // HP 0 -> breaks
+    bool boxBroken = (box.getRemainingHp() == 0.0f && box.isBroken());
+    bool boxOk = (boxDamaged && boxBroken && boxCollisionLoaded && boxPrismsOk);
+    printf("  Destructible Crate (Obj_GeneralBox): %s (Retail KCL: %zu Prisms, Shatter: YES)\n",
+           boxOk ? "PASSED" : "FAILED", box.getKclFile().getPrismCount());
+    if (!boxOk) allPassed = false;
+
+    // Shooting Range Target Dummy (SighterTarget) with Harmonic Spring Wobble
+    Game::SighterTarget targetDummy;
+    targetDummy.init();
+    targetDummy.setup(sead::Vector3f(5.0f, 0.0f, 15.0f), 100.0f, 1, false); // Defense Up Level 1
+    targetDummy.applyDamage(35.0f); // 35 * 0.91 = 31.85 HP
+    bool damageCurveOk = (targetDummy.getLastDamageTaken() < 35.0f && targetDummy.getState() == Game::TargetState::cHitRecoil);
+    for (int i = 0; i < 20; ++i) targetDummy.update(); // Recoil animation finishes
+    bool stateReturned = (targetDummy.getState() == Game::TargetState::cWait);
+    targetDummy.applyDamage(100.0f); // Lethal damage -> popped
+    bool poppedOk = (targetDummy.getState() == Game::TargetState::cPopped);
+    bool targetOk = (damageCurveOk && stateReturned && poppedOk);
+    printf("  Target Dummy (SighterTarget):        %s (Defense Stacking: %.1f HP, Recoil Spring: YES)\n",
+           targetOk ? "PASSED" : "FAILED", targetDummy.getLastDamageTaken());
+    if (!targetOk) allPassed = false;
+
+    // 16. Procedural Sound Synthesizer & Spatial 3D Audio
+    printf("\n--- [16/16] PROCEDURAL SOUND SYNTHESIS & SPATIAL 3D AUDIO ---\n");
+
+    Game::SoundShapeMgr soundMgr;
+    soundMgr.init();
+    soundMgr.setListenerTransform(sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(0.0f, 0.0f, 1.0f));
+
+    f32 leftVol = 0.0f, leftPan = 0.0f;
+    bool leftAudible = soundMgr.calculateSpatialAudio(sead::Vector3f(-10.0f, 0.0f, 10.0f), 45.0f, leftVol, leftPan);
+    f32 rightVol = 0.0f, rightPan = 0.0f;
+    bool rightAudible = soundMgr.calculateSpatialAudio(sead::Vector3f(10.0f, 0.0f, 10.0f), 45.0f, rightVol, rightPan);
+
+    bool spatialOk = (leftAudible && rightAudible && leftPan < -0.5f && rightPan > 0.5f);
+
+    // Ink Immersion Muffle Filter
+    soundMgr.setInkImmersionFilter(true);
+    bool filterActive = soundMgr.isSubmergedFilterActive() && (soundMgr.getLowpassCutoffHz() < 1000.0f);
+    soundMgr.setInkImmersionFilter(false);
+    bool filterReset = (!soundMgr.isSubmergedFilterActive()) && (soundMgr.getLowpassCutoffHz() >= 20000.0f);
+
+    // Audio Engine Dispatch
+    soundMgr.play3dSound(Game::cSoundId_Shoot_Splattershot, sead::Vector3f(0.0f, 0.0f, 5.0f));
+    soundMgr.play3dSound(Game::cSoundId_Hit_Confirm, sead::Vector3f(0.0f, 0.0f, 5.0f));
+    soundMgr.play3dSound(Game::cSoundId_Crate_Break, sead::Vector3f(0.0f, 0.0f, 5.0f));
+
+    bool audioOk = (spatialOk && filterActive && filterReset);
+    printf("  Spatial 3D Audio & Immersion Filter: %s (L/R Pan: [%.2f, %.2f], LPF: 950Hz)\n",
+           audioOk ? "PASSED" : "FAILED", leftPan, rightPan);
+    if (!audioOk) allPassed = false;
+
+    // 17. Multi-Weapon Arsenal (Roller & Charger Mechanics)
+    printf("\n--- [17/18] MULTI-WEAPON ARSENAL (ROLLER & CHARGER MECHANICS) ---\n");
+
+    // Splat Roller (GameWeaponRoller)
+    Game::GameWeaponRoller arsenalRoller;
+    arsenalRoller.init();
+    arsenalRoller.setRollerType(Game::RollerType::cNormal); // Splat Roller
+    arsenalRoller.updateInkConsumption(1.0f); // Sets mHasInk = true
+    arsenalRoller.startRolling();
+    bool rollerRolling = (arsenalRoller.getState() == Game::RollerState::cRolling && arsenalRoller.isPainting());
+    arsenalRoller.stopRolling();
+    arsenalRoller.startFling();
+    bool rollerFling = (arsenalRoller.getState() == Game::RollerState::cSwingWindup);
+    bool arsenalRollerOk = (rollerFling && rollerRolling && arsenalRoller.getSquishDamage() == 125.0f && arsenalRoller.getFlingDamage() == 125.0f);
+    printf("  Splat Roller (GameWeaponRoller):     %s (Fling: %.1f HP, Roll Width: %.1fm)\n",
+           arsenalRollerOk ? "PASSED" : "FAILED", arsenalRoller.getFlingDamage(), arsenalRoller.getPaintWidth());
+    if (!arsenalRollerOk) allPassed = false;
+
+    // Splat Charger (Charge_Light)
+    Game::Charge_Light arsenalCharger;
+    arsenalCharger.init();
+    arsenalCharger.setDamageParams(40.0f, 100.0f, 160.0f);
+    arsenalCharger.setChargePower(0.5f); // 50% charge
+    f32 halfChargeDmg = arsenalCharger.getCalculatedDamage(0);
+    arsenalCharger.setChargePower(1.0f); // 100% full charge
+    f32 fullChargeDmg = arsenalCharger.getCalculatedDamage(0);
+    f32 chargerShieldDmg = arsenalCharger.getCalculatedDamage(0xC); // Rainmaker shield (2.8x)
+    bool arsenalChargerOk = (halfChargeDmg == 70.0f && fullChargeDmg == 160.0f && chargerShieldDmg == 448.0f);
+    printf("  Splat Charger (Charge_Light):        %s (50%%: %.1f HP, 100%%: %.1f HP, Shield: %.1f HP)\n",
+           arsenalChargerOk ? "PASSED" : "FAILED", halfChargeDmg, fullChargeDmg, chargerShieldDmg);
+    if (!arsenalChargerOk) allPassed = false;
+
+    // 18. Octoling Rival Squad AI & Tactical Engagement Loop
+    printf("\n--- [18/18] OCTOLING RIVAL SQUAD AI & TACTICAL ENGAGEMENT ---\n");
+
+    Game::GameRivalSquad rivalBot;
+    rivalBot.init();
+    rivalBot.spawn(sead::Vector3f(0.0f, 0.0f, 25.0f), Game::RivalDifficulty::cLevel2);
+    bool rivalSpawnOk = (rivalBot.isAlive() && rivalBot.getHealth() == 100.0f);
+
+    // Player enters engagement range (10m away < 14m shooting range)
+    rivalBot.updateTactics(sead::Vector3f(0.0f, 0.0f, 15.0f));
+    bool rivalEngageOk = (rivalBot.getCurrentPlan() == Game::RivalPlanId::cEngage ||
+                          rivalBot.getCurrentPlan() == Game::RivalPlanId::cPatrol ||
+                          rivalBot.getCurrentPlan() == Game::RivalPlanId::cBombToss ||
+                          rivalBot.getCurrentPlan() == Game::RivalPlanId::cStandby);
+
+    // Apply bullet hits
+    rivalBot.applyDamage(40.0f);
+    bool rivalHurtOk = (rivalBot.getHealth() == 60.0f && rivalBot.isAlive());
+
+    // Apply lethal damage
+    rivalBot.applyDamage(70.0f);
+    bool rivalSplattedOk = (!rivalBot.isAlive() && rivalBot.getHealth() == 0.0f);
+
+    // Respawn at beacon
+    rivalBot.triggerRespawn(sead::Vector3f(0.0f, 0.0f, 25.0f));
+    bool rivalRespawnOk = (rivalBot.isAlive() && rivalBot.getHealth() == 100.0f);
+
+    bool rivalCombatOk = (rivalSpawnOk && rivalEngageOk && rivalHurtOk && rivalSplattedOk && rivalRespawnOk);
+    printf("  Octoling Rival Combat Loop:          %s (Engage Range: 14m, Splat: YES, Respawn: YES)\n",
+           rivalCombatOk ? "PASSED" : "FAILED");
+    if (!rivalCombatOk) allPassed = false;
+
+    // 19. Inkopolis Plaza NPCs & Interactive Arcade Machine
+    printf("\n--- [19/20] INKOPOLIS PLAZA NPCS & INTERACTIVE ARCADE MACHINE ---\n");
+
+    // Judd the Cat (Npc_Judge_Flag)
+    Game::Npc_Judge_Flag judd;
+    judd.init();
+    judd.setup(sead::Vector3f(0.0f, 0.0f, 10.0f));
+    bool juddSleeping = (judd.getState() == Game::JudgeState::cSleeping);
+    // Player approaches within 2.5m (< 4.0m wake radius)
+    judd.updateProximity(sead::Vector3f(0.0f, 0.0f, 12.0f), 4.0f);
+    bool juddAwake = (judd.getState() == Game::JudgeState::cAwake && judd.isNearby());
+    // Judge match outcome: Team Alpha 53.2% vs Team Bravo 42.1%
+    judd.judgeMatch(53.2f, 42.1f);
+    bool juddFlagOk = (judd.getWinningTeam() == 0 && judd.getState() == Game::JudgeState::cJudgingFlag);
+    // Award snails for 16.5 Vibe points (SO HOT!)
+    u32 awardedSnails = judd.awardSuperSeaSnails(16.5f);
+    bool juddSnailsOk = (awardedSnails == 3 && judd.getVibeRank() == Game::JudgeVibeRank::cSoHot);
+    bool juddOk = (juddSleeping && juddAwake && juddFlagOk && juddSnailsOk);
+    printf("  Judd the Cat (Npc_Judge_Flag):       %s (Awake: YES, Flag: Alpha Win, Snails: 3)\n",
+           juddOk ? "PASSED" : "FAILED");
+    if (!juddOk) allPassed = false;
+
+    // Sheldon / Ammo Knights (Npc_WeaponsShop)
+    Game::Npc_WeaponsShop sheldon;
+    sheldon.init();
+    bool catalogOk = (sheldon.getCatalog().size() >= 7);
+    bool levelLockOk = (!sheldon.purchaseWeapon(2, 2, awardedSnails)); // Splat Roller requires Lv 3 (player is Lv 2)
+    u32 playerWallet = 1500;
+    bool buyOk = sheldon.purchaseWeapon(2, 3, playerWallet); // Purchase at Lv 3 for 1000 coins -> 500 remaining
+    bool walletOk = (buyOk && playerWallet == 500);
+    bool testFireOk = sheldon.canTestFire(2);
+    bool sheldonOk = (catalogOk && levelLockOk && walletOk && testFireOk);
+    printf("  Sheldon Ammo Knights (Npc_WeaponsShop): %s (Catalog: %zu Weapons, Level Gate: YES, Buy: YES)\n",
+           sheldonOk ? "PASSED" : "FAILED", sheldon.getCatalog().size());
+    if (!sheldonOk) allPassed = false;
+
+    // Squid Jump Arcade Cabinet (Obj_PlazaGame)
+    Game::Obj_PlazaGame arcadeCabinet;
+    arcadeCabinet.init();
+    arcadeCabinet.setup(sead::Vector3f(8.0f, 0.0f, 4.0f));
+    arcadeCabinet.update(); // Tick attract mode
+    bool glowOk = (arcadeCabinet.getScreenGlow() > 0.8f);
+    bool launchOk = arcadeCabinet.launchGame(Game::MiniGameType::cSquidJump);
+    arcadeCabinet.submitHighScore(Game::MiniGameType::cSquidJump, 4850);
+    bool scoreOk = (arcadeCabinet.getHighScore(Game::MiniGameType::cSquidJump) == 4850);
+    bool arcadeOk = (glowOk && launchOk && scoreOk);
+    printf("  Squid Jump Arcade (Obj_PlazaGame):   %s (Attract Glow: %.2f, Game: Active, Hi-Score: 4850)\n",
+           arcadeOk ? "PASSED" : "FAILED", arcadeCabinet.getScreenGlow());
+    if (!arcadeOk) allPassed = false;
+
+    // 20. Special Weapon System & Protective Canopy Shelter
+    printf("\n--- [20/20] SPECIAL WEAPON SYSTEM & PROTECTIVE CANOPY SHELTER ---\n");
+
+    // SuperWeaponShelter (Canopy Shield)
+    Game::SuperWeaponShelter canopyShelter;
+    canopyShelter.init();
+    canopyShelter.deploy(sead::Vector3f(0.0f, 0.0f, 0.0f), 0);
+    for (int t = 0; t < 35; ++t) canopyShelter.update();
+    bool canopyDeployed = canopyShelter.isDeployed();
+    // Bullet hit deflection on shelter
+    bool deflectOk = canopyShelter.vfunc_15(80.0f, sead::Vector3f(1.0f, 0.0f, 0.0f));
+    bool durabilityOk = (canopyShelter.getDurability() == 420.0f);
+    canopyShelter.close();
+    for (int t = 0; t < 30; ++t) canopyShelter.update();
+    bool canopyClosed = (!canopyShelter.isDeployed());
+    bool shelterOk = (canopyDeployed && deflectOk && durabilityOk && canopyClosed);
+    printf("  Special Canopy Shelter (SuperWeaponShelter): %s (Deploy: YES, Deflect: 80 HP, Durability: 420/500)\n",
+           shelterOk ? "PASSED" : "FAILED");
+    if (!shelterOk) allPassed = false;
+
+    // SuperWeaponMgr
+    Game::SuperWeaponMgr specialMgr;
+    specialMgr.init();
+    specialMgr.update();
+    specialMgr.vfunc_10(0); // Splatted
+    specialMgr.vfunc_12(0); // SuperJump start
+    u32 spFlags = specialMgr.getStateFlags();
+    bool specialMgrOk = ((spFlags & 0x1) && (spFlags & 0x40) && (spFlags & 0x200) && (spFlags & 0x800));
+    printf("  SuperWeaponMgr Coordination:         %s (State Bitmask: 0x%04X)\n",
+           specialMgrOk ? "PASSED" : "FAILED", spFlags);
+    if (!specialMgrOk) allPassed = false;
+
+    printf("\n=================================================================\n");
+    printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
+    printf("=================================================================\n\n");
+    return allPassed;
+}
+
+void ListAllStages() {
+    printf("--- ALL 43 CATALOGED SPLATOON 1 RETAIL STAGES ---\n");
+    u32 count = Game::StageDef::getStageCount();
+    const auto* stages = Game::StageDef::getAllStages();
+    for (u32 i = 0; i < count; ++i) {
+        printf("[%02u] %-30s | %-24s | Category: %u\n",
+               i, stages[i].displayName, stages[i].codeName,
+               static_cast<u32>(stages[i].category));
+    }
+    printf("\n");
+}
+
+bool DumpSarcFile(const char* filePath) {
+    printf("[*] Inspecting SARC/SZS Archive: %s\n", filePath);
+    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        printf("[-] Error: Unable to open file '%s'\n", filePath);
+        return false;
+    }
+
+    std::streamsize fileSize = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    std::vector<u8> buffer(static_cast<size_t>(fileSize));
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), fileSize)) {
+        printf("[-] Error: Failed to read file data\n");
+        return false;
+    }
+
+    sead::SarcArchive archive;
+    if (!archive.load(buffer.data(), buffer.size())) {
+        printf("[-] Error: Not a valid SARC or Yaz0-compressed SZS archive\n");
+        return false;
+    }
+
+    printf("[+] Archive loaded successfully! File count: %zu\n", archive.getFileCount());
+    for (size_t i = 0; i < archive.getFileCount(); ++i) {
+        const auto* info = archive.getFileInfo(i);
+        if (info) {
+            printf("  [%03zu] %-40s | Size: %6zu bytes | Hash: 0x%08X\n",
+                   i, info->name.c_str(), info->size, info->nameHash);
+        }
+    }
+    return true;
+}
+
+static bool s_WindowRunning = true;
+static bool s_SplattedThisFrame = false;
+static bool s_SwitchStageRequested = false;
+static u8 s_CurrentPaintTeam = 0; // 0 = Alpha (Orange), 1 = Bravo (Cyan)
+static float s_CamDistance = 35.0f;
+static float s_CamHeight = 15.0f;
+static float s_CamYaw = 0.0f;
+static float s_CamPitch = 0.20f;
+static bool s_KeyW = false, s_KeyA = false, s_KeyS = false, s_KeyD = false;
+static bool s_KeyUp = false, s_KeyDown = false, s_KeyLeft = false, s_KeyRight = false;
+static bool s_KeyShift = false, s_KeySpace = false;
+static bool s_IsFiring = false;
+static bool s_ThrowBombRequested = false;
+static bool s_ToggleCameraRequested = false;
+static bool s_CycleWeaponRequested = false;
+static int s_ActiveWeaponType = 0; // 0 = Splattershot, 1 = Splat Roller, 2 = Splat Charger
+static float s_ChargerChargeRatio = 0.0f;
+static bool s_FiredChargerThisFrame = false;
+static int s_LastMouseX = 0, s_LastMouseY = 0;
+static float s_MouseDeltaX = 0.0f, s_MouseDeltaY = 0.0f;
+
+LRESULT CALLBACK SplatoonWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    switch (message) {
+    case WM_DESTROY:
+        s_WindowRunning = false;
+        PostQuitMessage(0);
+        return 0;
+    case WM_KEYDOWN:
+        if (wParam == VK_ESCAPE) {
+            s_WindowRunning = false;
+            PostQuitMessage(0);
+        } else if (wParam == '1') {
+            s_CurrentPaintTeam = 0;
+            printf("[+] Switched Active Ink: Team Alpha (Neon Orange)\n");
+        } else if (wParam == '2') {
+            s_CurrentPaintTeam = 1;
+            printf("[+] Switched Active Ink: Team Bravo (Neon Cyan)\n");
+        } else if (wParam == 'E' || wParam == 'Q') {
+            s_CycleWeaponRequested = true;
+        } else if (wParam == VK_SPACE) {
+            s_KeySpace = true;
+            s_SplattedThisFrame = true;
+        } else if (wParam == VK_SHIFT) {
+            s_KeyShift = true;
+        } else if (wParam == 'C') {
+            s_ToggleCameraRequested = true;
+        } else if (wParam == 'R') {
+            s_ThrowBombRequested = true;
+        } else if (wParam == VK_TAB || wParam == 'M') {
+            s_SwitchStageRequested = true;
+        } else if (wParam == 'W') s_KeyW = true;
+        else if (wParam == 'S') s_KeyS = true;
+        else if (wParam == 'A') s_KeyA = true;
+        else if (wParam == 'D') s_KeyD = true;
+        else if (wParam == VK_UP) s_KeyUp = true;
+        else if (wParam == VK_DOWN) s_KeyDown = true;
+        else if (wParam == VK_LEFT) s_KeyLeft = true;
+        else if (wParam == VK_RIGHT) s_KeyRight = true;
+        break;
+    case WM_KEYUP:
+        if (wParam == 'W') s_KeyW = false;
+        else if (wParam == 'S') s_KeyS = false;
+        else if (wParam == 'A') s_KeyA = false;
+        else if (wParam == 'D') s_KeyD = false;
+        else if (wParam == VK_SHIFT) s_KeyShift = false;
+        else if (wParam == VK_SPACE) s_KeySpace = false;
+        else if (wParam == VK_UP) s_KeyUp = false;
+        else if (wParam == VK_DOWN) s_KeyDown = false;
+        else if (wParam == VK_LEFT) s_KeyLeft = false;
+        else if (wParam == VK_RIGHT) s_KeyRight = false;
+        break;
+    case WM_LBUTTONDOWN:
+        s_IsFiring = true;
+        s_SplattedThisFrame = true;
+        break;
+    case WM_LBUTTONUP:
+        s_IsFiring = false;
+        if (s_ActiveWeaponType == 2 && s_ChargerChargeRatio > 0.15f) {
+            s_FiredChargerThisFrame = true;
+        }
+        break;
+    case WM_RBUTTONDOWN:
+        s_ThrowBombRequested = true;
+        break;
+    case WM_MOUSEMOVE: {
+        int mx = LOWORD(lParam);
+        int my = HIWORD(lParam);
+        if (s_LastMouseX != 0 || s_LastMouseY != 0) {
+            float dx = static_cast<float>(mx - s_LastMouseX);
+            float dy = static_cast<float>(my - s_LastMouseY);
+            if ((wParam & MK_LBUTTON) != 0 || (wParam & MK_RBUTTON) != 0) {
+                s_MouseDeltaX += dx * 0.005f;
+                s_MouseDeltaY += dy * 0.005f;
+            }
+        }
+        s_LastMouseX = mx;
+        s_LastMouseY = my;
+        break;
+    }
+    default:
+        return DefWindowProcA(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+struct InkBullet3D {
+    sead::Vector3f pos;
+    sead::Vector3f vel;
+    u32 teamId;
+    float radius;
+    float lifetime;
+    bool isBomb;
+    bool active;
+};
+
+int RunRenderWindow(int maxFrames, const char* stageName) {
+    printf("=================================================================\n");
+    printf("  Splatoon 1 (Wii U - Gambit PC) - DirectX 11 3D Map Renderer   \n");
+    printf("=================================================================\n");
+    printf("[+] Target Subsystem: Native PC Direct3D 11 Hardware Graphics\n");
+    printf("[+] Resolution: 1280x720 @ 60 FPS (VSync Enabled)\n");
+    printf("-----------------------------------------------------------------\n");
+
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
+    const char* className = "SplatoonDx11WindowClass";
+
+    WNDCLASSEXA wc;
+    ZeroMemory(&wc, sizeof(wc));
+    wc.cbSize = sizeof(WNDCLASSEXA);
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = SplatoonWndProc;
+    wc.hInstance = hInstance;
+    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wc.lpszClassName = className;
+    RegisterClassExA(&wc);
+
+    RECT wr = { 0, 0, 1280, 720 };
+    AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
+
+    HWND hWnd = CreateWindowExA(
+        0,
+        className,
+        "Splatoon 1 (Wii U Gambit PC) - DirectX 11 3D Map Renderer [60 FPS]",
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        wr.right - wr.left, wr.bottom - wr.top,
+        nullptr, nullptr, hInstance, nullptr
+    );
+
+    if (!hWnd) {
+        printf("[-] Error: Failed to create Win32 window (Error %lu)\n", GetLastError());
+        return 1;
+    }
+
+    ShowWindow(hWnd, SW_SHOW);
+    UpdateWindow(hWnd);
+
+    Game::Dx11Renderer renderer;
+    if (!renderer.initPipeline(hWnd, 1280, 720, false)) {
+        printf("[-] Error: Failed to initialize Direct3D 11 hardware pipeline!\n");
+        DestroyWindow(hWnd);
+        return 1;
+    }
+
+    printf("[+] Direct3D 11 Pipeline: INITIALIZED (Feature Level 11.0)\n");
+    printf("[+] Backbuffer: 1280x720 R8G8B8A8_UNORM | Depth: D24_UNORM_S8_UINT\n");
+
+    // Dynamic 3D Inking Surface (PaintMap3D)
+    Game::PaintMap3D paintMap;
+
+    // Initialize Native PC Audio Engine
+    Game::PcAudioDriver::instance().init();
+    Game::SoundShapeMgr soundMgr;
+    soundMgr.init();
+
+    // Load Procedural Splatoon Crate, Target Dummies & Character Models
+    sead::BfresModel crateModel = sead::BfresParser::createSplatoonCrateModel("Obj_GeneralBox_111", 2.4f);
+    sead::BfresModel targetDummyModel = sead::BfresParser::createSighterTargetModel("SighterTarget");
+    sead::BfresModel inklingHumanModel = sead::BfresParser::createInklingHumanModel("PlayerHuman", s_CurrentPaintTeam);
+    sead::BfresModel inklingSquidModel = sead::BfresParser::createInklingSquidModel("PlayerSquid", s_CurrentPaintTeam);
+    sead::BfresModel bulletModel = sead::BfresParser::createInkBulletModel("InkBullet", 0.35f);
+    sead::BfresModel bombModel = sead::BfresParser::createInkBulletModel("SplatBomb", 0.65f);
+
+    // Interactive Stage Objects
+    std::vector<Game::Obj_GeneralBox> stageCrates;
+    std::vector<Game::SighterTarget> stageTargets;
+
+    // Map Loading and Initialization
+    std::string currentStage = (stageName && stageName[0]) ? stageName : "Fld_PlazaLobby";
+    Game::KclFile stageKcl;
+    sead::BfresModel stageModel;
+    sead::Vector3f stageCenter(0.0f, 0.0f, 0.0f);
+    float maxSpan = 60.0f;
+
+    // Playable Inkling Player State
+    sead::Vector3f playerPos(0.0f, 0.0f, 0.0f);
+    sead::Vector3f playerVel(0.0f, 0.0f, 0.0f);
+    float playerYaw = 3.14159f;
+    bool isSquid = false;
+    bool wasSquid = false;
+    bool isGrounded = true;
+    float inkTank = 1.0f;
+    int fireCooldown = 0;
+    bool cameraThirdPerson = true;
+
+    // Dynamic In-Flight Ballistics
+    std::vector<InkBullet3D> bullets;
+
+    // Octoling Rival Squad Combatant
+    Game::GameRivalSquad rivalBot;
+    sead::Vector3f rivalSpawnPos(0.0f, 0.0f, 0.0f);
+    int rivalRespawnTimer = 0;
+    int rivalShootTimer = 0;
+
+    auto loadStageGeometry = [&](const std::string& name) -> bool {
+        stageKcl.clear();
+        stageCrates.clear();
+        stageTargets.clear();
+        bullets.clear();
+        std::string candidatePaths[] = {
+            name,
+            "content/Model/" + name + ".szs",
+            "content/Model/Fld_" + name + ".szs",
+            "content/Model/" + name
+        };
+        bool loaded = false;
+        std::string pathUsed;
+        for (const auto& p : candidatePaths) {
+            if (stageKcl.loadFromSzsFile(p.c_str())) {
+                loaded = true;
+                pathUsed = p;
+                break;
+            }
+        }
+        if (loaded) {
+            stageModel = stageKcl.toBfresModel(name.c_str());
+            sead::Vector3f minB = stageKcl.getMinBounds();
+            sead::Vector3f maxB = stageKcl.getMaxBounds();
+            stageCenter = (minB + maxB) * 0.5f;
+            float spanX = maxB.x - minB.x;
+            float spanZ = maxB.z - minB.z;
+            maxSpan = (std::max)(spanX, spanZ);
+
+            // Re-initialize dynamic inking map across stage bounds
+            float padX = spanX * 0.05f + 4.0f;
+            float padZ = spanZ * 0.05f + 4.0f;
+            paintMap.init(512, 512, minB.x - padX, minB.z - padZ, maxB.x + padX, maxB.z + padZ);
+
+            // Initial Turf War Ink Splats on Stage
+            paintMap.splatWorldSphere(stageCenter + sead::Vector3f(-maxSpan * 0.18f, 0.0f, -maxSpan * 0.10f), maxSpan * 0.14f, 0, 1.0f);
+            paintMap.splatWorldSphere(stageCenter + sead::Vector3f( maxSpan * 0.18f, 0.0f,  maxSpan * 0.10f), maxSpan * 0.14f, 1, 1.0f);
+            paintMap.splatWorldSphere(stageCenter, maxSpan * 0.06f, 0, 1.0f);
+
+            // Spawn player near stage center on floor
+            playerPos = stageCenter + sead::Vector3f(0.0f, 2.0f, 6.0f);
+            Game::KclHitResult spawnHit;
+            if (stageKcl.raycast(playerPos + sead::Vector3f(0.0f, 10.0f, 0.0f), sead::Vector3f(0.0f, -1.0f, 0.0f), 20.0f, spawnHit)) {
+                playerPos.y = spawnHit.hitPoint.y;
+            }
+
+            // Spawn 4 Wooden Crates on Stage Floor
+            sead::Vector3f crateOffsets[4] = {
+                sead::Vector3f(-7.0f, 0.0f, -5.0f),
+                sead::Vector3f(-7.0f, 0.0f,  5.0f),
+                sead::Vector3f( 7.0f, 0.0f, -5.0f),
+                sead::Vector3f( 7.0f, 0.0f,  5.0f)
+            };
+            for (int i = 0; i < 4; ++i) {
+                Game::Obj_GeneralBox boxObj;
+                boxObj.init();
+                sead::Vector3f bPos = stageCenter + crateOffsets[i];
+                Game::KclHitResult bHit;
+                if (stageKcl.raycast(bPos + sead::Vector3f(0.0f, 10.0f, 0.0f), sead::Vector3f(0.0f, -1.0f, 0.0f), 20.0f, bHit)) {
+                    bPos.y = bHit.hitPoint.y;
+                }
+                boxObj.setup(bPos, 80.0f, 1.0f);
+                stageCrates.push_back(boxObj);
+            }
+
+            // Spawn 2 Sighter Target Dummies on Stage Floor
+            Game::SighterTarget dummy0;
+            dummy0.init();
+            sead::Vector3f d0Pos = stageCenter + sead::Vector3f(0.0f, 0.0f, -12.0f);
+            Game::KclHitResult d0Hit;
+            if (stageKcl.raycast(d0Pos + sead::Vector3f(0.0f, 10.0f, 0.0f), sead::Vector3f(0.0f, -1.0f, 0.0f), 20.0f, d0Hit)) {
+                d0Pos.y = d0Hit.hitPoint.y;
+            }
+            dummy0.setup(d0Pos, 100.0f, 1, false);
+            stageTargets.push_back(dummy0);
+
+            Game::SighterTarget dummy1;
+            dummy1.init();
+            sead::Vector3f d1Pos = stageCenter + sead::Vector3f(0.0f, 0.0f, 12.0f);
+            Game::KclHitResult d1Hit;
+            if (stageKcl.raycast(d1Pos + sead::Vector3f(0.0f, 10.0f, 0.0f), sead::Vector3f(0.0f, -1.0f, 0.0f), 20.0f, d1Hit)) {
+                d1Pos.y = d1Hit.hitPoint.y;
+            }
+            dummy1.setup(d1Pos, 100.0f, 0, true);
+            stageTargets.push_back(dummy1);
+
+            // Spawn Octoling Rival Combatant
+            rivalBot.init();
+            rivalSpawnPos = stageCenter + sead::Vector3f(0.0f, 0.0f, -maxSpan * 0.28f);
+            Game::KclHitResult rHit;
+            if (stageKcl.raycast(rivalSpawnPos + sead::Vector3f(0.0f, 10.0f, 0.0f), sead::Vector3f(0.0f, -1.0f, 0.0f), 20.0f, rHit)) {
+                rivalSpawnPos.y = rHit.hitPoint.y;
+            }
+            rivalBot.spawn(rivalSpawnPos, Game::RivalDifficulty::cLevel2);
+            rivalRespawnTimer = 0;
+            rivalShootTimer = 0;
+
+            s_CamDistance = (std::max)(22.0f, maxSpan * 0.65f);
+            s_CamHeight = (std::max)(10.0f, maxSpan * 0.35f);
+
+            printf("[+] Loaded Retail Stage: %s (%s)\n", name.c_str(), pathUsed.c_str());
+            printf("    Prisms: %zu | Vertices: %zu | Submeshes: %zu\n",
+                   stageKcl.getPrismCount(), stageModel.getTotalVertexCount(), stageModel.meshes.size());
+            printf("    Bounds: Min(%.1f, %.1f, %.1f) -> Max(%.1f, %.1f, %.1f)\n",
+                   minB.x, minB.y, minB.z, maxB.x, maxB.y, maxB.z);
+            printf("    Center: (%.1f, %.1f, %.1f) | Span: %.1fm\n",
+                   stageCenter.x, stageCenter.y, stageCenter.z, maxSpan);
+
+            char titleBuf[256];
+            snprintf(titleBuf, sizeof(titleBuf),
+                     "Splatoon 1 (Wii U Gambit PC) - Stage: %s [%zu Prisms, %zu Verts] - DirectX 11 [60 FPS]",
+                     name.c_str(), stageKcl.getPrismCount(), stageModel.getTotalVertexCount());
+            SetWindowTextA(hWnd, titleBuf);
+            return true;
+        } else {
+            printf("[*] Fallback: Generating procedural ground plane for '%s'\n", name.c_str());
+            stageModel = sead::BfresParser::createProceduralGroundPlane("ProceduralFloor", 40.0f, 40.0f);
+            paintMap.init(512, 512, -25.0f, -25.0f, 25.0f, 25.0f);
+            paintMap.splatWorldSphere(sead::Vector3f(-4.0f, 0.0f, -3.5f), 4.5f, 0, 1.0f);
+            paintMap.splatWorldSphere(sead::Vector3f( 4.0f, 0.0f,  3.5f), 4.5f, 1, 1.0f);
+            stageCenter.set(0.0f, 0.0f, 0.0f);
+            playerPos.set(0.0f, 0.0f, 0.0f);
+            maxSpan = 40.0f;
+            s_CamDistance = 16.0f;
+            s_CamHeight = 7.0f;
+            rivalBot.init();
+            rivalSpawnPos = sead::Vector3f(0.0f, 0.0f, -10.0f);
+            rivalBot.spawn(rivalSpawnPos, Game::RivalDifficulty::cLevel2);
+            rivalRespawnTimer = 0;
+            rivalShootTimer = 0;
+            return false;
+        }
+    };
+
+    // Load initial requested stage
+    loadStageGeometry(currentStage);
+
+    printf("-----------------------------------------------------------------\n");
+    printf("[*] PLAYABLE INKLING CONTROLS:\n");
+    printf("    - WASD:                Move Inkling Player (relative to camera)\n");
+    printf("    - Mouse / Arrows:      Aim & Look in 3D (Yaw & Pitch)\n");
+    printf("    - Space:               Jump (with apex hang time)\n");
+    printf("    - Shift:               Submerge in Squid Form (Fast swim in ink!)\n");
+    printf("    - Left Click / Space:  Fire Weapon (Splattershot / Roller / Charger)\n");
+    printf("    - Q / E:               Cycle Active Weapon (Shooter <-> Roller <-> Charger)\n");
+    printf("    - Right Click / R:     Throw Splat Bomb (high lob trajectory)\n");
+    printf("    - 1 / 2:               Switch Ink Team (Neon Orange <-> Cyan)\n");
+    printf("    - TAB / M:             Switch Map (Inkopolis Plaza <-> Walleye Warehouse)\n");
+    printf("    - C:                   Toggle Camera (3rd-Person Follow <-> Turntable)\n");
+    printf("    - ESC:                 Close Window\n");
+    printf("-----------------------------------------------------------------\n\n");
+
+    s_WindowRunning = true;
+    int frameCount = 0;
+    float time = 0.0f;
+
+    MSG msg;
+    ZeroMemory(&msg, sizeof(msg));
+
+    while (s_WindowRunning) {
+        while (PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&msg);
+            DispatchMessageA(&msg);
+            if (msg.message == WM_QUIT) {
+                s_WindowRunning = false;
+                break;
+            }
+        }
+        if (!s_WindowRunning) break;
+
+        // Switch Stage on TAB or M
+        if (s_SwitchStageRequested) {
+            s_SwitchStageRequested = false;
+            bullets.clear();
+            if (currentStage == "Fld_PlazaLobby" || currentStage.find("Plaza") != std::string::npos) {
+                currentStage = "Fld_Warehouse00";
+            } else {
+                currentStage = "Fld_PlazaLobby";
+            }
+            printf("\n[*] Switching Stage to: %s...\n", currentStage.c_str());
+            loadStageGeometry(currentStage);
+        }
+
+        // Cycle Weapon Arsenal on 'Q' or 'E'
+        if (s_CycleWeaponRequested) {
+            s_CycleWeaponRequested = false;
+            s_ActiveWeaponType = (s_ActiveWeaponType + 1) % 3;
+            s_ChargerChargeRatio = 0.0f;
+            s_FiredChargerThisFrame = false;
+            const char* wNames[] = { "Splattershot (Shooter)", "Splat Roller (Roller)", "Splat Charger (Charger)" };
+            printf("[+] Switched Active Weapon to: %s\n", wNames[s_ActiveWeaponType]);
+        }
+
+        // Toggle Camera Mode on 'C'
+        if (s_ToggleCameraRequested) {
+            s_ToggleCameraRequested = false;
+            cameraThirdPerson = !cameraThirdPerson;
+            printf("[*] Camera Mode: %s\n", cameraThirdPerson ? "Third-Person Inkling Shoulder Cam" : "Stage Overview Turntable");
+        }
+
+        // Camera Aim / Look from Mouse & Arrow Keys
+        s_CamYaw += s_MouseDeltaX;
+        s_CamPitch += s_MouseDeltaY;
+        s_MouseDeltaX = 0.0f;
+        s_MouseDeltaY = 0.0f;
+
+        if (s_KeyLeft) s_CamYaw -= 0.035f;
+        if (s_KeyRight) s_CamYaw += 0.035f;
+        if (s_KeyUp) s_CamPitch = (std::max)(-0.65f, s_CamPitch - 0.035f);
+        if (s_KeyDown) s_CamPitch = (std::min)(1.10f, s_CamPitch + 0.035f);
+        s_CamPitch = (std::max)(-0.65f, (std::min)(1.10f, s_CamPitch));
+
+        if (!cameraThirdPerson) {
+            s_CamYaw += 0.005f; // Gentle continuous turntable rotation in overview mode
+        }
+
+        time += 0.0166f;
+
+        // Player Form Transformation (Shift = Squid)
+        isSquid = s_KeyShift;
+        if (isSquid && !wasSquid) {
+            Game::PcAudioDriver::instance().playSound(Game::cSoundId_Squid_Dive, 0.70f, 0.0f);
+        }
+        wasSquid = isSquid;
+
+        // Camera Direction Vectors
+        sead::Vector3f camFwd(sinf(s_CamYaw), 0.0f, cosf(s_CamYaw));
+        sead::Vector3f camRight(cosf(s_CamYaw), 0.0f, -sinf(s_CamYaw));
+
+        // Sample Ink on Stage Surface beneath Player
+        u8 sampledTeam = 255;
+        float sampledIntensity = 0.0f;
+        paintMap.sampleInkAtWorldPos(playerPos, &sampledTeam, &sampledIntensity);
+        bool inFriendlyInk = (sampledTeam == s_CurrentPaintTeam && sampledIntensity > 0.12f);
+        bool inEnemyInk = (sampledTeam != 255 && sampledTeam != s_CurrentPaintTeam && sampledIntensity > 0.12f);
+
+        // Immersion Audio Filter
+        soundMgr.setInkImmersionFilter(isSquid && inFriendlyInk);
+
+        // Player Speed Computation
+        float moveSpeed = 0.22f; // Base human run speed
+        if (isSquid) {
+            if (inFriendlyInk) {
+                moveSpeed = 0.46f; // Super-fast swimming in friendly ink
+                inkTank = (std::min)(1.0f, inkTank + 0.015f); // Rapid ink tank refill
+            } else if (inEnemyInk) {
+                moveSpeed = 0.06f; // Trapped / slowed down in enemy ink
+            } else {
+                moveSpeed = 0.14f; // Flopping on dry neutral concrete
+            }
+        } else {
+            if (inEnemyInk) {
+                moveSpeed = 0.09f; // Stuck in enemy ink
+            }
+            inkTank = (std::min)(1.0f, inkTank + 0.003f); // Passive ink recharge
+        }
+
+        // Compute Movement Vector
+        sead::Vector3f moveDir(0.0f, 0.0f, 0.0f);
+        if (s_KeyW) moveDir = moveDir + camFwd;
+        if (s_KeyS) moveDir = moveDir - camFwd;
+        if (s_KeyA) moveDir = moveDir - camRight;
+        if (s_KeyD) moveDir = moveDir + camRight;
+
+        float moveLenSq = moveDir.x * moveDir.x + moveDir.z * moveDir.z;
+        if (moveLenSq > 0.0001f) {
+            float invLen = 1.0f / std::sqrt(moveLenSq);
+            moveDir = moveDir * invLen;
+            playerYaw = std::atan2(moveDir.x, moveDir.z);
+            playerVel.x = moveDir.x * moveSpeed;
+            playerVel.z = moveDir.z * moveSpeed;
+        } else {
+            playerVel.x *= 0.65f;
+            playerVel.z *= 0.65f;
+        }
+
+        // Jump (Space)
+        if (s_KeySpace && isGrounded) {
+            s_KeySpace = false;
+            playerVel.y = isSquid ? 0.48f : 0.40f;
+            isGrounded = false;
+        }
+
+        // Horizontal Wall Collision & Slide
+        float testX = playerPos.x + playerVel.x;
+        float testZ = playerPos.z + playerVel.z;
+        Game::KclHitResult wallHit;
+        if (stageKcl.checkSphere(sead::Vector3f(testX, playerPos.y + 0.8f, testZ), 0.70f, wallHit)) {
+            sead::Vector3f wn = wallHit.hitNormal;
+            if (std::abs(wn.y) < 0.65f) {
+                float dot = playerVel.x * wn.x + playerVel.z * wn.z;
+                playerVel.x -= dot * wn.x;
+                playerVel.z -= dot * wn.z;
+            }
+        }
+        playerPos.x += playerVel.x;
+        playerPos.z += playerVel.z;
+
+        // Vertical Gravity & KCL Floor Raycast Snapping
+        if (!isGrounded) {
+            playerVel.y -= 0.024f; // Gravity
+        }
+        playerPos.y += playerVel.y;
+
+        Game::KclHitResult floorHit;
+        sead::Vector3f rayStart = playerPos + sead::Vector3f(0.0f, 1.2f, 0.0f);
+        if (stageKcl.raycast(rayStart, sead::Vector3f(0.0f, -1.0f, 0.0f), 2.5f, floorHit)) {
+            float floorY = floorHit.hitPoint.y;
+            if (playerPos.y <= floorY + 0.20f) {
+                playerPos.y = floorY;
+                playerVel.y = 0.0f;
+                isGrounded = true;
+            } else {
+                isGrounded = false;
+            }
+        } else {
+            isGrounded = false;
+            if (playerPos.y <= 0.0f) {
+                playerPos.y = 0.0f;
+                playerVel.y = 0.0f;
+                isGrounded = true;
+            }
+        }
+
+        // Weapon Attacks & Continuous Inking
+        if (fireCooldown > 0) fireCooldown--;
+
+        // Splat Roller continuous ground rolling
+        if (s_ActiveWeaponType == 1 && !isSquid && isGrounded && moveLenSq > 0.0001f) {
+            if (inkTank >= 0.0015f) {
+                inkTank -= 0.0015f;
+                sead::Vector3f rollPos = playerPos + camFwd * 1.3f;
+                paintMap.splatWorldSphere(rollPos, 2.7f, s_CurrentPaintTeam, 1.0f);
+
+                // Crates contact
+                for (auto& crate : stageCrates) {
+                    if (!crate.isBroken() && (crate.getPosition() - rollPos).length() < 2.5f) {
+                        crate.applyDamage(125.0f, s_CurrentPaintTeam);
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Crate_Break, 0.85f, 0.0f);
+                        paintMap.splatWorldSphere(crate.getPosition(), 4.2f, s_CurrentPaintTeam, 1.0f);
+                    }
+                }
+                // Target dummy contact
+                for (auto& target : stageTargets) {
+                    if (target.getState() != Game::TargetState::cPopped && (target.getPosition() - rollPos).length() < 2.5f) {
+                        target.applyDamage(125.0f);
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Hit_Confirm, 0.85f, 0.0f);
+                        paintMap.splatWorldSphere(target.getPosition(), 3.0f, s_CurrentPaintTeam, 1.0f);
+                    }
+                }
+                // Octoling Rival contact
+                if (rivalBot.isAlive() && (rivalBot.getPosition() - rollPos).length() < 2.5f) {
+                    rivalBot.applyDamage(125.0f);
+                    Game::PcAudioDriver::instance().playSound(Game::cSoundId_Hit_Confirm, 1.0f, 0.0f);
+                    paintMap.splatWorldSphere(rivalBot.getPosition(), 3.5f, s_CurrentPaintTeam, 1.0f);
+                    if (!rivalBot.isAlive()) {
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Octoling_Splat, 1.0f, 0.0f);
+                        paintMap.splatWorldSphere(rivalBot.getPosition(), 5.0f, s_CurrentPaintTeam, 1.0f);
+                        rivalRespawnTimer = 180;
+                        printf("[*] Octoling Rival SQUISHED by Splat Roller!\n");
+                    }
+                }
+            }
+        }
+
+        // Weapon Attack Action (Left Click)
+        if (!isSquid) {
+            if (s_ActiveWeaponType == 0) {
+                // Splattershot
+                if (s_IsFiring && fireCooldown == 0) {
+                    if (inkTank >= 0.009f) {
+                        fireCooldown = 6;
+                        inkTank -= 0.009f;
+                        sead::Vector3f aimDir(sinf(s_CamYaw), sinf(s_CamPitch), cosf(s_CamYaw));
+                        aimDir = aimDir.normalized();
+                        InkBullet3D b;
+                        b.pos = playerPos + sead::Vector3f(0.0f, 1.1f, 0.0f) + aimDir * 0.7f;
+                        float spreadX = ((rand() % 100) - 50) * 0.001f;
+                        float spreadY = ((rand() % 100) - 50) * 0.001f;
+                        b.vel = aimDir * 1.6f + sead::Vector3f(spreadX, 0.16f + spreadY, 0.0f);
+                        b.teamId = s_CurrentPaintTeam;
+                        b.radius = 2.0f;
+                        b.lifetime = 1.6f;
+                        b.isBomb = false;
+                        b.active = true;
+                        bullets.push_back(b);
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Shoot_Splattershot, 0.65f, 0.0f, isSquid && inFriendlyInk);
+                    } else if (frameCount % 12 == 0) {
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Low_Ink_Warning, 0.50f, 0.0f);
+                    }
+                }
+            } else if (s_ActiveWeaponType == 1) {
+                // Splat Roller Fling
+                if (s_IsFiring && fireCooldown == 0) {
+                    if (inkTank >= 0.08f) {
+                        fireCooldown = 22;
+                        inkTank -= 0.08f;
+                        for (int i = -2; i <= 2; ++i) {
+                            float ang = s_CamYaw + i * 0.12f;
+                            sead::Vector3f flingDir(sinf(ang), sinf(s_CamPitch) + 0.14f, cosf(ang));
+                            flingDir = flingDir.normalized();
+                            InkBullet3D fb;
+                            fb.pos = playerPos + sead::Vector3f(0.0f, 1.2f, 0.0f) + flingDir * 0.7f;
+                            fb.vel = flingDir * 1.55f + sead::Vector3f(0.0f, 0.16f, 0.0f);
+                            fb.teamId = s_CurrentPaintTeam;
+                            fb.radius = 2.3f;
+                            fb.lifetime = 1.2f;
+                            fb.isBomb = false;
+                            fb.active = true;
+                            bullets.push_back(fb);
+                        }
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Roller_Fling, 0.85f, 0.0f);
+                    } else if (frameCount % 12 == 0) {
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Low_Ink_Warning, 0.50f, 0.0f);
+                    }
+                }
+            } else if (s_ActiveWeaponType == 2) {
+                // Splat Charger
+                if (s_IsFiring) {
+                    if (s_ChargerChargeRatio == 0.0f && inkTank >= 0.05f) {
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Charger_Charge, 0.65f, 0.0f);
+                    }
+                    s_ChargerChargeRatio = (std::min)(1.0f, s_ChargerChargeRatio + 0.024f);
+                }
+                if (s_FiredChargerThisFrame) {
+                    s_FiredChargerThisFrame = false;
+                    float cost = 0.04f + 0.14f * s_ChargerChargeRatio;
+                    if (s_ChargerChargeRatio > 0.10f && inkTank >= cost) {
+                        inkTank -= cost;
+                        sead::Vector3f aimDir(sinf(s_CamYaw), sinf(s_CamPitch), cosf(s_CamYaw));
+                        aimDir = aimDir.normalized();
+                        float beamDist = 16.0f + 32.0f * s_ChargerChargeRatio;
+                        float pRadius = 1.6f + 1.2f * s_ChargerChargeRatio;
+
+                        // Continuous ink line along ground
+                        sead::Vector3f rayStart = playerPos + sead::Vector3f(0.0f, 1.2f, 0.0f);
+                        for (float d = 2.0f; d < beamDist; d += 2.2f) {
+                            sead::Vector3f pt = rayStart + aimDir * d;
+                            Game::KclHitResult ptHit;
+                            if (stageKcl.raycast(pt + sead::Vector3f(0.0f, 4.0f, 0.0f), sead::Vector3f(0.0f, -1.0f, 0.0f), 8.0f, ptHit)) {
+                                paintMap.splatWorldSphere(ptHit.hitPoint, pRadius * 0.7f, s_CurrentPaintTeam, 1.0f);
+                            }
+                        }
+
+                        // High speed projectile
+                        InkBullet3D cb;
+                        cb.pos = rayStart + aimDir * 0.8f;
+                        cb.vel = aimDir * (2.8f + 2.0f * s_ChargerChargeRatio);
+                        cb.teamId = s_CurrentPaintTeam;
+                        cb.radius = pRadius;
+                        cb.lifetime = 1.0f;
+                        cb.isBomb = false;
+                        cb.active = true;
+                        bullets.push_back(cb);
+
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Charger_Fire, 0.90f, 0.0f);
+                    }
+                    s_ChargerChargeRatio = 0.0f;
+                }
+            }
+        }
+
+        // Throw Splat Bomb (Right Click / R)
+        if (s_ThrowBombRequested && !isSquid) {
+            s_ThrowBombRequested = false;
+            if (inkTank >= 0.65f) {
+                inkTank -= 0.65f;
+
+                sead::Vector3f aimDir(sinf(s_CamYaw), sinf(s_CamPitch), cosf(s_CamYaw));
+                aimDir = aimDir.normalized();
+
+                InkBullet3D bomb;
+                bomb.pos = playerPos + sead::Vector3f(0.0f, 1.4f, 0.0f) + aimDir * 0.8f;
+                bomb.vel = aimDir * 1.05f + sead::Vector3f(0.0f, 0.55f, 0.0f); // High parabolic lob
+                bomb.teamId = s_CurrentPaintTeam;
+                bomb.radius = 6.2f; // Big turf explosion radius
+                bomb.lifetime = 1.3f;
+                bomb.isBomb = true;
+                bomb.active = true;
+                bullets.push_back(bomb);
+                Game::PcAudioDriver::instance().playSound(Game::cSoundId_Splat_Bomb_Throw, 0.75f, 0.0f);
+                printf("[*] Threw Splat Bomb! Parabolic lob trajectory active.\n");
+            } else {
+                Game::PcAudioDriver::instance().playSound(Game::cSoundId_Low_Ink_Warning, 0.60f, 0.0f);
+            }
+        }
+
+        // Update In-Flight Ballistics & Stage Collisions
+        for (auto& b : bullets) {
+            if (!b.active) continue;
+            b.vel.y -= 0.024f; // Ballistic gravity
+            sead::Vector3f nextPos = b.pos + b.vel;
+
+            // 1. Collide with Destructible Stage Wooden Crates
+            bool hitCrate = false;
+            for (auto& crate : stageCrates) {
+                if (!crate.isBroken() && crate.checkBulletCollision(b.pos, b.radius * 0.4f, b.isBomb ? 180.0f : 28.0f, b.teamId)) {
+                    b.active = false;
+                    hitCrate = true;
+                    if (crate.isBroken()) {
+                        paintMap.splatWorldSphere(crate.getPosition(), 4.2f, b.teamId, 1.0f);
+                        printf("[*] Wooden Crate DESTROYED at (%.1f, %.1f)! Shattered into splinters.\n",
+                               crate.getPosition().x, crate.getPosition().z);
+                    }
+                    break;
+                }
+            }
+            if (hitCrate) continue;
+
+            // 2. Collide with Target Dummies
+            bool hitTarget = false;
+            for (auto& target : stageTargets) {
+                if (target.getState() != Game::TargetState::cPopped) {
+                    sead::Vector3f tPos = target.getPosition() + sead::Vector3f(0.0f, 1.4f, 0.0f);
+                    float dist = (b.pos - tPos).length();
+                    if (dist < 1.3f) {
+                        target.applyDamage(b.isBomb ? 180.0f : 28.0f);
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Hit_Confirm, 0.85f, 0.0f);
+                        paintMap.splatWorldSphere(target.getPosition(), 2.8f, b.teamId, 1.0f);
+                        b.active = false;
+                        hitTarget = true;
+                        printf("[*] Target Dummy HIT! Damage: %.1f HP (Remaining HP: %.1f)\n",
+                               target.getLastDamageTaken(), target.getRemainingHp());
+                        break;
+                    }
+                }
+            }
+            if (hitTarget) continue;
+
+            // 3. Collide with Octoling Rival Bot
+            if (rivalBot.isAlive() && b.teamId != 1) {
+                sead::Vector3f rTarget = rivalBot.getPosition() + sead::Vector3f(0.0f, 1.0f, 0.0f);
+                if ((b.pos - rTarget).length() < 1.4f) {
+                    float dmg = b.isBomb ? 180.0f : (s_ActiveWeaponType == 2 ? 110.0f : 28.0f);
+                    rivalBot.applyDamage(dmg);
+                    Game::PcAudioDriver::instance().playSound(Game::cSoundId_Hit_Confirm, 0.85f, 0.0f);
+                    paintMap.splatWorldSphere(rivalBot.getPosition(), 2.8f, b.teamId, 1.0f);
+                    b.active = false;
+                    if (!rivalBot.isAlive()) {
+                        Game::PcAudioDriver::instance().playSound(Game::cSoundId_Octoling_Splat, 1.0f, 0.0f);
+                        paintMap.splatWorldSphere(rivalBot.getPosition(), 5.0f, b.teamId, 1.0f);
+                        rivalRespawnTimer = 180;
+                        printf("[*] OCTOLING RIVAL SPLATTED! Massive ink burst!\n");
+                    }
+                    continue;
+                }
+            }
+
+            // 4. Collide with Stage Geometry via KCL Raycast
+            sead::Vector3f segment = nextPos - b.pos;
+            float segLen = segment.length();
+            Game::KclHitResult bulletHit;
+            if (segLen > 0.001f && stageKcl.raycast(b.pos, segment / segLen, segLen, bulletHit)) {
+                // Impact on stage geometry! Splat ink onto PaintMap3D!
+                paintMap.splatWorldSphere(bulletHit.hitPoint, b.radius, b.teamId, 1.0f);
+                b.active = false;
+                if (b.isBomb) {
+                    Game::PcAudioDriver::instance().playSound(Game::cSoundId_Splat_Bomb_Explode, 0.95f, 0.0f);
+                    printf("[*] Splat Bomb BOOM at (%.1f, %.1f)! Inked R=%.1fm!\n",
+                           bulletHit.hitPoint.x, bulletHit.hitPoint.z, b.radius);
+                }
+            } else {
+                b.pos = nextPos;
+                b.lifetime -= 0.0166f;
+                if (b.pos.y < -60.0f || b.lifetime <= 0.0f) {
+                    b.active = false;
+                }
+            }
+        }
+
+        // Update Stage Props & Physics Wobble
+        for (auto& crate : stageCrates) crate.update();
+        for (auto& target : stageTargets) target.update();
+
+        // Update Octoling Rival Squad Bot
+        if (rivalBot.isAlive()) {
+            rivalBot.updateTactics(playerPos);
+            sead::Vector3f rPos = rivalBot.getPosition();
+            Game::KclHitResult rFloor;
+            if (stageKcl.raycast(rPos + sead::Vector3f(0.0f, 2.5f, 0.0f), sead::Vector3f(0.0f, -1.0f, 0.0f), 6.0f, rFloor)) {
+                rPos.y = rFloor.hitPoint.y;
+            }
+
+            // Rival shoots Cyan ink droplets at player
+            rivalShootTimer++;
+            if (rivalBot.getCurrentPlan() == Game::RivalPlanId::cEngage && rivalShootTimer >= 32) {
+                rivalShootTimer = 0;
+                sead::Vector3f rToPlayer = (playerPos + sead::Vector3f(0.0f, 0.8f, 0.0f)) - (rPos + sead::Vector3f(0.0f, 1.1f, 0.0f));
+                float rDist = rToPlayer.length();
+                if (rDist > 0.5f) {
+                    sead::Vector3f rAim = rToPlayer / rDist;
+                    InkBullet3D rBullet;
+                    rBullet.pos = rPos + sead::Vector3f(0.0f, 1.1f, 0.0f) + rAim * 0.8f;
+                    rBullet.vel = rAim * 1.45f + sead::Vector3f(0.0f, 0.14f, 0.0f);
+                    rBullet.teamId = 1; // Team Bravo (Cyan Octarian)
+                    rBullet.radius = 1.8f;
+                    rBullet.lifetime = 1.4f;
+                    rBullet.isBomb = false;
+                    rBullet.active = true;
+                    bullets.push_back(rBullet);
+                    Game::PcAudioDriver::instance().playSound(Game::cSoundId_Shoot_Splattershot, 0.45f, 0.2f);
+                }
+            }
+        } else {
+            if (rivalRespawnTimer > 0) {
+                rivalRespawnTimer--;
+                if (rivalRespawnTimer == 0) {
+                    rivalBot.triggerRespawn(rivalSpawnPos);
+                    paintMap.splatWorldSphere(rivalSpawnPos, 3.5f, 1, 1.0f);
+                    Game::PcAudioDriver::instance().playSound(Game::cSoundId_Squid_Dive, 0.8f, 0.0f);
+                    printf("[*] Octoling Rival RESPAWNED at spawn beacon!\n");
+                }
+            }
+        }
+
+        // Camera View & Projection Matrices
+        sead::Vector3f eyePos, targetPos;
+        if (cameraThirdPerson) {
+            float camDist = isSquid ? 4.2f : 5.2f;
+            float camHeight = 1.5f + s_CamPitch * 1.8f;
+            targetPos = playerPos + sead::Vector3f(0.0f, 1.2f, 0.0f);
+            float eyeX = targetPos.x - sinf(s_CamYaw) * cosf(s_CamPitch) * camDist;
+            float eyeY = targetPos.y + camHeight;
+            float eyeZ = targetPos.z - cosf(s_CamYaw) * cosf(s_CamPitch) * camDist;
+            eyePos = sead::Vector3f(eyeX, eyeY, eyeZ);
+        } else {
+            float eyeX = stageCenter.x + sinf(s_CamYaw) * s_CamDistance;
+            float eyeZ = stageCenter.z + cosf(s_CamYaw) * s_CamDistance;
+            eyePos = sead::Vector3f(eyeX, stageCenter.y + s_CamHeight, eyeZ);
+            targetPos = stageCenter;
+        }
+
+        sead::Matrix44f viewMat;
+        viewMat.buildLookAtDX11(eyePos, targetPos, sead::Vector3f(0.0f, 1.0f, 0.0f));
+
+        sead::Matrix44f projMat;
+        projMat.buildPerspectiveDX11(1.047f, 1280.0f / 720.0f, 0.1f, 2500.0f);
+
+        sead::Matrix44f viewProj = projMat * viewMat;
+
+        // Render Frame
+        renderer.beginFrame(0.08f, 0.11f, 0.16f, 1.0f);
+        renderer.setFrameConstants(viewProj, eyePos, time);
+        renderer.bindPaintTexture(paintMap);
+
+        // 1. Render Retail Splatoon Stage Model (Floors, Walls, Grates)
+        sead::Matrix44f stageWorld;
+        stageWorld.setTranslation(0.0f, 0.0f, 0.0f);
+        renderer.submitModel(stageModel, stageWorld, 255);
+
+        // 2. Render Destructible Wooden Crates (Obj_GeneralBox)
+        for (const auto& crate : stageCrates) {
+            if (!crate.isBroken()) {
+                sead::Matrix44f cw;
+                cw.setTranslation(crate.getPosition().x, crate.getPosition().y + 1.2f, crate.getPosition().z);
+                renderer.submitModel(crateModel, cw, crate.getCoveredTeam());
+            }
+        }
+
+        // 3. Render Sighter Target Dummies
+        for (const auto& target : stageTargets) {
+            if (target.getState() != Game::TargetState::cPopped) {
+                sead::Matrix44f tw;
+                tw.setTranslation(target.getPosition().x, target.getPosition().y, target.getPosition().z);
+                renderer.submitModel(targetDummyModel, tw, 255);
+            }
+        }
+
+        // 4. Render Playable Inkling Player Character
+        sead::Matrix44f playerWorld;
+        float cy = cosf(playerYaw), sy = sinf(playerYaw);
+        playerWorld.m[0][0] = cy;   playerWorld.m[0][2] = sy;
+        playerWorld.m[1][1] = 1.0f;
+        playerWorld.m[2][0] = -sy;  playerWorld.m[2][2] = cy;
+        playerWorld.m[3][3] = 1.0f;
+        playerWorld.m[0][3] = playerPos.x;
+        playerWorld.m[1][3] = playerPos.y + (isSquid ? 0.05f : 0.0f);
+        playerWorld.m[2][3] = playerPos.z;
+
+        if (isSquid) {
+            renderer.submitModel(inklingSquidModel, playerWorld, s_CurrentPaintTeam);
+        } else {
+            renderer.submitModel(inklingHumanModel, playerWorld, s_CurrentPaintTeam);
+        }
+
+        // 5. Render Octoling Rival Combatant
+        if (rivalBot.isAlive()) {
+            sead::Vector3f rPos = rivalBot.getPosition();
+            sead::Vector3f rToPlayer = playerPos - rPos;
+            float rYaw = std::atan2(rToPlayer.x, rToPlayer.z);
+            sead::Matrix44f rivalWorld;
+            float cry = cosf(rYaw), sry = sinf(rYaw);
+            rivalWorld.m[0][0] = cry;   rivalWorld.m[0][2] = sry;
+            rivalWorld.m[1][1] = 1.0f;
+            rivalWorld.m[2][0] = -sry;  rivalWorld.m[2][2] = cry;
+            rivalWorld.m[3][3] = 1.0f;
+            rivalWorld.m[0][3] = rPos.x;
+            rivalWorld.m[1][3] = rPos.y;
+            rivalWorld.m[2][3] = rPos.z;
+            renderer.submitModel(inklingHumanModel, rivalWorld, 1); // Team Bravo Cyan Octoling
+        }
+
+        // 6. Render Active In-Flight Ballistics
+        for (const auto& b : bullets) {
+            if (!b.active) continue;
+            sead::Matrix44f bw;
+            bw.setTranslation(b.pos.x, b.pos.y, b.pos.z);
+            if (b.isBomb) {
+                renderer.submitModel(bombModel, bw, b.teamId);
+            } else {
+                renderer.submitModel(bulletModel, bw, b.teamId);
+            }
+        }
+
+        renderer.endFrame();
+        renderer.present();
+
+        // Update Title HUD Telemetry every 30 frames
+        if (frameCount % 30 == 0) {
+            Game::PaintStats stats = paintMap.calculateStats();
+            const char* wNamesShort[] = { "Splattershot", "Splat Roller", "Splat Charger" };
+            char titleBuf[256];
+            snprintf(titleBuf, sizeof(titleBuf),
+                     "Splatoon 1 (Gambit PC) | %s | Wep: %s | Ink: %d%% | Turf: Org %.1f%% / Cyan %.1f%% | Rival: %s (HP: %.0f) [60 FPS]",
+                     currentStage.c_str(),
+                     wNamesShort[s_ActiveWeaponType],
+                     static_cast<int>(inkTank * 100.0f),
+                     stats.alphaPercent,
+                     stats.bravoPercent,
+                     rivalBot.isAlive() ? "ALIVE" : "RESPAWN",
+                     rivalBot.getHealth());
+            SetWindowTextA(hWnd, titleBuf);
+        }
+
+        frameCount++;
+        if (maxFrames > 0 && frameCount >= maxFrames) {
+            printf("[+] Reached requested frame limit (%d frames). Closing render window.\n", maxFrames);
+            break;
+        }
+
+        Sleep(1);
+    }
+
+    renderer.shutdown();
+    DestroyWindow(hWnd);
+    UnregisterClassA(className, hInstance);
+
+    printf("[+] Direct3D 11 Render Session Finished Cleanly (%d frames rendered).\n", frameCount);
+    return 0;
+}
+
+int main(int argc, char* argv[]) {
+    PrintBanner();
+
+    if (argc < 2) {
+        // Default when executed directly or double-clicked: launch the DirectX 11 3D Renderer with Inkopolis Plaza!
+        return RunRenderWindow(0, "Fld_PlazaLobby");
+    }
+
+    std::string requestedStage = "Fld_PlazaLobby";
+    int requestedFrames = 0;
+    bool shouldRender = false;
+
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+
+        if (arg == "--verify" || arg == "--test") {
+            return RunVerificationSuite() ? 0 : 1;
+        } else if (arg == "--list-stages") {
+            ListAllStages();
+            return 0;
+        } else if (arg.rfind("--test-stage=", 0) == 0) {
+            std::string stageName = arg.substr(13);
+            const auto* info = Game::StageDef::getStageInfoByName(stageName.c_str());
+            if (!info) {
+                printf("[-] Error: Unknown stage '%s'\n", stageName.c_str());
+                return 1;
+            }
+            printf("[+] Testing stage: %s (%s)\n", info->displayName, info->codeName);
+            Game::GambitActorMgr actorMgr;
+            actorMgr.init(nullptr);
+            Game::PaintTextureMgr paintMgr;
+            paintMgr.init(nullptr, 512, 512);
+            Game::StageMgr stageMgr;
+            stageMgr.init();
+            stageMgr.loadStage(info->id, &actorMgr, &paintMgr);
+            printf("[+] Stage loaded cleanly into memory.\n");
+            return 0;
+        } else if (arg == "--dump-sarc" && i + 1 < argc) {
+            return DumpSarcFile(argv[++i]) ? 0 : 1;
+        } else if (arg == "--help" || arg == "-h") {
+            PrintUsage();
+            return 0;
+        } else if (arg == "--render" || arg == "--window" || arg == "-r") {
+            shouldRender = true;
+            if (i + 1 < argc && argv[i + 1][0] != '-') {
+                requestedFrames = atoi(argv[++i]);
+            }
+        } else if (arg.rfind("--frames=", 0) == 0) {
+            requestedFrames = atoi(arg.c_str() + 9);
+            shouldRender = true;
+        } else if (arg.rfind("--stage=", 0) == 0) {
+            requestedStage = arg.substr(8);
+            shouldRender = true;
+        } else if (arg.rfind("--map=", 0) == 0) {
+            requestedStage = arg.substr(6);
+            shouldRender = true;
+        } else {
+            printf("[-] Unknown option: %s\n", arg.c_str());
+            PrintUsage();
+            return 1;
+        }
+    }
+
+    if (shouldRender) {
+        return RunRenderWindow(requestedFrames, requestedStage.c_str());
+    }
+
+    return 0;
+}

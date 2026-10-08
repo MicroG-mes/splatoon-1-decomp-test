@@ -53,6 +53,7 @@ public:
     // State machine management
     void changeState(PlayerStateID stateId);
     PlayerStateID getCurrentState() const { return mCurrentState; }
+    f32 getInkTankAmount() const { return mInkTankAmount; }
     bool isSquidState() const;
     bool isHumanState() const;
 
@@ -67,6 +68,8 @@ public:
     void updateInkSwimming();
     void tryShoot();
     void trySubWeapon();
+    const sead::Vector3f& getVelocity() const { return mVelocity; }
+    void setVelocity(const sead::Vector3f& vel) { mVelocity = vel; }
 
     // Network event handlers
     void receiveDie_Net();
@@ -78,73 +81,87 @@ public:
     void receiveUnk2_Net();
     void receiveEndDokanWarp_Net();
 
+    // Authentic Ghidra Decompiled vfuncs (from PlayerCtrl vtable 0x100E9700)
+    virtual const char* getActorName();      // vfunc_36 (0x0265A688)
+    virtual const char* getControllerName(); // vfunc_37 (0x0265A730)
+    virtual void enterHumanForm();           // vfunc_52 (0x02659F7C)
+    virtual void enterSquidForm();           // vfunc_53 (0x02659FD0)
+    virtual void updatePhysicsStep();        // vfunc_7 (0x02641C1C)
+    virtual void updateGroundSlope();        // vfunc_11 (0x0264FF04)
+
 public:
-    undefined field0_0x0[44];
-    s32 teamId;
-    undefined field2_0x30[36];
-    u32 field3_0x54;
-    s32 isLocalPlayer;
-    undefined field5_0x5c[6];
-    s16 shotBulletsNum;
-    undefined field7_0x64[20];
-    s32 weaponId;
-    s32 subWeaponId;
-    s32 specialWeaponid;
-    undefined field11_0x84[24];
-    s32 playerId;
-    undefined field13_0xa0[56];
-    s16 isShooting;
-    s32 isSubWeaponHeld;
-    undefined field16_0xde[26];
-    s32 useSubDelayFrm;
-    s16 isSwimming;
-    undefined field19_0xfe[190];
-    sead::Vector3f* shotDir;
-    undefined field21_0x1c0[8];
-    f32* nextShotDir;
-    undefined field23_0x1cc[44];
-    PlayerWeaponShachihoko* playerWeaponShachihoko;
-    undefined field25_0x1fc[560];
-    s32 field26_0x42c;
-    undefined field27_0x430[164];
-    s32 field28_0x4d4;
-    s32 field29_0x4d8;
-    s32 field30_0x4dc;
-    s32 deathFrm;
-    undefined field32_0x4e4[18];
-    undefined1 killAllEffect;
-    undefined field34_0x4f7[209];
-    s32 jumpframe;
-    undefined field36_0x5cc[296];
-    s32 field37_0x6f4;
-    undefined field38_0x6f8[16];
-    char field39_0x708;
-    undefined field40_0x709[87];
-    PlayerInkAction* playerInkAction;
-    undefined1 playerCollision;
-    undefined field43_0x765[3];
-    PlayerModel* playerModel;
-    undefined field45_0x76c[4];
-    PlayerEffect* playerEffect;
-    undefined field47_0x774[16];
-    PlayerNetControl* playerNetControl;
-    undefined field49_0x788[44];
-    s32 demoPlaceType;
-    undefined field51_0x7b8;
-    byte field52_0x7b9;
-    undefined field53_0x7ba[62];
-    s32 turfPaint;
-    undefined field55_0x7fc[12];
-    u32 field56_0x808;
-    undefined field57_0x80c[128];
-    f32 swimSpeed;
-    undefined field59_0x890[64];
-    PlayerBehindCamera* playerBehindCamera;
+    u8 field0_0x0[44];
+    s32 teamId;           // 0x2C
+    u8 field2_0x30[40];
+    s32 isOtherPlayer;    // 0x58
+    s32 isLocalPlayer;    // 0x5C
+    s16 shotBulletsNum;   // 0x60
+    u8 field7_0x62[22];
+    s32 weaponId;         // 0x78
+    s32 subWeaponId;      // 0x7C
+    s32 specialWeaponId;  // 0x80
+    u8 field11_0x84[24];
+    u32 playerIndex;      // 0x9C (0 to 7)
+    s32 playerId;         // 0xA0
+    void* playerActorPtr; // 0xA4
+    void* matchMgrPtr;    // 0xA8
+    u8 field13_0xac[44];
+    s16 isShooting;       // 0xD8
+    s32 isSubWeaponHeld;  // 0xDC
+    u8 field16_0xde[26];
+    s32 useSubDelayFrm;   // 0xF8
+    s16 isSwimming;       // 0xFC
+    u8 field19_0xfe[126];
+    sead::Vector3f mPosition;        // 0x248
+    u8 field20_0x254[24];
+    sead::Vector3f mCollisionOffset; // 0x26C
+    u8 field21_0x278[160];
+    sead::Vector3f mVelocity;        // 0x318 (0x318.x, 0x31c.y, 0x320.z)
+    u8 field22_0x324[252];
+    f32 mTargetVelocity;             // 0x420
+    f32 mCurrentVelocity;            // 0x424
+    f32 mAccelDelta;                 // 0x428
+    s32 mAccelTimer;                 // 0x42C
+    u8 field23_0x430[92];
+    char mIsSlopeGrounded;           // 0x48C
+    u8 field24_0x48D[71];
+    s32 deathFrm;                    // 0x4D4
+    u8 field25_0x4D8[172];
+    char mIsAiming;                  // 0x584
+    u8 mIsSuperSpeed;                // 0x585
+    u8 field26_0x586[22];
+    char mIsInInk;                   // 0x59C
+    u8 field27_0x59D[19];
+    s32 mSubmergedState;             // 0x5B0
+    u8 field28_0x5B4[56];
+    f32 mInkDepth;                   // 0x5EC
+    u8 field29_0x5F0[4];
+    sead::Vector3f mGroundNormal;    // 0x5F4 (0x5f4.x, 0x5f8.y, 0x5fc.z)
+    u8 field30_0x600[40];
+    f32 mDistanceToFloor;            // 0x628
+    u8 field31_0x62C[300];
+    void* mGearSkillMgr;             // 0x758
+    void* mJumpController;           // 0x75C
+    void* mAnimController;           // 0x760
+    PlayerInkAction* playerInkAction;// 0x764
+    PlayerModel* playerModel;        // 0x768
+    PlayerEffect* playerEffect;      // 0x76C
+    void* mSoundController;          // 0x770
+    void* mFormStateMachine;         // 0x774
+    void* mWeaponController;         // 0x778
+    u8 field32_0x77C[8];
+    PlayerNetControl* playerNetControl;// 0x784
+    u8 field33_0x788[44];
+    PlayerStateID mCurrentState;     // 0x7B4
+    u8 field34_0x7B8;
+    byte mStateSubFlag;              // 0x7B9
+    u8 field35_0x7BA[214];
+    f32 swimSpeed;                   // 0x890
+    u8 field36_0x894[60];
+    PlayerBehindCamera* playerBehindCamera; // 0x8D0
 
 protected:
-    PlayerStateID mCurrentState;
     f32 mInkTankAmount;     // 0.0 to 1.0 (empty to full)
-    sead::Vector3f mVelocity;
     bool mIsGrounded;
     bool mIsInFriendlyInk;
     bool mIsInEnemyInk;

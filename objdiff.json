@@ -1,70 +1,1197 @@
 {
-  "$schema": "https://raw.githubusercontent.com/encounter/objdiff/main/objdiff.schema.json",
-  "min_version": "2.0.0",
-  "custom_make": "ninja",
-  "build_base": false,
-  "build_target": false,
-  "watch_patterns": [
-    "src/**/*.cpp",
-    "src/**/*.h",
-    "include/**/*.h"
-  ],
-  "units": [
-    {
-      "name": "GamePlayer",
-      "target_path": "original/Gambit.elf",
-      "base_path": "build/src/Game/Player/GamePlayer.o",
-      "metadata": {
-        "complete": false
-      }
-    },
-    {
-      "name": "GamePlayerCloneHandle",
-      "target_path": "original/Gambit.elf",
-      "base_path": "build/src/Game/Player/GamePlayerCloneHandle.o",
-      "metadata": {
-        "complete": false
-      }
-    },
-    {
-      "name": "GambitActor",
-      "target_path": "original/Gambit.elf",
-      "base_path": "build/src/Game/Actor/GambitActor.o",
-      "metadata": {
-        "complete": false
-      }
-    },
-    {
-      "name": "GambitActorMgr",
-      "target_path": "original/Gambit.elf",
-      "base_path": "build/src/Game/Actor/GambitActorMgr.o",
-      "metadata": {
-        "complete": false
-      }
-    },
-    {
-      "name": "GameBullet",
-      "target_path": "original/Gambit.elf",
-      "base_path": "build/src/Game/Bullet/GameBullet.o",
-      "metadata": {
-        "complete": false
-      }
-    },
-    {
-      "name": "GameBulletBombSucker",
-      "target_path": "original/Gambit.elf",
-      "base_path": "build/src/Game/Bullet/GameBulletBombSucker.o",
-      "metadata": {
-        "complete": false
-      }
-    },
-    {
-      "name": "PaintTextureMgr",
-      "target_path": "original/Gambit.elf",
-      "base_path": "build/src/Game/Paint/PaintTextureMgr.o",
-      "metadata": {
-        "complete": false
-      }
-    }
-  ]
+    "min_version": "2.0.0",
+    "custom_make": "ninja",
+    "build_base": false,
+    "build_target": false,
+    "watch_patterns": [
+        "src/**/*.cpp",
+        "src/**/*.h",
+        "include/**/*.h"
+    ],
+    "units": [
+        {
+            "name": "GambitActor",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Actor/GambitActor.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GambitActorMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Actor/GambitActorMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameBullet",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Bullet/GameBullet.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameBulletBombSucker",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Bullet/GameBulletBombSucker.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameBulletPlayerNormalShotBase",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Bullet/GameBulletPlayerNormalShotBase.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameBulletSimple",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Bullet/GameBulletSimple.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameEnemyBallKing",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Enemy/GameEnemyBallKing.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameEnemyCharge",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Enemy/GameEnemyCharge.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameEnemyCleaner",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Enemy/GameEnemyCleaner.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameEnemyHideKing",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Enemy/GameEnemyHideKing.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameEnemyRailKingTakowasaBullet",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Enemy/GameEnemyRailKingTakowasaBullet.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameEnemyTakolien",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Enemy/GameEnemyTakolien.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameEnemyTakopter",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Enemy/GameEnemyTakopter.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameItemBase",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Item/GameItemBase.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameItemShachihoko",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Item/GameItemShachihoko.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameInkRail",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\MapObj/GameInkRail.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameTurnPlate",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\MapObj/GameTurnPlate.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PlayerClone",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Net/PlayerClone.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "NpcPlazaNews",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Npc/NpcPlazaNews.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PaintTextureMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Paint/PaintTextureMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "WallPaintMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Paint/WallPaintMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GamePlayer",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Player/GamePlayer.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GamePlayerCloneHandle",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Player/GamePlayerCloneHandle.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GamePlayerJointHuman",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Player/GamePlayerJointHuman.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GamePlayerJointSquid",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Player/GamePlayerJointSquid.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GamePlayerJointSwing",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Player/GamePlayerJointSwing.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GamePlazaMiiverseShot",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Plaza/GamePlazaMiiverseShot.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "SeqMgrPlaza",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Sequence/SeqMgrPlaza.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "StartupScreen",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Sequence/StartupScreen.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "TitleView",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Sequence/TitleView.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "SaveDataMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\System/SaveDataMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameWeaponDaiouIka",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Weapon/GameWeaponDaiouIka.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameWeaponMegaphone",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Weapon/GameWeaponMegaphone.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameWeaponSuperShot",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Weapon/GameWeaponSuperShot.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "NpcMgrShop",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Shop/NpcMgrShop.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PlayerMgrShop",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Shop/PlayerMgrShop.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "LytShopHandler",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Shop/LytShopHandler.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Npc_Judge_Flag",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Npc/Npc_Judge_Flag.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "LytPlazaGearOrderMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Npc/LytPlazaGearOrderMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "MiniGame",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\MiniGame/MiniGame.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_PlazaGame",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\MiniGame/Obj_PlazaGame.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "LytMiniGameHandler",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\MiniGame/LytMiniGameHandler.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Fld_PlazaLobby",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Lobby/Fld_PlazaLobby.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Lobby",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Lobby/Lobby.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "VSGameTime",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Match/VSGameTime.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PreGame_StageView",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Match/PreGame_StageView.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "VSGame",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Match/VSGame.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "HudMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Hud/HudMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "LytVSGameHandler",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Hud/LytVSGameHandler.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "RegularRule",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Rule/RegularRule.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_QuarryBeltYagura",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Rule/Obj_QuarryBeltYagura.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GachihokoClone",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Rule/GachihokoClone.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "VSGamePlayerNameResult",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Result/VSGamePlayerNameResult.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PostGame_StageView_Default_DRC",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Result/PostGame_StageView_Default_DRC.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Game_FinalResult",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Result/Game_FinalResult.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "SighterTarget",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\ShootingRange/SighterTarget.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Fld_ShootingRange_Shr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\ShootingRange/Fld_ShootingRange_Shr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "LytShootingRangeHandler",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\ShootingRange/LytShootingRangeHandler.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameWeaponRoller",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Weapon/GameWeaponRoller.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameWeaponBrush",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Weapon/GameWeaponBrush.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameWeaponCharger",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Weapon/GameWeaponCharger.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GameWeaponSlosher",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Weapon/GameWeaponSlosher.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "BulletBombNormal",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Bullet/BulletBombNormal.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Wsb_Shield",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Bullet/Wsb_Shield.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Sprinkler",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Bullet/Sprinkler.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_Barrier",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Weapon/Obj_Barrier.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PlayerWeaponTornado",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Weapon/PlayerWeaponTornado.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_PlazaAmiibo",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Amiibo/Obj_PlazaAmiibo.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "LytAmiiboHandler",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Amiibo/LytAmiiboHandler.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "LytPlazaFestChoiceMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Fest/LytPlazaFestChoiceMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "FestResult",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Fest/FestResult.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_PlazaPost",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Post/Obj_PlazaPost.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "LytPlazaMiiversePostMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Post/LytPlazaMiiversePostMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_PlazaTrain",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\PlazaEnv/Obj_PlazaTrain.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PlazaSpeakerSpeaker",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\PlazaEnv/PlazaSpeakerSpeaker.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Fld_World",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Mission/Fld_World.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Mission",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Mission/Mission.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "MsnDemo_Goal",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Mission/MsnDemo_Goal.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PlayerCustomPartMission",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Mission/PlayerCustomPartMission.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_BossGateway",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Mission/Obj_BossGateway.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "EnemyHohei",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Enemy/EnemyHohei.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "EnemyHimo",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Enemy/EnemyHimo.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "EnemyTakodozer",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Enemy/EnemyTakodozer.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "EnemyStampKing",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game\\Enemy/EnemyStampKing.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Balloon",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Dojo/Balloon.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "MainMgrDuel",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Dojo/MainMgrDuel.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_Sponge",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/Obj_Sponge.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_Geyser",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/Obj_Geyser.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Trap",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/Trap.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Enm_MouthKingTooth",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Enm_MouthKingTooth.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "EnemyMouthKing",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/EnemyMouthKing.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PlayerWeaponBigLaser",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Weapon/PlayerWeaponBigLaser.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PlayerKingSquid",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Weapon/PlayerKingSquid.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Gatling_Quick",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Weapon/Gatling_Quick.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PlayerWeaponBigShot",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Weapon/PlayerWeaponBigShot.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Enm_BallKing",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Enm_BallKing.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "BulletBombInstant",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Bullet/BulletBombInstant.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "BulletBombDevil",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Bullet/BulletBombDevil.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "BulletBombMarking",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Bullet/BulletBombMarking.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Wsb_Flag",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Bullet/Wsb_Flag.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_CylinderKingHole",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Obj_CylinderKingHole.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Enm_CylinderKing",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Enm_CylinderKing.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "RailKingPilotHouse",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/RailKingPilotHouse.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Enm_RailKing",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Enm_RailKing.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "CameraMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/System/CameraMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "SoundShapeMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/System/SoundShapeMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GachiArea",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Rule/GachiArea.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GachiYagura",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Rule/GachiYagura.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Enm_Takopter",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Enm_Takopter.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "EnemyCleaner",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/EnemyCleaner.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "RollingLift",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/RollingLift.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GearSkillMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Player/GearSkillMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Wsp_Shachihoko",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Weapon/Wsp_Shachihoko.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "PlayerWeaponShachihoko",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Weapon/PlayerWeaponShachihoko.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Enm_Takolien",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Enm_Takolien.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "RespawnPos",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/RespawnPos.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "AutoWarpPoint",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Net/AutoWarpPoint.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Shield",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Shield.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Lft_TurnPlate",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/Lft_TurnPlate.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "InkRail",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/InkRail.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "NamazuType",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Item/NamazuType.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Enm_SuperShotMan",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Enm_SuperShotMan.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "BulletEnemyBomb",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Bullet/BulletEnemyBomb.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "TalkAmiibo",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Amiibo/TalkAmiibo.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Enm_Ball",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Enm_Ball.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Enm_Flyswatter",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Enm_Flyswatter.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "AirWall",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/AirWall.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "AreaGateway",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/AreaGateway.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "cDisconnectClone",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Net/cDisconnectClone.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "DuelListenerPoser",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Result/DuelListenerPoser.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Bomb_Chase",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Bullet/Bomb_Chase.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "ItemMultiBomb",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Item/ItemMultiBomb.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "ItemAncientDocument",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Item/ItemAncientDocument.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "ItemIkura",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Item/ItemIkura.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_Armor",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Item/Obj_Armor.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "ItemCardKey",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Item/ItemCardKey.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Lft_Propeller00",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/Lft_Propeller00.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_QuarryBelt",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/Obj_QuarryBelt.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_Grate",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/Obj_Grate.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "IrregularWallSplash",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Paint/IrregularWallSplash.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GamePlayerClimb",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Player/GamePlayerClimb.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "GamePlayerInkTank",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Player/GamePlayerInkTank.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Enm_TakopterBomb",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Enm_TakopterBomb.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Enm_Tentacle",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Enemy/Enm_Tentacle.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "Obj_Vault",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/MapObj/Obj_Vault.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "ItemDuelSpecial",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Item/ItemDuelSpecial.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "NetSessionMgr",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Net/NetSessionMgr.o",
+            "metadata": {
+                "complete": false
+            }
+        },
+        {
+            "name": "NetPacketStream",
+            "target_path": "original/Gambit.elf",
+            "base_path": "build/src/Game/Net/NetPacketStream.o",
+            "metadata": {
+                "complete": false
+            }
+        }
+    ]
 }

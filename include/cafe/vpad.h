@@ -22,14 +22,30 @@ enum VPADButtons : u32 {
     VPAD_BUTTON_SYNC     = 0x0001,
 };
 
+struct VPADTouchData {
+    u16 x;
+    u16 y;
+    u16 touched;
+    u16 validity;
+};
+
+struct VPADVec2D {
+    f32 x;
+    f32 y;
+};
+
 struct VPADStatus {
     u32 hold;
     u32 trigger;
     u32 release;
-    struct {
-        f32 x;
-        f32 y;
-    } lStick, rStick;
+    union {
+        VPADVec2D lStick;
+        VPADVec2D leftStick;
+    };
+    union {
+        VPADVec2D rStick;
+        VPADVec2D rightStick;
+    };
     struct {
         f32 x;
         f32 y;
@@ -42,6 +58,7 @@ struct VPADStatus {
     } gyro;
     f32 angle[3];
     s8 error;
+    VPADTouchData tpData;
     u8 tpNormalCalibration;
     undefined padding[2];
 };

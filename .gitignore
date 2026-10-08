@@ -1,16 +1,22 @@
 # Binaries and game dumps (never commit copyrighted game assets)
-original/*.rpx
-original/*.elf
-original/*.bin
+original/
+content/
 dump/
+*.rpx
+*.elf
+*.bin
+*.szs
+*.sarc
 
 # Build artifacts
 build/
+build_cmake/
 bin/
+*.exe
+*.pdb
+*.ilk
 *.o
 *.obj
-*.elf
-*.rpx
 *.a
 *.lib
 

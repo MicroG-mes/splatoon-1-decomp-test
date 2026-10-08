@@ -1,6 +1,7 @@
 #include "Game/Paint/PaintTextureMgr.h"
 #include <cmath>
 #include <cstring>
+#include <algorithm>
 
 namespace Game {
 
