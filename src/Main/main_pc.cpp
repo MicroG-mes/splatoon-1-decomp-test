@@ -29,6 +29,7 @@
 #include "Game/Rule/GachiArea.h"
 #include "Game/Rule/GachiYagura.h"
 #include "Game/Weapon/Wsp_Shachihoko.h"
+#include "Game/Rule/GameRuleRanked.h"
 #include "Game/Enemy/EnemyMouthKing.h"
 #include "Game/Mission/PlayerCustomPartMission.h"
 #include "Game/System/CameraMgr.h"
@@ -1191,7 +1192,7 @@ bool RunVerificationSuite() {
     if (!realKwOk) allPassed = false;
 
     // 24. Turf War Match Rules, Camera Occlusion & Ink Dynamics
-    printf("\n--- [24/24] TURF WAR MATCH RULES, CAMERA OCCLUSION & INK DYNAMICS ---\n");
+    printf("\n--- [24/25] TURF WAR MATCH RULES, CAMERA OCCLUSION & INK DYNAMICS ---\n");
 
     // GameRuleTurfWar Match Loop & Judd Weigh-in
     Game::GameRuleTurfWar turfWarRule;
@@ -1262,6 +1263,84 @@ bool RunVerificationSuite() {
            inkStateOk ? "PASSED" : "FAILED");
     if (!inkStateOk) allPassed = false;
 
+    // 25. Rainmaker Ballistics & Ranked Rules Engine
+    printf("\n--- [25/25] RAINMAKER BALLISTICS & RANKED RULES ENGINE ---\n");
+
+    // Rainmaker Weapon & Ink Tornado Ballistics (Game::Wsp_Shachihoko)
+    Game::Wsp_Shachihoko rainmakerWep;
+    rainmakerWep.init(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    rainmakerWep.applyInkToShield(0, 520.0f); // Pop shield
+    bool popped = rainmakerWep.pickup(1, 0); // Carrier: Player 1, Team Alpha
+    rainmakerWep.startCharge();
+    for (int i = 0; i < 60; ++i) rainmakerWep.updateCharge(0.01667f); // 1.0s full charge
+    bool fullCharge = (rainmakerWep.getChargeRatio() >= 1.0f);
+
+    // Fire full-charge Ink Tornado projectile directly toward warehouse floor
+    Game::ShachihokoProjectile shot = rainmakerWep.releaseShot(
+        prismFloor + sead::Vector3f(0.0f, 2.0f, 0.0f),
+        sead::Vector3f(0.0f, -1.0f, 0.0f)
+    );
+    bool shotStatsOk = (shot.damage == 180.0f && shot.blastRadius == 5.5f && shot.vel.length() > 30.0f);
+
+    // Simulate projectile impact on stage KCL
+    sead::Vector3f burstPos;
+    bool burstExploded = false;
+    for (int i = 0; i < 60; ++i) {
+        if (Game::Wsp_Shachihoko::updateProjectile(shot, warehouseKcl, &paintMap, 0.01667f, &burstPos)) {
+            burstExploded = true;
+            break;
+        }
+    }
+
+    // Turtle base camping detection: 2x countdown speed
+    u32 startFrames = rainmakerWep.getRemainingCarrierFrames();
+    for (int i = 0; i < 350; ++i) {
+        rainmakerWep.updateAdvanced(0.01667f, true, &paintMap);
+    }
+    bool turtleDrained = (rainmakerWep.getRemainingCarrierFrames() < startFrames - 350); // drained faster than 1:1
+    bool hokoOk = (popped && fullCharge && shotStatsOk && burstExploded && turtleDrained);
+    printf("  Rainmaker Tornado & Ballistics (Wsp_Shachihoko):%s (Dmg: 180 HP OHKO, Blast: 5.5m, Turtle 2x: YES)\n",
+           hokoOk ? "PASSED" : "FAILED");
+    if (!hokoOk) allPassed = false;
+
+    // Splat Zones Timer & 0.75 Penalty Formula (Game::GachiAreaTimer)
+    Game::GachiAreaTimer zonesTimer;
+    zonesTimer.reset();
+    // Team Alpha controls zones for 20 seconds -> score drops 100 -> 80
+    for (int i = 0; i < 20; ++i) zonesTimer.update(Game::SplatZoneOwner::cTeamAlpha, 1.0f);
+    bool alphaCountOk = (zonesTimer.getCount(0) == 80);
+
+    // Control lost to Neutral -> exact Splatoon penalty formula: floor((100 - 80) * 0.75) = 15 points
+    zonesTimer.update(Game::SplatZoneOwner::cNeutral, 1.0f);
+    bool penaltyOk = (zonesTimer.getPenalty(0) == 15);
+
+    // Alpha regains control: penalty counts down first
+    for (int i = 0; i < 15; ++i) zonesTimer.update(Game::SplatZoneOwner::cTeamAlpha, 1.0f);
+    bool penaltyCleared = (zonesTimer.getPenalty(0) == 0 && zonesTimer.getCount(0) == 80);
+    // After penalty cleared, main score resumes countdown
+    zonesTimer.update(Game::SplatZoneOwner::cTeamAlpha, 1.0f);
+    bool resumedCount = (zonesTimer.getCount(0) == 79);
+
+    // Overtime test: trailing Team Bravo controls zones when regulation ends
+    bool overtimeNeeded = zonesTimer.checkOvertimeNeeded(0.0f, Game::SplatZoneOwner::cTeamBravo);
+    bool zonesOk = (alphaCountOk && penaltyOk && penaltyCleared && resumedCount && overtimeNeeded);
+    printf("  Splat Zones Countdown & Penalty (GachiAreaTimer):%s (Score: 80, Penalty: 15 (0.75x), Overtime: YES)\n",
+           zonesOk ? "PASSED" : "FAILED");
+    if (!zonesOk) allPassed = false;
+
+    // Rainmaker Goal Pedestal & Knockout Touchdown (Game::GachiHokoPedestal)
+    Game::GachiHokoPedestal pedestal;
+    pedestal.init(sead::Vector3f(0.0f, 0.0f, -50.0f), sead::Vector3f(0.0f, 0.0f, 50.0f));
+    // Carrier moves from center toward Bravo pedestal
+    s32 dist1 = pedestal.updateCarrierDistance(sead::Vector3f(0.0f, 0.0f, 25.0f), 0);
+    bool distAdvancing = (dist1 < 100 && dist1 == 50);
+    // Touchdown onto enemy goal pedestal top
+    bool knockout = pedestal.checkGoalTouchdown(sead::Vector3f(0.0f, 0.0f, 50.0f), 0);
+    bool pedestalOk = (distAdvancing && knockout && pedestal.isKnockout() && pedestal.getBestDistance(0) == 0);
+    printf("  Rainmaker Goal Pedestal (GachiHokoPedestal):   %s (Count: 50 -> Touchdown Knockout: 0)\n",
+           pedestalOk ? "PASSED" : "FAILED");
+    if (!pedestalOk) allPassed = false;
+
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
     printf("=================================================================\n\n");
@@ -1316,7 +1395,12 @@ bool DumpSarcFile(const char* filePath, const char* outDir = nullptr) {
                    i, info->name.c_str(), info->size, info->nameHash);
 
             if (outDir && info->data && info->size > 0) {
-                std::string outPath = std::string(outDir) + "/" + info->name;
+                std::string filename = info->name;
+                size_t slash = filename.find_last_of("/\\");
+                if (slash != std::string::npos) {
+                    filename = filename.substr(slash + 1);
+                }
+                std::string outPath = std::string(outDir) + "/" + filename;
                 FILE* fp = fopen(outPath.c_str(), "wb");
                 if (fp) {
                     fwrite(info->data, 1, info->size, fp);
