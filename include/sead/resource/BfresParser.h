@@ -137,6 +137,10 @@ public:
     static BfresModel createSplashWallModel(const char* name = "Wsb_Shield", u32 teamId = 0);
     static BfresModel createSprinklerModel(const char* name = "Wsb_Sprinkler", u32 teamId = 0);
     static BfresModel createInkstrikeModel(const char* name = "Wsp_Tornado", u32 teamId = 0);
+    static BfresModel createOctostompModel(const char* name = "Enm_Stamp");
+    static BfresModel createOctocopterModel(const char* name = "Enm_Takopter");
+    static BfresModel createSqueeGModel(const char* name = "Enm_Cleaner");
+    static BfresModel createSparrowModel(const char* name = "Brd_Sparrow00");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

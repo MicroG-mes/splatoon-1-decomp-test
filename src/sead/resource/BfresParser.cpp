@@ -1412,6 +1412,65 @@ BfresModel BfresParser::createInkstrikeModel(const char* name, u32 teamId) {
     return createProceduralCube(name ? name : "Wsp_Tornado", 1.5f);
 }
 
+BfresModel BfresParser::createOctostompModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_Stamp.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Enm_Stamp";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) {
+            return combined;
+        }
+    }
+    return createProceduralCube(name ? name : "Enm_Stamp", 3.0f);
+}
+
+BfresModel BfresParser::createOctocopterModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_Takopter.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            return copy;
+        }
+    }
+    return createProceduralCube(name ? name : "Enm_Takopter", 1.2f);
+}
+
+BfresModel BfresParser::createSqueeGModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_Cleaner.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            return copy;
+        }
+    }
+    return createProceduralCube(name ? name : "Enm_Cleaner", 1.0f);
+}
+
+BfresModel BfresParser::createSparrowModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Brd_Sparrow00.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            return copy;
+        }
+    }
+    return createProceduralCube(name ? name : "Brd_Sparrow00", 0.4f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

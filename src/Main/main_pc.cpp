@@ -1862,6 +1862,30 @@ bool RunVerificationSuite() {
            fullParamsOk ? "PASSED" : "FAILED", weaponParams.getTotalAssetCount());
     if (!fullParamsOk) allPassed = false;
 
+    // 37. Authentic Retail Octarian Army & Boss 3D Models
+    printf("\n--- [37/37] RETAIL OCTARIAN ARMY & BOSS 3D BFRES MODELS ---\n");
+
+    sead::BfresModel realOctostomp = sead::BfresParser::createOctostompModel("Octostomp_Retail");
+    bool realStampOk = (realOctostomp.getTotalVertexCount() >= 70);
+
+    sead::BfresModel realOctocopter = sead::BfresParser::createOctocopterModel("Octocopter_Retail");
+    bool realCopterOk = (realOctocopter.getTotalVertexCount() >= 500);
+
+    sead::BfresModel realSqueeG = sead::BfresParser::createSqueeGModel("SqueeG_Retail");
+    bool realSqueeOk = (realSqueeG.getTotalVertexCount() >= 300);
+
+    sead::BfresModel realSparrow = sead::BfresParser::createSparrowModel("Sparrow_Retail");
+    bool realSparrowOk = (realSparrow.getTotalVertexCount() >= 100);
+
+    bool octoArmyOk = (realStampOk && realCopterOk && realSqueeOk && realSparrowOk);
+    printf("  Retail Octarian & Boss Models:               %s (Octostomp: %zu Verts, Copter: %zu, SqueeG: %zu, Sparrow: %zu)\n",
+           octoArmyOk ? "PASSED" : "FAILED",
+           realOctostomp.getTotalVertexCount(),
+           realOctocopter.getTotalVertexCount(),
+           realSqueeG.getTotalVertexCount(),
+           realSparrow.getTotalVertexCount());
+    if (!octoArmyOk) allPassed = false;
+
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
     printf("=================================================================\n\n");
