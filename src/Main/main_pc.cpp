@@ -104,6 +104,7 @@
 #include "Game/Mission/CuttlefishDialogueMgr.h"
 #include "Game/Camera/CameraParamEngine.h"
 #include "Game/Effect/ParticleBindCatalog.h"
+#include "Game/Plaza/PlazaAvatarCatalog.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2089,6 +2090,38 @@ bool RunVerificationSuite() {
     printf("  Particle & VFX Debris (ParticleBindCatalog): %s (Bindings: 64/64, Parents: 28, Audio FX: %zu/39, Deflection: YES)\n",
            fullParticleOk ? "PASSED" : "FAILED", audioBindings.size());
     if (!fullParticleOk) allPassed = false;
+
+    // 43. Inkopolis Plaza Offline Inhabitants & Photo Avatars (PhotographPlayerInfo.byaml)
+    printf("\n--- [43/43] INKOPOLIS PLAZA INHABITANTS & PHOTO AVATARS ---\n");
+
+    Game::PlazaAvatarCatalog avatarCatalog;
+    bool avatarLoaded = avatarCatalog.loadFromByml("content/Static/PhotographPlayerInfo.byaml");
+    bool avatarCountsOk = (avatarLoaded && avatarCatalog.getTotalAvatarCount() == 81 &&
+                           avatarCatalog.getGirlCount() == 40 && avatarCatalog.getBoyCount() == 41);
+
+    // 1. Verify Entry 0: Default Lobby Girl (Player1, Skin 2, Shot_Normal00)
+    const auto* a0 = avatarCatalog.getAvatar(0);
+    bool a0Ok = (a0 && a0->name == "Player1" && a0->isGirl() && a0->skin == 2 &&
+                 a0->clothes == "TES001" && a0->weaponSet == "Shot_Normal00");
+
+    // 2. Verify Roaming Plaza NPCs (8 presets: Erick, Polly, Monica, Bernardo, etc.)
+    auto npcPresets = avatarCatalog.getNpcPresets();
+    const auto* erick = avatarCatalog.findByName("00.Erick");
+    const auto* polly = avatarCatalog.findByName("01.Polly");
+    bool npcOk = (npcPresets.size() == 8 && erick && erick->weaponSet == "Roller_Heavy00" &&
+                  polly && polly->weaponSet == "Roller_Normal00");
+
+    // 3. Verify Amiibo Challenge Presets (School Uniform, Samurai, Power Armor)
+    auto amiiboPresets = avatarCatalog.getAmiiboPresets();
+    bool amiiboOk = (amiiboPresets.size() == 3 &&
+                     amiiboPresets[0]->clothes == "AMB000" &&
+                     amiiboPresets[1]->clothes == "AMB001" &&
+                     amiiboPresets[2]->clothes == "AMB002");
+
+    bool fullAvatarOk = (avatarCountsOk && a0Ok && npcOk && amiiboOk);
+    printf("  Plaza Avatars (PlazaAvatarCatalog):           %s (Avatars: 81/81, Girls: 40, Boys: 41, Roaming NPCs: 8, Amiibo: 3)\n",
+           fullAvatarOk ? "PASSED" : "FAILED");
+    if (!fullAvatarOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
