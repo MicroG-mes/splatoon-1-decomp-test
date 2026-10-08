@@ -27,26 +27,16 @@ bool BfresParser::load(const u8* data, size_t size) {
         return false;
     }
 
-    u32 magic = *reinterpret_cast<const u32*>(data);
-    if (magic == cMagic) {
-        mIsBigEndian = true;
-    } else if (magic == cMagicLE) {
-        mIsBigEndian = false;
-    } else {
+    if (data[0] != 'F' || data[1] != 'R' || data[2] != 'E' || data[3] != 'S') {
         return false;
     }
 
-    // Read version and byte order
+    // Byte 8 and 9 are the BOM: 0xFE 0xFF = Big Endian (Wii U), 0xFF 0xFE = Little Endian
+    mIsBigEndian = (data[8] == 0xFE && data[9] == 0xFF);
+
+    // Read version
     u32 rawVersion = *reinterpret_cast<const u32*>(data + 4);
     mVersion = Endian::toHostU32(rawVersion, mIsBigEndian);
-
-    u16 rawBom = *reinterpret_cast<const u16*>(data + 8);
-    u16 bom = Endian::toHostU16(rawBom, mIsBigEndian);
-    if (bom == 0xFEFF) {
-        mIsBigEndian = true;
-    } else if (bom == 0xFFFE) {
-        mIsBigEndian = false;
-    }
 
     auto readU32 = [this, data, size](size_t offset) -> u32 {
         if (offset + 4 > size) return 0;
@@ -69,17 +59,18 @@ bool BfresParser::load(const u8* data, size_t size) {
         return res;
     };
 
-    // Scan for all FMDL (Model) blocks throughout the BFRES archive
-    const u32 targetFmdl = (mIsBigEndian) ? 0x464D444C : 0x4C444D46; // "FMDL"
-    const u32 targetFvtx = (mIsBigEndian) ? 0x46565458 : 0x58545646; // "FVTX"
-    const u32 targetFshp = (mIsBigEndian) ? 0x46534850 : 0x50485346; // "FSHP"
-
+    // 1. Collect all FMDL (Model) block offsets throughout the archive
+    std::vector<size_t> fmdlOffsets;
     for (size_t offset = 0; offset + 64 <= size; offset += 4) {
-        if (*reinterpret_cast<const u32*>(data + offset) != targetFmdl) {
-            continue;
+        if (std::memcmp(data + offset, "FMDL", 4) == 0) {
+            fmdlOffsets.push_back(offset);
         }
+    }
 
-        size_t fmdlOff = offset;
+    for (size_t mIdx = 0; mIdx < fmdlOffsets.size(); ++mIdx) {
+        size_t fmdlOff = fmdlOffsets[mIdx];
+        size_t nextModelOff = (mIdx + 1 < fmdlOffsets.size()) ? fmdlOffsets[mIdx + 1] : size;
+
         BfresModel model;
 
         // Model name
@@ -92,109 +83,161 @@ bool BfresParser::load(const u8* data, size_t size) {
             model.name = "FMDL_Model_" + std::to_string(mModels.size());
         }
 
+        u16 numFvtx = readU16(fmdlOff + 0x20);
+        u16 numFshp = readU16(fmdlOff + 0x22);
+
         // Find FVTX vertex buffers associated with this model
         u32 vtxRel = readU32(fmdlOff + 0x10);
-        size_t fvtxOff = fmdlOff + 0x10 + vtxRel;
+        size_t fvtxBase = fmdlOff + 0x10 + vtxRel;
 
         std::vector<std::vector<Vector3f>> modelVertexPositions;
 
-        // Parse FVTX structures in range
-        for (size_t scanV = fvtxOff; scanV + 32 <= size && scanV < fmdlOff + 0x4000; scanV += 4) {
-            if (*reinterpret_cast<const u32*>(data + scanV) == targetFvtx) {
-                u32 numVerts = readU32(scanV + 8);
-                u32 vbArrRel = readU32(scanV + 0x18);
-                size_t vbArr = scanV + 0x18 + vbArrRel;
+        // Parse FVTX structures: each FVTX descriptor is 0x20 bytes
+        for (u16 vIdx = 0; vIdx < numFvtx; ++vIdx) {
+            size_t fvtxOff = fvtxBase + vIdx * 0x20;
+            if (fvtxOff + 32 > size) break;
+            if (std::memcmp(data + fvtxOff, "FVTX", 4) != 0) {
+                continue;
+            }
 
-                if (vbArr + 24 <= size) {
-                    u16 stride = readU16(vbArr + 0x0C);
-                    if (stride == 0) stride = 16;
-                    u32 vbDataRel = readU32(vbArr + 0x14);
-                    size_t vbData = vbArr + 0x14 + vbDataRel;
+            u32 numVerts = readU32(fvtxOff + 8);
+            u32 vbArrRel = readU32(fvtxOff + 0x18);
+            size_t vbArr = fvtxOff + 0x18 + vbArrRel;
 
-                    if (vbData + numVerts * stride <= size) {
-                        std::vector<Vector3f> positions;
-                        positions.reserve(numVerts);
-                        for (size_t v = 0; v < numVerts; ++v) {
-                            size_t p = vbData + v * stride;
-                            Vector3f pos(readF32(p), readF32(p + 4), readF32(p + 8));
-                            positions.push_back(pos);
+            std::vector<Vector3f> positions;
+            if (vbArr + 24 <= size) {
+                u16 stride = readU16(vbArr + 0x0C);
+                if (stride == 0) stride = 16;
+                u32 vbDataRel = readU32(vbArr + 0x14);
+                size_t vbData = vbArr + 0x14 + vbDataRel;
+
+                if (vbData + numVerts * stride <= size) {
+                    positions.reserve(numVerts);
+                    for (size_t v = 0; v < numVerts; ++v) {
+                        size_t p = vbData + v * stride;
+                        Vector3f pos(readF32(p), readF32(p + 4), readF32(p + 8));
+                        positions.push_back(pos);
+                    }
+                }
+            }
+            modelVertexPositions.push_back(std::move(positions));
+        }
+
+        // If direct FVTX array had fewer than numFvtx, do range scan fallback
+        if (modelVertexPositions.size() < numFvtx) {
+            for (size_t scanV = fvtxBase; scanV + 32 <= nextModelOff && modelVertexPositions.size() < numFvtx; scanV += 4) {
+                if (std::memcmp(data + scanV, "FVTX", 4) == 0) {
+                    u32 numVerts = readU32(scanV + 8);
+                    u32 vbArrRel = readU32(scanV + 0x18);
+                    size_t vbArr = scanV + 0x18 + vbArrRel;
+                    if (vbArr + 24 <= size) {
+                        u16 stride = readU16(vbArr + 0x0C);
+                        if (stride == 0) stride = 16;
+                        u32 vbDataRel = readU32(vbArr + 0x14);
+                        size_t vbData = vbArr + 0x14 + vbDataRel;
+                        if (vbData + numVerts * stride <= size) {
+                            std::vector<Vector3f> positions;
+                            positions.reserve(numVerts);
+                            for (size_t v = 0; v < numVerts; ++v) {
+                                size_t p = vbData + v * stride;
+                                positions.emplace_back(readF32(p), readF32(p + 4), readF32(p + 8));
+                            }
+                            modelVertexPositions.push_back(std::move(positions));
                         }
-                        modelVertexPositions.push_back(std::move(positions));
                     }
                 }
             }
         }
 
-        // Parse FSHP shapes
-        for (size_t scanS = fmdlOff; scanS + 64 <= size && scanS < fmdlOff + 0x10000; scanS += 4) {
-            if (*reinterpret_cast<const u32*>(data + scanS) == targetFshp) {
-                size_t fshpOff = scanS;
-                BfresMesh mesh;
+        // Parse FSHP shapes within [fmdlOff, nextModelOff)
+        for (size_t scanS = fmdlOff; scanS + 64 <= nextModelOff; scanS += 4) {
+            if (std::memcmp(data + scanS, "FSHP", 4) != 0) {
+                continue;
+            }
 
-                u32 sNameRel = readU32(fshpOff + 4);
-                size_t sNameActual = fshpOff + 4 + sNameRel;
-                if (sNameActual < size) {
-                    mesh.name = reinterpret_cast<const char*>(data + sNameActual);
-                } else {
-                    mesh.name = "SubMesh_" + std::to_string(model.meshes.size());
-                }
+            size_t fshpOff = scanS;
+            BfresMesh mesh;
 
-                u16 matIdx = readU16(fshpOff + 0x0E);
-                mesh.materialIndex = matIdx;
+            u32 sNameRel = readU32(fshpOff + 4);
+            size_t sNameActual = fshpOff + 4 + sNameRel;
+            if (sNameActual < size) {
+                mesh.name = reinterpret_cast<const char*>(data + sNameActual);
+            } else {
+                mesh.name = "SubMesh_" + std::to_string(model.meshes.size());
+            }
 
-                u16 vtxBufferIdx = readU16(fshpOff + 0x12);
-                if (vtxBufferIdx >= modelVertexPositions.size()) {
-                    vtxBufferIdx = 0;
-                }
+            u16 matIdx = readU16(fshpOff + 0x0E);
+            mesh.materialIndex = matIdx;
 
-                // Read IndexBuffer from LOD 0
-                u32 lodArrRel = readU32(fshpOff + 0x30);
-                size_t lodArr = fshpOff + 0x30 + lodArrRel;
+            u16 vtxBufferIdx = readU16(fshpOff + 0x12);
+            if (vtxBufferIdx >= modelVertexPositions.size()) {
+                vtxBufferIdx = 0;
+            }
 
-                u32 idxCount = 0;
-                size_t idxBuf = 0;
-                if (lodArr + 24 <= size) {
-                    idxCount = readU32(lodArr + 8);
-                    u32 idxBufRel = readU32(lodArr + 0x14);
-                    idxBuf = lodArr + 0x14 + idxBufRel;
-                }
+            u32 totalIndices = readU32(fshpOff + 0x40);
+            u32 meshArrRel = readU32(fshpOff + 0x30);
+            size_t meshArr = fshpOff + 0x30 + meshArrRel;
 
-                if (idxCount > 0 && idxBuf + 24 <= size) {
-                    u32 idxDataRel = readU32(idxBuf + 0x14);
-                    size_t idxData = idxBuf + 0x14 + idxDataRel;
-
-                    if (idxData + idxCount * 2 <= size && !modelVertexPositions.empty()) {
-                        const auto& positions = modelVertexPositions[vtxBufferIdx];
-                        mesh.vertices.resize(positions.size());
-                        for (size_t vi = 0; vi < positions.size(); ++vi) {
-                            mesh.vertices[vi].position = positions[vi];
-                            mesh.vertices[vi].normal = Vector3f(0.0f, 1.0f, 0.0f);
-                            mesh.vertices[vi].color = Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+            // Search for index buffer pointer inside meshArr structure
+            size_t idxData = 0;
+            if (totalIndices > 0 && meshArr < size) {
+                for (size_t k = 0x18; k < 0x600 && meshArr + k + 4 <= size; k += 4) {
+                    u32 offVal = readU32(meshArr + k);
+                    size_t target = meshArr + k + offVal;
+                    if (target > 0 && target + totalIndices * 2 <= size) {
+                        u16 s0 = readU16(target);
+                        u16 s1 = readU16(target + 2);
+                        u16 s2 = readU16(target + 4);
+                        if (s0 < 65000 && s1 < 65000 && s2 < 65000) {
+                            idxData = target;
+                            break;
                         }
-
-                        mesh.indices.reserve(idxCount);
-                        for (size_t k = 0; k < idxCount; ++k) {
-                            u16 idx = readU16(idxData + k * 2);
-                            if (idx < mesh.vertices.size()) {
-                                mesh.indices.push_back(idx);
-                            }
-                        }
-
-                        // Compute surface normal per triangle
-                        for (size_t tri = 0; tri + 2 < mesh.indices.size(); tri += 3) {
-                            u32 i0 = mesh.indices[tri];
-                            u32 i1 = mesh.indices[tri + 1];
-                            u32 i2 = mesh.indices[tri + 2];
-                            Vector3f e1 = mesh.vertices[i1].position - mesh.vertices[i0].position;
-                            Vector3f e2 = mesh.vertices[i2].position - mesh.vertices[i0].position;
-                            Vector3f n = e1.cross(e2).normalized();
-                            mesh.vertices[i0].normal = n;
-                            mesh.vertices[i1].normal = n;
-                            mesh.vertices[i2].normal = n;
-                        }
-
-                        model.meshes.push_back(std::move(mesh));
                     }
+                }
+            }
+
+            // Fallback for single-LOD crates / target dummy
+            if (idxData == 0 && totalIndices > 0 && meshArr + 24 <= size) {
+                u32 idxBufRel = readU32(meshArr + 0x14);
+                size_t idxBuf = meshArr + 0x14 + idxBufRel;
+                if (idxBuf + 24 <= size) {
+                    u32 idRel = readU32(idxBuf + 0x14);
+                    idxData = idxBuf + 0x14 + idRel;
+                }
+            }
+
+            if (idxData > 0 && totalIndices > 0 && !modelVertexPositions.empty() && vtxBufferIdx < modelVertexPositions.size()) {
+                const auto& positions = modelVertexPositions[vtxBufferIdx];
+                if (!positions.empty()) {
+                    mesh.vertices.resize(positions.size());
+                    for (size_t vi = 0; vi < positions.size(); ++vi) {
+                        mesh.vertices[vi].position = positions[vi];
+                        mesh.vertices[vi].normal = Vector3f(0.0f, 1.0f, 0.0f);
+                        mesh.vertices[vi].color = Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+                    }
+
+                    mesh.indices.reserve(totalIndices);
+                    for (size_t k = 0; k < totalIndices; ++k) {
+                        u16 idx = readU16(idxData + k * 2);
+                        if (idx < mesh.vertices.size()) {
+                            mesh.indices.push_back(idx);
+                        }
+                    }
+
+                    // Compute surface normal per triangle
+                    for (size_t tri = 0; tri + 2 < mesh.indices.size(); tri += 3) {
+                        u32 i0 = mesh.indices[tri];
+                        u32 i1 = mesh.indices[tri + 1];
+                        u32 i2 = mesh.indices[tri + 2];
+                        Vector3f e1 = mesh.vertices[i1].position - mesh.vertices[i0].position;
+                        Vector3f e2 = mesh.vertices[i2].position - mesh.vertices[i0].position;
+                        Vector3f n = e1.cross(e2).normalized();
+                        mesh.vertices[i0].normal = n;
+                        mesh.vertices[i1].normal = n;
+                        mesh.vertices[i2].normal = n;
+                    }
+
+                    model.meshes.push_back(std::move(mesh));
                 }
             }
         }
@@ -209,6 +252,7 @@ bool BfresParser::load(const u8* data, size_t size) {
             mModels.push_back(std::move(model));
         }
     }
+
 
     // Fallback if no full models were parsed
     if (mModels.empty()) {
@@ -477,12 +521,35 @@ BfresModel BfresParser::createSplatoonCrateModel(const char* name, f32 size) {
 }
 
 BfresModel BfresParser::createInklingHumanModel(const char* name, u32 teamId) {
-    BfresModel model;
-    model.name = name ? name : "InklingPlayerHuman";
-
     Vector4f teamColor = (teamId == 0)
         ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)   // Team Alpha Neon Orange
         : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);  // Team Bravo Neon Cyan
+
+    BfresParser szsParser;
+    const char* candFiles[] = { "content/Model/Player00.szs", "content/Model/Player01.szs" };
+    for (const char* p : candFiles) {
+        if (szsParser.loadFromSzsFile(p)) {
+            const BfresModel* realModel = szsParser.getModel(0);
+            if (realModel && !realModel->meshes.empty()) {
+                BfresModel copy = *realModel;
+                if (name) copy.name = name;
+                f32 scale = 1.8f / 13.36f;
+                for (auto& m : copy.meshes) {
+                    for (auto& v : m.vertices) {
+                        v.position = (v.position - Vector3f(0.0f, 0.21f, 0.0f)) * scale;
+                        if (m.name.find("Hair") != std::string::npos || m.name.find("hair") != std::string::npos ||
+                            m.name.find("Tentacle") != std::string::npos || m.name.find("Ink") != std::string::npos) {
+                            v.color = teamColor;
+                        }
+                    }
+                }
+                return copy;
+            }
+        }
+    }
+
+    BfresModel model;
+    model.name = name ? name : "InklingPlayerHuman";
 
     // Materials
     BfresMaterial skinMat; skinMat.name = "M_InklingSkin"; skinMat.teamColor = Vector4f(0.96f, 0.82f, 0.72f, 1.0f);
@@ -566,12 +633,29 @@ BfresModel BfresParser::createInklingHumanModel(const char* name, u32 teamId) {
 }
 
 BfresModel BfresParser::createInklingSquidModel(const char* name, u32 teamId) {
-    BfresModel model;
-    model.name = name ? name : "InklingPlayerSquid";
-
     Vector4f teamColor = (teamId == 0)
         ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
         : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Player_Squid.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.12f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = (v.position - Vector3f(0.0f, -0.39f, 0.0f)) * scale;
+                    v.color = teamColor;
+                }
+            }
+            return copy;
+        }
+    }
+
+    BfresModel model;
+    model.name = name ? name : "InklingPlayerSquid";
 
     BfresMaterial mantleMat; mantleMat.name = "M_SquidMantle"; mantleMat.teamColor = teamColor;
     BfresMaterial eyesMat;   eyesMat.name = "M_SquidEyes";     eyesMat.teamColor = Vector4f(0.95f, 0.90f, 0.10f, 1.0f);
@@ -774,12 +858,31 @@ BfresModel BfresParser::createSighterTargetModel(const char* name) {
 }
 
 BfresModel BfresParser::createKillerWailModel(const char* name, u32 teamId) {
-    BfresModel model;
-    model.name = name ? name : "Weapon_KillerWail";
-
     Vector4f teamColor = (teamId == 0)
         ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
         : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsp_BigLaser.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.15f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = (v.position - Vector3f(0.0f, -2.8f, 0.0f)) * scale;
+                    if (m.name.find("Team") != std::string::npos || m.name.find("Color") != std::string::npos) {
+                        v.color = teamColor;
+                    }
+                }
+            }
+            return copy;
+        }
+    }
+
+    BfresModel model;
+    model.name = name ? name : "Weapon_KillerWail";
 
     BfresMaterial speakerMat; speakerMat.name = "M_SpeakerBody"; speakerMat.teamColor = Vector4f(0.20f, 0.22f, 0.25f, 1.0f);
     BfresMaterial hornMat;    hornMat.name = "M_SpeakerHorn";    hornMat.teamColor = teamColor;
@@ -917,6 +1020,59 @@ BfresModel BfresParser::createInkzookaModel(const char* name, u32 teamId) {
     model.meshes.push_back(gripMesh);
 
     return model;
+}
+
+BfresModel BfresParser::createSplattershotModel(const char* name, u32 teamId) {
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wmn_Shot_Normal.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.18f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                    if (m.name.find("Ink") != std::string::npos || m.name.find("Tank") != std::string::npos) {
+                        v.color = teamColor;
+                    }
+                }
+            }
+            return copy;
+        }
+    }
+    return createInkzookaModel(name, teamId);
+}
+
+BfresModel BfresParser::createOctolingModel(const char* name, u32 teamId) {
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.95f, 0.12f, 0.45f, 1.0f); // Octarian Magenta
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Rival00.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 1.8f / 15.17f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = (v.position - Vector3f(0.0f, -2.0f, 0.0f)) * scale;
+                    if (m.name.find("Hair") != std::string::npos || m.name.find("hair") != std::string::npos ||
+                        m.name.find("Oct") != std::string::npos) {
+                        v.color = teamColor;
+                    }
+                }
+            }
+            return copy;
+        }
+    }
+    return createInklingHumanModel(name, teamId);
 }
 
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {

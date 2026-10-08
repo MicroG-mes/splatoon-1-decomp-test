@@ -1122,7 +1122,7 @@ bool RunVerificationSuite() {
     if (!krOk) allPassed = false;
 
     // 22. Ranked Tower Control & Super Jump Ballistics
-    printf("\n--- [22/22] RANKED TOWER CONTROL & SUPER JUMP BALLISTICS ---\n");
+    printf("\n--- [22/23] RANKED TOWER CONTROL & SUPER JUMP BALLISTICS ---\n");
 
     // Obj_QuarryBeltYagura (Tower Control Spline Rail)
     Game::Obj_QuarryBeltYagura towerActor;
@@ -1148,6 +1148,44 @@ bool RunVerificationSuite() {
     printf("  Super Jump Parabola (AutoWarpPoint):         %s (Squat: OK, Flight Apex Y: %.1fm)\n",
            warpOk ? "PASSED" : "FAILED", superJumpActor.getCurrentSquidPos().y);
     if (!warpOk) allPassed = false;
+
+    // 23. Authentic Nintendo Retail 3D Geometry Pipeline
+    printf("\n--- [23/23] AUTHENTIC NINTENDO RETAIL 3D GEOMETRY PIPELINE ---\n");
+
+    // Inkling Girl (Player00) & Boy (Player01)
+    sead::BfresModel realPlayer = sead::BfresParser::createInklingHumanModel("Player00_Retail", 0);
+    bool realPlayerOk = (realPlayer.getTotalVertexCount() >= 1000);
+    printf("  Inkling Character (Player00):                %s (Retail BFRES: %zu Verts, %zu Meshes)\n",
+           realPlayerOk ? "PASSED" : "FAILED", realPlayer.getTotalVertexCount(), realPlayer.meshes.size());
+    if (!realPlayerOk) allPassed = false;
+
+    // Inkling Squid Form (Player_Squid)
+    sead::BfresModel realSquid = sead::BfresParser::createInklingSquidModel("Squid_Retail", 0);
+    bool realSquidOk = (realSquid.getTotalVertexCount() >= 500);
+    printf("  Squid Transformation (Player_Squid):         %s (Retail BFRES: %zu Verts, %zu Meshes)\n",
+           realSquidOk ? "PASSED" : "FAILED", realSquid.getTotalVertexCount(), realSquid.meshes.size());
+    if (!realSquidOk) allPassed = false;
+
+    // Splattershot Standard Weapon (Wmn_Shot_Normal)
+    sead::BfresModel realSplattershot = sead::BfresParser::createSplattershotModel("Splattershot_Retail", 0);
+    bool realWepOk = (realSplattershot.getTotalVertexCount() >= 500);
+    printf("  Splattershot Main Weapon (Wmn_Shot_Normal):  %s (Retail BFRES: %zu Verts, %zu Meshes)\n",
+           realWepOk ? "PASSED" : "FAILED", realSplattershot.getTotalVertexCount(), realSplattershot.meshes.size());
+    if (!realWepOk) allPassed = false;
+
+    // Octoling Rival Squad Elite (Rival00)
+    sead::BfresModel realRival = sead::BfresParser::createOctolingModel("Rival00_Retail", 1);
+    bool realRivalOk = (realRival.getTotalVertexCount() >= 1000);
+    printf("  Octoling Rival Combatant (Rival00):          %s (Retail BFRES: %zu Verts, %zu Meshes)\n",
+           realRivalOk ? "PASSED" : "FAILED", realRival.getTotalVertexCount(), realRival.meshes.size());
+    if (!realRivalOk) allPassed = false;
+
+    // Killer Wail Megaphone (Wsp_BigLaser)
+    sead::BfresModel realKillerWail = sead::BfresParser::createKillerWailModel("BigLaser_Retail", 0);
+    bool realKwOk = (realKillerWail.getTotalVertexCount() >= 500);
+    printf("  Killer Wail Special Weapon (Wsp_BigLaser):   %s (Retail BFRES: %zu Verts, %zu Meshes)\n",
+           realKwOk ? "PASSED" : "FAILED", realKillerWail.getTotalVertexCount(), realKillerWail.meshes.size());
+    if (!realKwOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
@@ -1405,6 +1443,8 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
     sead::BfresModel targetDummyModel = sead::BfresParser::createSighterTargetModel("SighterTarget");
     sead::BfresModel inklingHumanModel = sead::BfresParser::createInklingHumanModel("PlayerHuman", s_CurrentPaintTeam);
     sead::BfresModel inklingSquidModel = sead::BfresParser::createInklingSquidModel("PlayerSquid", s_CurrentPaintTeam);
+    sead::BfresModel rivalModel = sead::BfresParser::createOctolingModel("RivalOctoling", 1);
+    sead::BfresModel splattershotModel = sead::BfresParser::createSplattershotModel("Weapon_Splattershot", s_CurrentPaintTeam);
     sead::BfresModel bulletModel = sead::BfresParser::createInkBulletModel("InkBullet", 0.35f);
     sead::BfresModel bombModel = sead::BfresParser::createInkBulletModel("SplatBomb", 0.65f);
     sead::BfresModel killerWailModel = sead::BfresParser::createKillerWailModel("Weapon_KillerWail", s_CurrentPaintTeam);
@@ -1470,7 +1510,22 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
             }
         }
         if (loaded) {
-            stageModel = stageKcl.toBfresModel(name.c_str());
+            sead::BfresParser stageBfres;
+            if (stageBfres.loadFromSzsFile(pathUsed.c_str()) && stageBfres.getModelCount() > 0) {
+                stageModel.name = name;
+                stageModel.meshes.clear();
+                stageModel.materials.clear();
+                for (size_t m = 0; m < stageBfres.getModelCount(); ++m) {
+                    const auto* mod = stageBfres.getModel(m);
+                    if (mod) {
+                        for (const auto& mesh : mod->meshes) {
+                            stageModel.meshes.push_back(mesh);
+                        }
+                    }
+                }
+            } else {
+                stageModel = stageKcl.toBfresModel(name.c_str());
+            }
             sead::Vector3f minB = stageKcl.getMinBounds();
             sead::Vector3f maxB = stageKcl.getMaxBounds();
             stageCenter = (minB + maxB) * 0.5f;
@@ -2310,6 +2365,12 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
             renderer.submitModel(inklingSquidModel, playerWorld, s_CurrentPaintTeam);
         } else {
             renderer.submitModel(inklingHumanModel, playerWorld, s_CurrentPaintTeam);
+            // Render held weapon (Splattershot) in player's hands
+            sead::Matrix44f weaponWorld = playerWorld;
+            weaponWorld.m[0][3] += cy * 0.28f + sy * 0.35f;
+            weaponWorld.m[1][3] += 0.85f;
+            weaponWorld.m[2][3] += -sy * 0.28f + cy * 0.35f;
+            renderer.submitModel(splattershotModel, weaponWorld, s_CurrentPaintTeam);
         }
 
         // 5. Render Octoling Rival Combatant
@@ -2326,7 +2387,7 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
             rivalWorld.m[0][3] = rPos.x;
             rivalWorld.m[1][3] = rPos.y;
             rivalWorld.m[2][3] = rPos.z;
-            renderer.submitModel(inklingHumanModel, rivalWorld, 1); // Team Bravo Cyan Octoling
+            renderer.submitModel(rivalModel, rivalWorld, 1); // Team Bravo Octoling Rival (Rival00)
         }
 
         // 6. Render Active In-Flight Ballistics

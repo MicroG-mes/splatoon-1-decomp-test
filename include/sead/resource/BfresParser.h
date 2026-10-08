@@ -120,6 +120,8 @@ public:
     static BfresModel createSighterTargetModel(const char* name = "SighterTarget");
     static BfresModel createKillerWailModel(const char* name = "Weapon_KillerWail", u32 teamId = 0);
     static BfresModel createInkzookaModel(const char* name = "Weapon_Inkzooka", u32 teamId = 0);
+    static BfresModel createSplattershotModel(const char* name = "Weapon_Splattershot", u32 teamId = 0);
+    static BfresModel createOctolingModel(const char* name = "RivalOctoling", u32 teamId = 1);
 
     bool loadFromSzsFile(const char* szsFilePath);
 
