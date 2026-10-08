@@ -1907,6 +1907,78 @@ BfresModel BfresParser::createPropellerBasePlateModel(const char* name) {
     return createProceduralCube(name ? name : "Lft_PropellerBasePlateRailKing", 1.0f);
 }
 
+BfresModel BfresParser::createOctUfoBoxModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Lft_OctUfoBox.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Lft_OctUfoBox";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Lft_OctUfoBox", 2.0f);
+}
+
+BfresModel BfresParser::createOctUfoWallModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Lft_OctUfoWall.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Lft_OctUfoWall";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Lft_OctUfoWall", 2.0f);
+}
+
+BfresModel BfresParser::createRvlUfoMiniModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Lft_RvlUfoMini.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Lft_RvlUfoMini";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Lft_RvlUfoMini", 2.0f);
+}
+
+BfresModel BfresParser::createMissileModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_Missile.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_Missile";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_Missile", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

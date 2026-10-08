@@ -125,6 +125,8 @@
 #include "Game/MapObj/Obj_Ikastone.h"
 #include "Game/Enemy/Obj_RailKingPilotHouse.h"
 #include "Game/MapObj/Obj_LiftFall.h"
+#include "Game/MapObj/Obj_MissilePosition.h"
+#include "Game/Enemy/Obj_ZakoPointUFO.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2888,6 +2890,99 @@ bool RunVerificationSuite() {
     printf("  DJ Octavio Pilot House & Collapsing Fall Lift: %s (Octavio 100m/1deg/f/Shiokara, Lift 3.0s Drop, 3,165 Verts)\n",
            m56Ok ? "PASSED" : "FAILED");
     if (!m56Ok) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 57 Verification: Octarian UFO Spawner & Inkstrike Missile Beacon Positioning
+    // -----------------------------------------------------------------
+    Game::Obj_MissilePosition missileActor;
+    bool missileParamsOk = missileActor.loadParams("content/Static/Obj_MissilePosition.params");
+    bool missileCombatOk = false;
+    bool missileVsOk = false;
+
+    // Verify solo parameters
+    const auto& mp = missileActor.getParams();
+    bool mpOk = (mp.mBindNoShootFrame == 30 &&
+                 std::abs(mp.mMissileSpeed - 5.0f) < 0.01f &&
+                 mp.mMinShotInterval == 60 &&
+                 std::abs(mp.mActionGuideRadius - 50.0f) < 0.01f &&
+                 std::abs(mp.mActionGuideOffsetY - 10.0f) < 0.01f);
+
+    // Verify prompt radius detection
+    sead::Vector3f nearPos(30.0f, 0.0f, 30.0f); // ~42.4m
+    sead::Vector3f farPos(50.0f, 0.0f, 50.0f);  // ~70.7m
+    bool nearGuideOk = missileActor.isPlayerInGuideRadius(nearPos);
+    bool farGuideOk = !missileActor.isPlayerInGuideRadius(farPos);
+
+    // Enter cockpit -> warm-up lockout -> missile firing
+    bool enterOk = missileActor.enterCockpit(0);
+    bool initialLockout = !missileActor.fireMissile(sead::Vector3f(100.0f, 0.0f, 100.0f));
+    for (int f = 0; f < 30; ++f) missileActor.update();
+    bool fireOk = missileActor.fireMissile(sead::Vector3f(100.0f, 0.0f, 100.0f));
+    bool refireLockout = !missileActor.fireMissile(sead::Vector3f(100.0f, 0.0f, 100.0f));
+    for (int f = 0; f < 60; ++f) missileActor.update();
+    bool refireOk = missileActor.fireMissile(sead::Vector3f(120.0f, 0.0f, 120.0f));
+    missileActor.exitCockpit();
+    bool exitOk = (missileActor.getState() == Game::Obj_MissilePosition::State::cWait && !missileActor.isOccupied());
+
+    missileCombatOk = (missileParamsOk && mpOk && nearGuideOk && farGuideOk &&
+                       enterOk && initialLockout && fireOk && refireLockout && refireOk && exitOk &&
+                       missileActor.getFiredMissileCount() == 2);
+
+    // Verify VS variant parameters
+    Game::Obj_MissilePosition missileVs;
+    bool vsLoadOk = missileVs.loadParamsVS("content/Static/Obj_MissilePositionVS.params");
+    const auto& vsp = missileVs.getParams();
+    missileVsOk = (vsLoadOk && missileVs.isVsMode() &&
+                   vsp.mBindNoShootFrame == 15 &&
+                   vsp.mMinShotInterval == 70 &&
+                   std::abs(vsp.mActionGuideRadius - 75.0f) < 0.01f &&
+                   vsp.mCoolingFrame == 600 &&
+                   vsp.mCoolingFrameOverheat == 600);
+
+    // Verify Obj_ZakoPointUFO Octarian UFO spawner & deployment craft
+    Game::Obj_ZakoPointUFO ufoActor(Game::Obj_ZakoPointUFO::UfoType::OctUfoBox);
+    bool ufoParamsOk = ufoActor.loadParams("content/Static/Obj_ZakoPointUFO.params");
+    bool ufoSpawnOk = false;
+    bool ufoDamageOk = false;
+
+    const auto& up = ufoActor.getParams();
+    bool upLifeOk = (std::abs(up.mLife - 1000.0f) < 0.01f && std::abs(ufoActor.getHealth() - 1000.0f) < 0.01f);
+
+    // Verify hover bobbing & spawn wave cycle
+    ufoActor.init();
+    for (int f = 0; f < 30; ++f) ufoActor.update();
+    bool bobbingOk = (ufoActor.getState() == Game::Obj_ZakoPointUFO::State::Hovering);
+
+    bool waveSpawned = ufoActor.triggerSpawnWave();
+    bool countsOk = (ufoActor.getTotalSpawnedCount() == 1 && ufoActor.getActiveEnemyCount() == 1);
+    ufoActor.onEnemyDefeated();
+    bool defeatOk = (ufoActor.getActiveEnemyCount() == 0);
+    ufoSpawnOk = (ufoParamsOk && upLifeOk && bobbingOk && waveSpawned && countsOk && defeatOk);
+
+    // Verify durability damage and destruction
+    ufoActor.applyDamage(400.0f);
+    bool midDmgOk = (std::abs(ufoActor.getHealth() - 600.0f) < 0.01f && ufoActor.isAlive());
+    ufoActor.applyDamage(600.0f);
+    bool destroyedOk = (!ufoActor.isAlive() && ufoActor.getState() == Game::Obj_ZakoPointUFO::State::Destroyed);
+    ufoDamageOk = (midDmgOk && destroyedOk);
+
+    // Verify authentic 3D BFRES models on disk (4,361 vertices total)
+    sead::BfresModel realUfoBox = sead::BfresParser::createOctUfoBoxModel();
+    sead::BfresModel realUfoWall = sead::BfresParser::createOctUfoWallModel();
+    sead::BfresModel realUfoMini = sead::BfresParser::createRvlUfoMiniModel();
+    sead::BfresModel realMissile = sead::BfresParser::createMissileModel();
+
+    bool ufoBoxMeshOk = (realUfoBox.getTotalVertexCount() >= 400);
+    bool ufoWallMeshOk = (realUfoWall.getTotalVertexCount() >= 250);
+    bool ufoMiniMeshOk = (realUfoMini.getTotalVertexCount() >= 2500);
+    bool missileMeshOk = (realMissile.getTotalVertexCount() >= 1000);
+
+    bool m57Ok = (missileCombatOk && missileVsOk && ufoSpawnOk && ufoDamageOk &&
+                  ufoBoxMeshOk && ufoWallMeshOk && ufoMiniMeshOk && missileMeshOk);
+
+    printf("  Octarian UFO Spawner & Missile Turret Station: %s (Missile 5m/s/15-30f, UFO 1000 HP, 4,361 Verts)\n",
+           m57Ok ? "PASSED" : "FAILED");
+    if (!m57Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

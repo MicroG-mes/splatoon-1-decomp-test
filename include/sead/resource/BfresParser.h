@@ -165,6 +165,10 @@ public:
     static BfresModel createJumpPointModel(const char* name = "Obj_JumpPoint");
     static BfresModel createOctavioPilotHouseModel(const char* name = "Obj_RailKingPilotHouse");
     static BfresModel createPropellerBasePlateModel(const char* name = "Lft_PropellerBasePlateRailKing");
+    static BfresModel createOctUfoBoxModel(const char* name = "Lft_OctUfoBox");
+    static BfresModel createOctUfoWallModel(const char* name = "Lft_OctUfoWall");
+    static BfresModel createRvlUfoMiniModel(const char* name = "Lft_RvlUfoMini");
+    static BfresModel createMissileModel(const char* name = "Obj_Missile");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
