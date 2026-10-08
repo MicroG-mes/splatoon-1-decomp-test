@@ -1799,6 +1799,78 @@ BfresModel BfresParser::createSpongeModel(const char* name) {
     return createProceduralCube(name ? name : "Obj_Sponge", 2.0f);
 }
 
+BfresModel BfresParser::createDoorKeyModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_DoorKey00.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_DoorKey00";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_DoorKey00", 0.5f);
+}
+
+BfresModel BfresParser::createTreasureBoxModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_KeyTreasureBox.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_KeyTreasureBox";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_KeyTreasureBox", 1.5f);
+}
+
+BfresModel BfresParser::createIkastoneModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_Ikastone.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_Ikastone";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_Ikastone", 3.0f);
+}
+
+BfresModel BfresParser::createJumpPointModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_JumpPoint.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_JumpPoint";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_JumpPoint", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

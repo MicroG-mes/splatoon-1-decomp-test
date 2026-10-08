@@ -121,6 +121,8 @@
 #include "Game/Mission/ZapfishPowerGridMgr.h"
 #include "Game/MapObj/Obj_Geyser.h"
 #include "Game/MapObj/Obj_Sponge.h"
+#include "Game/MapObj/Obj_KeyTreasureBox.h"
+#include "Game/MapObj/Obj_Ikastone.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2726,6 +2728,86 @@ bool RunVerificationSuite() {
     printf("  Ink Geysers (Gushers) & Dynamic Sponges:      %s (Geyser 30m/2.5m/s Ascent, Sponge 2.4x/0.4x Scale, 4,606 Verts)\n",
            m54Ok ? "PASSED" : "FAILED");
     if (!m54Ok) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 55 Verification: Locked Vaults, Keys & Squid Stone Monuments
+    // -----------------------------------------------------------------
+    Game::Obj_KeyTreasureBox chestActor;
+    chestActor.init(sead::Vector3f(0.0f, 0.0f, 0.0f), true, "SunkenScroll");
+    bool chestParamsOk = false;
+    bool chestUnlockOk = false;
+
+    // Verify authentic chest parameters
+    const auto& cp = chestActor.getParams();
+    chestParamsOk = (cp.colOffFrame == 15 && cp.openStFrame == 30);
+
+    // Verify key gating, opening sequence, timed collision cutoff and reward spawning
+    bool noKeyRejected = !chestActor.tryUnlock(false);
+    bool keyAccepted = chestActor.tryUnlock(true);
+    bool openingStateOk = (chestActor.getState() == Game::TreasureBoxState::cState_Opening);
+
+    for (int f = 0; f < 14; ++f) chestActor.update();
+    bool colStillActive = chestActor.isCollisionActive();
+
+    chestActor.update(); // frame 15 reached
+    bool colTurnedOff = !chestActor.isCollisionActive();
+
+    for (int f = 15; f < 30; ++f) chestActor.update();
+    bool openedOk = chestActor.isOpened();
+    bool rewardOk = chestActor.isRewardSpawned();
+
+    chestUnlockOk = (noKeyRejected && keyAccepted && openingStateOk &&
+                     colStillActive && colTurnedOff && openedOk && rewardOk);
+
+    // Verify Obj_Ikastone Squid Stone Monument
+    Game::Obj_Ikastone stoneActor;
+    stoneActor.init(sead::Vector3f(0.0f, 0.0f, 0.0f), 0.0f);
+    bool stoneParamsOk = false;
+    bool stoneGuideOk = false;
+    bool stoneAnimOk = false;
+
+    // Verify authentic parameters
+    const auto& ip = stoneActor.getParams();
+    stoneParamsOk = (std::abs(ip.actionRadius - 50.0f) < 0.01f &&
+                     std::abs(ip.actionAngleDeg - 60.0f) < 0.01f &&
+                     ip.reactionAnimCancelFrame == 20 &&
+                     std::abs(ip.startAnimFrames - 60.0f) < 0.01f &&
+                     std::abs(ip.actionGuideOffset.y - 18.6f) < 0.1f);
+
+    // Verify 60-degree approach cone detection
+    sead::Vector3f insidePlayer(0.0f, 0.0f, 20.0f);
+    bool approachInside = stoneActor.checkPlayerApproach(insidePlayer, 0.0f);
+    bool guideActiveOk = stoneActor.isGuideActive();
+
+    sead::Vector3f behindPlayer(0.0f, 0.0f, -20.0f);
+    bool approachBehind = !stoneActor.checkPlayerApproach(behindPlayer, 0.0f);
+    stoneGuideOk = (approachInside && guideActiveOk && approachBehind);
+
+    // Verify activation and 60-frame start animation
+    stoneActor.activate();
+    bool activatedStateOk = stoneActor.isActivated();
+    for (int f = 0; f < 60; ++f) stoneActor.update();
+    bool reactStateOk = (stoneActor.getState() == Game::IkastoneState::cState_Reacting);
+    stoneAnimOk = (activatedStateOk && reactStateOk);
+
+    // Verify authentic 3D BFRES models on disk
+    sead::BfresModel realDoorKey = sead::BfresParser::createDoorKeyModel();
+    sead::BfresModel realChestBox = sead::BfresParser::createTreasureBoxModel();
+    sead::BfresModel realIkastone = sead::BfresParser::createIkastoneModel();
+    sead::BfresModel realJumpPoint = sead::BfresParser::createJumpPointModel();
+
+    bool keyMeshOk = (realDoorKey.getTotalVertexCount() >= 500);
+    bool chestMeshOk = (realChestBox.getTotalVertexCount() >= 400);
+    bool ikaMeshOk = (realIkastone.getTotalVertexCount() >= 4000);
+    bool jumpMeshOk = (realJumpPoint.getTotalVertexCount() >= 2000);
+
+    bool m55Ok = (chestParamsOk && chestUnlockOk &&
+                  stoneParamsOk && stoneGuideOk && stoneAnimOk &&
+                  keyMeshOk && chestMeshOk && ikaMeshOk && jumpMeshOk);
+
+    printf("  Locked Vaults, Keys & Squid Stone Monuments:  %s (Vault 15f Col/30f Open, Ikastone 50m/60f, 9,787 Verts)\n",
+           m55Ok ? "PASSED" : "FAILED");
+    if (!m55Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

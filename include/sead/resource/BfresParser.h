@@ -159,6 +159,10 @@ public:
     static BfresModel createGoalPedestalModel(const char* name = "Obj_Goal");
     static BfresModel createGeyserModel(const char* name = "Obj_Geyser");
     static BfresModel createSpongeModel(const char* name = "Obj_Sponge");
+    static BfresModel createDoorKeyModel(const char* name = "Obj_DoorKey00");
+    static BfresModel createTreasureBoxModel(const char* name = "Obj_KeyTreasureBox");
+    static BfresModel createIkastoneModel(const char* name = "Obj_Ikastone");
+    static BfresModel createJumpPointModel(const char* name = "Obj_JumpPoint");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
