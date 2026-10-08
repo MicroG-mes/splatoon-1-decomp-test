@@ -110,6 +110,8 @@
 #include "Game/Player/TankInfoCatalog.h"
 #include "Game/Dojo/DuelPlayerSettingCatalog.h"
 #include "Game/Effect/ELinkDatabase.h"
+#include "Game/Npc/NewsScriptEngine.h"
+#include "Game/MiniGame/MiniGameCatalog.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2349,6 +2351,55 @@ bool RunVerificationSuite() {
     printf("  Rank EXP, Tanks, Dojo & ELink2DB Engine:     %s (20 Ranks, 6 Tanks, 8 Presets, 362 VFX Users Authenticated)\n",
            m48Ok ? "PASSED" : "FAILED");
     if (!m48Ok) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 49 Verification: Squid Sisters News Script & Retro Arcade Mini Games
+    // -----------------------------------------------------------------
+    Game::NewsScriptEngine newsEngine;
+    bool newsLoaded = newsEngine.loadFromSzs("content/Static/NewsScript.szs");
+    bool newsScriptOk = false;
+    if (newsLoaded) {
+        bool scnCountOk = (newsEngine.getScenarioCount() == 36);
+        bool scnTypesOk = newsEngine.hasScenario("FirstBoot") &&
+                          newsEngine.hasScenario("FestivalAnnounceCommon") &&
+                          newsEngine.hasScenario("FestivalEnd") &&
+                          newsEngine.hasScenario("FestivalResultResultShow") &&
+                          newsEngine.hasScenario("FestivalVoteStart");
+
+        const auto* firstBoot = newsEngine.findScenario("FirstBoot");
+        bool firstBootOk = (firstBoot != nullptr && !firstBoot->commands.empty());
+
+        newsScriptOk = (scnCountOk && scnTypesOk && firstBootOk);
+    }
+
+    Game::MiniGameCatalog miniGameCatalog;
+    bool mgLoaded = miniGameCatalog.loadFromSzs("content/Static/MiniGame.szs");
+    bool miniGamesOk = false;
+    if (mgLoaded) {
+        bool vballCountOk = (miniGameCatalog.getVBallStageCount() == 30);
+        bool raceCountOk = (miniGameCatalog.getRaceStageCount() == 25);
+        bool jbCountOk = (miniGameCatalog.getJukeBoxTrackCount() == 27);
+
+        const auto* vb0 = miniGameCatalog.getVBallStage(0);
+        const auto* vb4 = miniGameCatalog.getVBallStage(4);
+        bool vbParamsOk = (vb0 != nullptr && vb0->goalPoint == 3 &&
+                           vb4 != nullptr && vb4->goalPoint == 20);
+
+        const auto* r0 = miniGameCatalog.getRaceStage(0);
+        const auto* r5 = miniGameCatalog.getRaceStage(5);
+        bool raceParamsOk = (r0 != nullptr && r0->timeLimit == 10 && r0->strongRival == "1.1" &&
+                             r5 != nullptr && r5->timeLimit == 17 && r5->strongRival == "1.6");
+
+        const auto* jb0 = miniGameCatalog.getJukeBoxTrack(0);
+        bool jbParamsOk = (jb0 != nullptr && jb0->numNotesEasy == 161);
+
+        miniGamesOk = (vballCountOk && raceCountOk && jbCountOk && vbParamsOk && raceParamsOk && jbParamsOk);
+    }
+
+    bool m49Ok = (newsScriptOk && miniGamesOk);
+    printf("  News Script & Retro Arcade Mini Games:       %s (36 Broadcasts, 30 VBall, 25 Race, 27 JukeBox Tracks)\n",
+           m49Ok ? "PASSED" : "FAILED");
+    if (!m49Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
