@@ -157,6 +157,8 @@ public:
     static BfresModel createMiniZapfishModel(const char* name = "Obj_Namazu");
     static BfresModel createZapfishDummyModel(const char* name = "Obj_NamazuDummy");
     static BfresModel createGoalPedestalModel(const char* name = "Obj_Goal");
+    static BfresModel createGeyserModel(const char* name = "Obj_Geyser");
+    static BfresModel createSpongeModel(const char* name = "Obj_Sponge");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

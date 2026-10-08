@@ -7,43 +7,69 @@
 namespace Game {
 
 enum class SpongeState : u32 {
-    cIdle       = 0,
-    cExpanding  = 1,
-    cShrinking  = 2
+    cState_Neutral = 0,
+    cState_Expanding,
+    cState_Contracting,
+    cState_MaxExpanded,
+    cState_MinContracted
 };
 
+struct SpongeParams {
+    f32 scaleDamageForMax;      // mScaleDamageForMax (2.4)
+    f32 scaleBombCoreDamageK;   // mScaleBombCoreDamageK (2.0)
+    f32 paintingLiftDamage;     // mPaintingLiftDamage (1.0)
+    s32 enemyNoReactFrame;      // mEnemyNoReactFrame (12)
+
+    bool load(const char* paramsPath);
+};
+
+/**
+ * Obj_Sponge
+ * Dynamic ink-reactive inflatable sponge obstacle / platform.
+ * Expands dramatically when inked by friendly ink (up to 2.4x scale)
+ * and contracts when sprayed with enemy ink.
+ */
 class Obj_Sponge : public GambitActor {
 public:
-    static constexpr f32 cMinScale = 1.0f;
-    static constexpr f32 cMaxScale = 3.0f;
-    static constexpr f32 cGrowthStep = 0.25f;
-    static constexpr f32 cShrinkStep = 0.35f;
+    static constexpr f32 cBaseScale = 1.0f;
+    static constexpr f32 cMinScale = 0.4f;
+    static constexpr f32 cBaseRadius = 2.0f;
+    static constexpr f32 cBaseHeight = 1.8f;
 
     Obj_Sponge();
     virtual ~Obj_Sponge() override;
 
     virtual void init() override;
+    void init(const sead::Vector3f& pos, u32 initialTeam = 0);
     virtual void update() override;
-    virtual void draw() override;
 
-    void hitByInk(s32 inkTeam, f32 inkVolume);
+    // Damage / Inking reactions
+    bool applyFriendlyInk(f32 inkAmount);
+    bool applyFriendlyBomb(f32 bombAmount);
+    bool applyEnemyInk(f32 inkAmount);
 
-    f32 getCurrentScale() const { return mCurrentScale; }
-    f32 getTargetScale() const { return mTargetScale; }
-    s32 getOwnerTeam() const { return mOwnerTeam; }
+    // Collision detection with dynamic scaling
+    bool checkPlayerStanding(const sead::Vector3f& playerPos, f32& outGroundY) const;
+
+    // Getters
     SpongeState getState() const { return mState; }
-    const sead::Vector3f& getPosition() const { return mPosition; }
+    f32 getCurrentScale() const { return mCurrentScale; }
+    f32 getMaxScale() const { return mParams.scaleDamageForMax; }
+    f32 getMinScale() const { return cMinScale; }
+    u32 getTeamId() const { return mTeamId; }
+    const SpongeParams& getParams() const { return mParams; }
+    f32 getCurrentRadius() const { return cBaseRadius * mCurrentScale; }
+    f32 getCurrentHeight() const { return cBaseHeight * mCurrentScale; }
+    bool isFullyExpanded() const { return mCurrentScale >= (mParams.scaleDamageForMax - 0.05f); }
 
-    void setPosition(const sead::Vector3f& pos) { mPosition = pos; }
-
-protected:
-    sead::Vector3f mPosition;
+private:
+    SpongeState mState;
+    SpongeParams mParams;
+    u32 mTeamId;
     f32 mCurrentScale;
     f32 mTargetScale;
-    s32 mOwnerTeam; // -1 = neutral/unpainted, 0 = team 0, 1 = team 1
-    SpongeState mState;
-
-    undefined mReserved[0x34];
+    f32 mBreathingPhase;
+    s32 mCooldownTimer;
 };
 
 } // namespace Game

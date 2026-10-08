@@ -1,69 +1,116 @@
 #include "Game/MapObj/Obj_Sponge.h"
+#include "Game/System/AglParameter.h"
+#include <cmath>
+#include <algorithm>
 
 namespace Game {
 
-Obj_Sponge::Obj_Sponge()
-    : mPosition(0.0f, 0.0f, 0.0f),
-      mCurrentScale(cMinScale),
-      mTargetScale(cMinScale),
-      mOwnerTeam(-1),
-      mState(SpongeState::cIdle) {
+bool SpongeParams::load(const char* paramsPath) {
+    scaleDamageForMax = 2.40000010f;
+    scaleBombCoreDamageK = 2.00000000f;
+    paintingLiftDamage = 1.00000000f;
+    enemyNoReactFrame = 12;
+
+    if (paramsPath) {
+        AglParameterObj obj;
+        if (obj.loadFromFile(paramsPath)) {
+            scaleDamageForMax = obj.getFloat("mScaleDamageForMax", scaleDamageForMax);
+            scaleBombCoreDamageK = obj.getFloat("mScaleBombCoreDamageK", scaleBombCoreDamageK);
+            paintingLiftDamage = obj.getFloat("mPaintingLiftDamage", paintingLiftDamage);
+            enemyNoReactFrame = obj.getInt("mEnemyNoReactFrame", enemyNoReactFrame);
+        }
+    }
+
+    return true;
 }
 
-Obj_Sponge::~Obj_Sponge() {
+Obj_Sponge::Obj_Sponge()
+    : mState(SpongeState::cState_Neutral)
+    , mTeamId(0)
+    , mCurrentScale(cBaseScale)
+    , mTargetScale(cBaseScale)
+    , mBreathingPhase(0.0f)
+    , mCooldownTimer(0) {
+    mPosition.set(0.0f, 0.0f, 0.0f);
+    mParams.load("content/Static/Obj_Sponge.params");
 }
+
+Obj_Sponge::~Obj_Sponge() {}
 
 void Obj_Sponge::init() {
-    GambitActor::init();
-    mPosition.set(0.0f, 0.0f, 0.0f);
-    mCurrentScale = cMinScale;
-    mTargetScale = cMinScale;
-    mOwnerTeam = -1;
-    mState = SpongeState::cIdle;
+    init(mPosition, 0);
 }
 
-void Obj_Sponge::hitByInk(s32 inkTeam, f32 inkVolume) {
-    if (mOwnerTeam == -1) {
-        // Unclaimed sponge absorbs ink and takes on team color
-        mOwnerTeam = inkTeam;
-        mTargetScale += cGrowthStep * (inkVolume > 0.0f ? inkVolume : 1.0f);
-        if (mTargetScale > cMaxScale) {
-            mTargetScale = cMaxScale;
-        }
-        mState = SpongeState::cExpanding;
-    } else if (mOwnerTeam == inkTeam) {
-        // Friendly ink expands sponge up to max scale
-        mTargetScale += cGrowthStep * (inkVolume > 0.0f ? inkVolume : 1.0f);
-        if (mTargetScale > cMaxScale) {
-            mTargetScale = cMaxScale;
-        }
-        mState = SpongeState::cExpanding;
-    } else {
-        // Enemy ink shrinks sponge down to min scale
-        mTargetScale -= cShrinkStep * (inkVolume > 0.0f ? inkVolume : 1.0f);
-        if (mTargetScale <= cMinScale) {
-            mTargetScale = cMinScale;
-            mOwnerTeam = -1; // Reset to neutral when completely deflated
-        }
-        mState = SpongeState::cShrinking;
-    }
+void Obj_Sponge::init(const sead::Vector3f& pos, u32 initialTeam) {
+    mPosition = pos;
+    mTeamId = initialTeam;
+    mState = SpongeState::cState_Neutral;
+    mCurrentScale = cBaseScale;
+    mTargetScale = cBaseScale;
+    mBreathingPhase = 0.0f;
+    mCooldownTimer = 0;
+    mParams.load("content/Static/Obj_Sponge.params");
+}
+
+bool Obj_Sponge::applyFriendlyInk(f32 inkAmount) {
+    mTargetScale = std::min(mTargetScale + inkAmount * 0.10f, mParams.scaleDamageForMax);
+    mState = SpongeState::cState_Expanding;
+    return true;
+}
+
+bool Obj_Sponge::applyFriendlyBomb(f32 bombAmount) {
+    f32 effective = bombAmount * 0.10f * mParams.scaleBombCoreDamageK;
+    mTargetScale = std::min(mTargetScale + effective, mParams.scaleDamageForMax);
+    mState = SpongeState::cState_Expanding;
+    return true;
+}
+
+bool Obj_Sponge::applyEnemyInk(f32 inkAmount) {
+    mTargetScale = std::max(mTargetScale - inkAmount * 0.15f, cMinScale);
+    mState = SpongeState::cState_Contracting;
+    return true;
 }
 
 void Obj_Sponge::update() {
-    // Smooth interpolation towards target scale
+    // Smooth scale interpolation toward target
     f32 diff = mTargetScale - mCurrentScale;
-    if (diff > 0.005f) {
-        mCurrentScale += diff * 0.15f;
-    } else if (diff < -0.005f) {
-        mCurrentScale += diff * 0.15f;
-    } else {
+    mCurrentScale += diff * 0.20f;
+
+    if (std::abs(diff) < 0.05f) {
         mCurrentScale = mTargetScale;
-        mState = SpongeState::cIdle;
+        if (mCurrentScale >= (mParams.scaleDamageForMax - 0.05f)) {
+            mState = SpongeState::cState_MaxExpanded;
+        } else if (mCurrentScale <= (cMinScale + 0.05f)) {
+            mState = SpongeState::cState_MinContracted;
+        } else {
+            mState = SpongeState::cState_Neutral;
+        }
+    }
+
+    // Idle rhythmic breathing pulsation when settled
+    mBreathingPhase += 0.05f;
+    if (mBreathingPhase > 6.2831853f) {
+        mBreathingPhase -= 6.2831853f;
     }
 }
 
-void Obj_Sponge::draw() {
-    GambitActor::draw();
+bool Obj_Sponge::checkPlayerStanding(const sead::Vector3f& playerPos, f32& outGroundY) const {
+    f32 dx = playerPos.x - mPosition.x;
+    f32 dz = playerPos.z - mPosition.z;
+    f32 distH = std::sqrt(dx * dx + dz * dz);
+
+    f32 rad = getCurrentRadius();
+    f32 topY = mPosition.y + getCurrentHeight();
+
+    if (distH <= rad) {
+        // Check if player's feet are within vertical proximity of the top surface
+        if (playerPos.y >= (topY - 0.8f) && playerPos.y <= (topY + 1.2f)) {
+            outGroundY = topY;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 } // namespace Game

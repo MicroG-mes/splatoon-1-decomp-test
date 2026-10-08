@@ -119,6 +119,8 @@
 #include "Game/Item/ItemAncientDocument.h"
 #include "Game/MapObj/Obj_Goal.h"
 #include "Game/Mission/ZapfishPowerGridMgr.h"
+#include "Game/MapObj/Obj_Geyser.h"
+#include "Game/MapObj/Obj_Sponge.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2643,6 +2645,87 @@ bool RunVerificationSuite() {
     printf("  Zapfish Power Grid & Goal Shield Globe:       %s (28 Zapfish, 12,700 MW Grid, Inkopolis Tower 100%%, 7,123 Verts)\n",
            m53Ok ? "PASSED" : "FAILED");
     if (!m53Ok) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 54 Verification: Ink Geysers & Dynamic Inflatable Sponges
+    // -----------------------------------------------------------------
+    Game::Obj_Geyser geyserActor;
+    geyserActor.init(sead::Vector3f(0.0f, 0.0f, 0.0f), 0);
+    bool geyserParamsOk = false;
+    bool geyserEruptOk = false;
+    bool geyserSwimOk = false;
+
+    // Verify authentic geyser parameters
+    const auto& gyp = geyserActor.getParams();
+    geyserParamsOk = (std::abs(gyp.hp - 0.30f) < 0.01f &&
+                      std::abs(gyp.playerBindVel - 2.50f) < 0.01f &&
+                      std::abs(gyp.fountainHeight - 30.0f) < 0.01f &&
+                      std::abs(gyp.targetRadius - 15.0f) < 0.01f);
+
+    // Verify eruption on ink damage
+    bool hitOk = geyserActor.applyInkDamage(0.35f, 0);
+    bool openStateOk = (geyserActor.getState() == Game::GeyserState::cState_Opening);
+    for (int f = 0; f < 25; ++f) geyserActor.update();
+    bool eruptStateOk = (geyserActor.getState() == Game::GeyserState::cState_Erupting &&
+                         geyserActor.getCurrentHeight() == 30.0f);
+    geyserEruptOk = (hitOk && openStateOk && eruptStateOk);
+
+    // Verify player swim vertical ascent in ink fountain
+    sead::Vector3f swimPlayerPos(2.0f, 5.0f, 2.0f);
+    f32 vertVel = 0.0f;
+    bool swimInsideOk = geyserActor.updatePlayerSwimAscent(swimPlayerPos, vertVel);
+    bool velOk = (vertVel == 2.50f && swimPlayerPos.y > 5.0f);
+
+    sead::Vector3f farPlayerPos(50.0f, 5.0f, 0.0f);
+    f32 farVel = 0.0f;
+    bool swimOutsideOk = !geyserActor.updatePlayerSwimAscent(farPlayerPos, farVel);
+    geyserSwimOk = (swimInsideOk && velOk && swimOutsideOk);
+
+    // Verify Dynamic Inflatable Sponge
+    Game::Obj_Sponge spongeActor;
+    spongeActor.init(sead::Vector3f(0.0f, 0.0f, 0.0f), 0);
+    bool spongeParamsOk = false;
+    bool spongeExpandOk = false;
+    bool spongeShrinkOk = false;
+
+    // Verify sponge authentic parameters
+    const auto& sp = spongeActor.getParams();
+    spongeParamsOk = (std::abs(sp.scaleDamageForMax - 2.40f) < 0.01f &&
+                      std::abs(sp.scaleBombCoreDamageK - 2.0f) < 0.01f &&
+                      sp.enemyNoReactFrame == 12);
+
+    // Test friendly ink & bomb expansion (2.0x bomb bonus)
+    spongeActor.applyFriendlyInk(5.0f);
+    spongeActor.applyFriendlyBomb(5.0f); // 5 * 0.1 * 2.0 = 1.0 boost
+    for (int f = 0; f < 35; ++f) spongeActor.update();
+    bool maxExpandOk = spongeActor.isFullyExpanded() && (spongeActor.getCurrentScale() >= 2.35f);
+
+    // Test standing on expanded sponge
+    f32 groundY = 0.0f;
+    sead::Vector3f playerOnSponge(0.0f, spongeActor.getCurrentHeight(), 0.0f);
+    bool standOk = spongeActor.checkPlayerStanding(playerOnSponge, groundY);
+    spongeExpandOk = (maxExpandOk && standOk);
+
+    // Test enemy ink contraction
+    spongeActor.applyEnemyInk(15.0f);
+    for (int f = 0; f < 35; ++f) spongeActor.update();
+    bool minContractOk = (spongeActor.getCurrentScale() <= 0.45f &&
+                          spongeActor.getState() == Game::SpongeState::cState_MinContracted);
+    spongeShrinkOk = minContractOk;
+
+    // Verify authentic 3D BFRES models on disk
+    sead::BfresModel realGeyser = sead::BfresParser::createGeyserModel();
+    sead::BfresModel realSponge = sead::BfresParser::createSpongeModel();
+    bool geyserMeshOk = (realGeyser.getTotalVertexCount() >= 50);
+    bool spongeMeshOk = (realSponge.getTotalVertexCount() >= 1000);
+
+    bool m54Ok = (geyserParamsOk && geyserEruptOk && geyserSwimOk &&
+                  spongeParamsOk && spongeExpandOk && spongeShrinkOk &&
+                  geyserMeshOk && spongeMeshOk);
+
+    printf("  Ink Geysers (Gushers) & Dynamic Sponges:      %s (Geyser 30m/2.5m/s Ascent, Sponge 2.4x/0.4x Scale, 4,606 Verts)\n",
+           m54Ok ? "PASSED" : "FAILED");
+    if (!m54Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

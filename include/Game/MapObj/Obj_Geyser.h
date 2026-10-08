@@ -1,56 +1,69 @@
 #pragma once
 
 #include "types.h"
-#include "Game/Actor/GambitActor.h"
 #include "sead/math/seadVector.h"
 
 namespace Game {
 
 enum class GeyserState : u32 {
-    cClosed    = 0,
-    cOpening   = 1,
-    cActive    = 2,
-    cClosing   = 3,
-    cCooldown  = 4
+    cState_Closed = 0,
+    cState_Opening,
+    cState_Erupting,
+    cState_Closing
 };
 
-class Obj_Geyser : public GambitActor {
+struct GeyserParams {
+    f32 hp;                         // mHp (0.30)
+    f32 playerBindVel;              // mPlayerBindVel (2.50)
+    f32 playerBindLerpRate;         // mPlayerBindLerpRate (0.05)
+    f32 bombCorePosOffsetY;         // mBombCorePosOffsetY (5.0)
+    f32 bombCorePaintRadius;        // mBombCorePaintRadius (45.0)
+    f32 bombCoreDamageRadiusNear;   // mBombCoreDamageRadiusNear (40.0)
+    f32 bombCoreDamageNear;         // mBombCoreDamageNear (0.80)
+    f32 targetRadius;               // mTargetRadius (15.0)
+    f32 fountainHeight;             // mUmbrellaColOffHeight (30.0)
+
+    bool load(const char* paramsPath);
+};
+
+/**
+ * Obj_Geyser
+ * Authentic Splatoon 1 Ink Geyser (Gusher) mechanism.
+ * Inking the closed valve triggers an ink eruption providing high vertical mobility.
+ */
+class Obj_Geyser {
 public:
-    static constexpr f32 cDefaultMaxHeight = 6.0f;
-    static constexpr f32 cActivationThreshold = 40.0f;
-    static constexpr s32 cActiveDuration = 300; // 5 seconds at 60fps
-    static constexpr s32 cCooldownDuration = 60;
+    static constexpr s32 cDefaultEruptDuration = 600; // 10 seconds at 60 fps
 
     Obj_Geyser();
-    virtual ~Obj_Geyser() override;
+    ~Obj_Geyser();
 
-    virtual void init() override;
-    virtual void update() override;
-    virtual void draw() override;
+    void init(const sead::Vector3f& pos, u32 teamId = 0);
+    void update();
 
-    void applyInkHit(s32 teamId, f32 amount);
-    void triggerEruption(s32 teamId);
+    // Damage intake
+    bool applyInkDamage(f32 damage, u32 teamId);
 
+    // Swimming interaction: binds player to vertical ascent column
+    bool updatePlayerSwimAscent(sead::Vector3f& playerPos, f32& outVerticalVel) const;
+
+    // Getters
     GeyserState getState() const { return mState; }
     f32 getCurrentHeight() const { return mCurrentHeight; }
-    f32 getMaxHeight() const { return mMaxHeight; }
-    s32 getActiveTeam() const { return mActiveTeam; }
-    bool isClimbable() const { return mState == GeyserState::cActive && mCurrentHeight > 1.0f; }
+    f32 getMaxHeight() const { return mParams.fountainHeight; }
+    u32 getTeamId() const { return mTeamId; }
     const sead::Vector3f& getPosition() const { return mPosition; }
+    const GeyserParams& getParams() const { return mParams; }
+    bool isErupting() const { return mState == GeyserState::cState_Erupting; }
 
-    void setPosition(const sead::Vector3f& pos) { mPosition = pos; }
-    void setMaxHeight(f32 height) { mMaxHeight = height; }
-
-protected:
+private:
     sead::Vector3f mPosition;
     GeyserState mState;
-    s32 mStateTimer;
-    s32 mActiveTeam;
-    f32 mInkAccumulated;
+    GeyserParams mParams;
+    u32 mTeamId;
+    f32 mCurrentDamage;
     f32 mCurrentHeight;
-    f32 mMaxHeight;
-
-    undefined mReserved[0x38];
+    s32 mEruptTimer;
 };
 
 } // namespace Game
