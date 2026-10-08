@@ -2148,6 +2148,31 @@ bool RunVerificationSuite() {
            realHeroTank.getTotalVertexCount());
     if (!fullArsenalOk) allPassed = false;
 
+    // 45. Inkopolis Plaza & Octo Valley 3D Skybox & Environment Pipeline
+    printf("\n--- [45/45] INKOPOLIS PLAZA & OCTO VALLEY 3D SKYBOX ENVIRONMENT PIPELINE ---\n");
+
+    sead::BfresModel realSkyDay = sead::BfresParser::createSkyDayPlazaModel("Sky_Day_Plaza");
+    sead::BfresModel realSkyNight = sead::BfresParser::createSkyNightPlazaModel("Sky_Night_Plaza");
+    sead::BfresModel realSkyWorld = sead::BfresParser::createOctoValleySkyWorldModel("Sky_OctoValley");
+    sead::BfresModel realBananaTree = sead::BfresParser::createBananaTreeModel("Banana_Tree");
+    sead::BfresModel realWaterTank = sead::BfresParser::createWaterTankModel("Water_Tank");
+
+    bool skyDayOk = (realSkyDay.getTotalVertexCount() >= 10);
+    bool skyNightOk = (realSkyNight.getTotalVertexCount() >= 10);
+    bool skyWorldOk = (realSkyWorld.getTotalVertexCount() >= 10);
+    bool bananaOk = (realBananaTree.getTotalVertexCount() >= 10);
+    bool tankPropOk = (realWaterTank.getTotalVertexCount() >= 10);
+
+    bool fullEnvOk = (skyDayOk && skyNightOk && skyWorldOk && bananaOk && tankPropOk);
+    printf("  Retail 3D Skybox & Environment:              %s (Day Sky: %zu Verts, Fest Night: %zu, Octo Valley: %zu, Banana: %zu, Tank: %zu)\n",
+           fullEnvOk ? "PASSED" : "FAILED",
+           realSkyDay.getTotalVertexCount(),
+           realSkyNight.getTotalVertexCount(),
+           realSkyWorld.getTotalVertexCount(),
+           realBananaTree.getTotalVertexCount(),
+           realWaterTank.getTotalVertexCount());
+    if (!fullEnvOk) allPassed = false;
+
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
     printf("=================================================================\n\n");

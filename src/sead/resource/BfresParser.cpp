@@ -1565,6 +1565,96 @@ BfresModel BfresParser::createHeroTankModel(const char* name, u32 teamId) {
     return createProceduralCube(name ? name : "Tnk_Msn0Lv0", 0.8f);
 }
 
+BfresModel BfresParser::createSkyDayPlazaModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/VR_SkyDayPlaza.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "VR_SkyDayPlaza";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralGroundPlane(name ? name : "VR_SkyDayPlaza", 1000.0f, 1000.0f);
+}
+
+BfresModel BfresParser::createSkyNightPlazaModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/VR_SkyNightPlaza.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "VR_SkyNightPlaza";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralGroundPlane(name ? name : "VR_SkyNightPlaza", 1000.0f, 1000.0f);
+}
+
+BfresModel BfresParser::createOctoValleySkyWorldModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/VR_DomeMonitorSkyWorld.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "VR_DomeMonitorSkyWorld";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralGroundPlane(name ? name : "VR_DomeMonitorSkyWorld", 1000.0f, 1000.0f);
+}
+
+BfresModel BfresParser::createBananaTreeModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_TreeBanana.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_TreeBanana";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_TreeBanana", 2.0f);
+}
+
+BfresModel BfresParser::createWaterTankModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_WaterTank.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_WaterTank";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_WaterTank", 2.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

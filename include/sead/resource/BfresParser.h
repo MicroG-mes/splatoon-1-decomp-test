@@ -146,6 +146,11 @@ public:
     static BfresModel createOctobrushModel(const char* name = "Wmn_Roller_BrushNormal", u32 teamId = 0);
     static BfresModel createInkstrikeMonitorModel(const char* name = "Wsp_Tornado_Monitor");
     static BfresModel createHeroTankModel(const char* name = "Tnk_Msn0Lv0", u32 teamId = 0);
+    static BfresModel createSkyDayPlazaModel(const char* name = "VR_SkyDayPlaza");
+    static BfresModel createSkyNightPlazaModel(const char* name = "VR_SkyNightPlaza");
+    static BfresModel createOctoValleySkyWorldModel(const char* name = "VR_DomeMonitorSkyWorld");
+    static BfresModel createBananaTreeModel(const char* name = "Obj_TreeBanana");
+    static BfresModel createWaterTankModel(const char* name = "Obj_WaterTank");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
