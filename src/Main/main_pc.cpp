@@ -106,6 +106,10 @@
 #include "Game/Effect/ParticleBindCatalog.h"
 #include "Game/Plaza/PlazaAvatarCatalog.h"
 #include "Game/Audio/SLinkDatabase.h"
+#include "Game/Player/PlayerRankMgr.h"
+#include "Game/Player/TankInfoCatalog.h"
+#include "Game/Dojo/DuelPlayerSettingCatalog.h"
+#include "Game/Effect/ELinkDatabase.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2265,6 +2269,86 @@ bool RunVerificationSuite() {
     printf("  Audio Sound Link 2 Engine (SLink2DB/XLNK):   %s (883 Named Users, 7,201 Strings, Bullet/Boss Cues Authenticated)\n",
            slinkOk ? "PASSED" : "FAILED");
     if (!slinkOk) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 48 Verification: Player Rank Curve, Ink Tanks, Battle Dojo & ELink2DB
+    // -----------------------------------------------------------------
+    Game::PlayerRankMgr rankMgr;
+    bool rankLoaded = rankMgr.load("content/Static/PlayerRank.byaml");
+    bool rankOk = false;
+    if (rankLoaded) {
+        // Verify EXP thresholds
+        u32 r1Exp = rankMgr.getNextRankExp(1);  // 700
+        u32 r5Exp = rankMgr.getNextRankExp(5);  // 4800
+        u32 r19Exp = rankMgr.getNextRankExp(19); // 30000
+
+        u32 calcRank = 0, currentExp = 0, neededExp = 0;
+        rankMgr.calculateRankFromTotalExp(5000, calcRank, currentExp, neededExp);
+        // At 5000 total EXP: rank should be 6 (threshold 4800 passed), currentExp = 200, neededExp = 1200 (6000 - 4800)
+        bool rankCalcOk = (calcRank == 6 && currentExp == 200 && neededExp == 1200);
+
+        rankOk = (rankMgr.getRankCount() == 20 && r1Exp == 700 && r5Exp == 4800 && r19Exp == 30000 && rankCalcOk);
+    }
+
+    Game::TankInfoCatalog tankCatalog;
+    bool tanksLoaded = tankCatalog.load("content/Static/TankInfo.byaml");
+    bool tanksOk = false;
+    if (tanksLoaded) {
+        const auto* simpleTank = tankCatalog.getTankByName("Tnk_Simple");
+        const auto* heroTankLv0 = tankCatalog.getTankByName("Tnk_Msn0Lv0");
+        const auto* heroTankLv3 = tankCatalog.getTankByName("Tnk_Msn0Lv3");
+        const auto* rivalTank = tankCatalog.getTankByName("Tnk_Rvl00");
+
+        tanksOk = (tankCatalog.getTankCount() == 6 &&
+                   simpleTank != nullptr && simpleTank->id == 0 &&
+                   heroTankLv0 != nullptr && heroTankLv0->id == 1000 &&
+                   heroTankLv3 != nullptr && heroTankLv3->id == 1003 &&
+                   rivalTank != nullptr && rivalTank->id == 2000);
+    }
+
+    Game::DuelPlayerSettingCatalog duelPresetsCatalog;
+    bool dojoLoaded = duelPresetsCatalog.load("content/Static/DuelPlayerSetting.byaml");
+    bool dojoPresetsOk = false;
+    if (dojoLoaded) {
+        const auto* p0 = duelPresetsCatalog.getPreset(0);
+        const auto* p1 = duelPresetsCatalog.getPreset(1);
+        const auto* p2 = duelPresetsCatalog.getPreset(2);
+
+        dojoPresetsOk = (duelPresetsCatalog.getPresetCount() == 8 &&
+                         p0 != nullptr && p0->weaponSet == "Shot_Normal00" && p0->head == "HDP000" &&
+                         p1 != nullptr && p1->weaponSet == "Roller_Normal00" && p1->head == "EYE000" &&
+                         p2 != nullptr && p2->weaponSet == "Charge_Normal00" && p2->head == "NCP000");
+    }
+
+    Game::ELinkDatabase elinkDb;
+    bool elinkLoaded = elinkDb.loadFromSzs("content/Static/ELink2DB.szs");
+    bool elinkOk = false;
+    if (elinkLoaded) {
+        // Assert authentic retail ELink2DB metrics
+        bool eCountOk = (elinkDb.getUserCount() == 362 && elinkDb.getNamedUserCount() == 362);
+
+        // Verify key effect emitter hierarchies
+        auto msBombHier = elinkDb.resolveHierarchy("BulletBombJumpingMissionLv0");
+        bool msBombHierOk = (msBombHier.size() == 3 &&
+                             msBombHier[0] == "BulletBombJumpingMissionLv0" &&
+                             msBombHier[1] == "MSBomb" &&
+                             msBombHier[2] == "Bomb");
+
+        auto normBombHier = elinkDb.resolveHierarchy("BulletBombNormal");
+        bool normBombHierOk = (normBombHier.size() == 2 &&
+                               normBombHier[0] == "BulletBombNormal" &&
+                               normBombHier[1] == "Bomb");
+
+        const auto* suckerBomb = elinkDb.findUser("BulletBombSuckerMissionLv0");
+        bool suckerOk = (suckerBomb != nullptr && suckerBomb->parent == "BulletBombSucker");
+
+        elinkOk = (eCountOk && msBombHierOk && normBombHierOk && suckerOk);
+    }
+
+    bool m48Ok = (rankOk && tanksOk && dojoPresetsOk && elinkOk);
+    printf("  Rank EXP, Tanks, Dojo & ELink2DB Engine:     %s (20 Ranks, 6 Tanks, 8 Presets, 362 VFX Users Authenticated)\n",
+           m48Ok ? "PASSED" : "FAILED");
+    if (!m48Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
