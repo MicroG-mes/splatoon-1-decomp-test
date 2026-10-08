@@ -97,6 +97,7 @@
 #include "Game/Dojo/DuelItemTable.h"
 #include "Game/Map/MapInfoCatalog.h"
 #include "Game/Mission/AmiiboChallengeMgr.h"
+#include "Game/Enemy/RailKingSchedule.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -1770,6 +1771,43 @@ bool RunVerificationSuite() {
     printf("  Amiibo Mission Engine (AmiiboChallengeMgr):  %s (Missions: 60/60, Girl: 20, Boy: 20, Squid: 20, Rewards: YES)\n",
            fullAmiiboOk ? "PASSED" : "FAILED");
     if (!fullAmiiboOk) allPassed = false;
+
+    // 35. DJ Octavio Authentic Boss Attack Timeline & Scheduler (RailKingSchedule.byaml)
+    printf("\n--- [35/35] DJ OCTAVIO BOSS ATTACK TIMELINE & SCHEDULER ---\n");
+
+    Game::RailKingScheduleMgr octavioSchedule;
+    bool scheduleLoaded = octavioSchedule.loadFromByml("content/Static/RailKingSchedule.byaml");
+    bool scheduleTotalOk = (scheduleLoaded && octavioSchedule.getTotalEventCount() == 72);
+
+    // Verify Pattern 0 timeline:
+    // Frame 40: Missile Bullet 1
+    const auto* f40 = octavioSchedule.getEventAtFrame(0, 40);
+    bool f40Ok = (f40 && f40->bullet);
+
+    // Frame 60: Missile Bullet 2
+    const auto* f60 = octavioSchedule.getEventAtFrame(0, 60);
+    bool f60Ok = (f60 && f60->bullet);
+
+    // Frame 240: RallyPunch (Giant Rocket Fist swat-back deflection mechanic)
+    const auto* f240 = octavioSchedule.getEventAtFrame(0, 240);
+    bool f240Ok = (f240 && f240->rallyPunch);
+
+    // Frame 360: PunchL (Left Giant Rocket Fist)
+    const auto* f360 = octavioSchedule.getEventAtFrame(0, 360);
+    bool f360Ok = (f360 && f360->punchL);
+
+    // Verify Next Event lookup at timeline Frame 50 -> returns Frame 60 (Bullet)
+    const auto* nextEvt = octavioSchedule.getNextEvent(0, 50);
+    bool nextEvtOk = (nextEvt && nextEvt->frame == 60 && nextEvt->bullet);
+
+    // Verify Pattern counts across multi-phase boss fight
+    auto p0Events = octavioSchedule.getEventsForPattern(0);
+    bool patternEventsOk = (!p0Events.empty() && octavioSchedule.getMaxPattern() >= 3);
+
+    bool fullScheduleOk = (scheduleTotalOk && f40Ok && f60Ok && f240Ok && f360Ok && nextEvtOk && patternEventsOk);
+    printf("  DJ Octavio Timeline (RailKingSchedule):      %s (Events: 72/72, Phase Patterns: %u, RallyPunch: Frame 240)\n",
+           fullScheduleOk ? "PASSED" : "FAILED", octavioSchedule.getMaxPattern() + 1);
+    if (!fullScheduleOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
