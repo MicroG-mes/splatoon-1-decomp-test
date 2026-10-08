@@ -1604,6 +1604,10 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
     sead::BfresModel inklingSquidModel = sead::BfresParser::createInklingSquidModel("PlayerSquid", s_CurrentPaintTeam);
     sead::BfresModel rivalModel = sead::BfresParser::createOctolingModel("RivalOctoling", 1);
     sead::BfresModel splattershotModel = sead::BfresParser::createSplattershotModel("Weapon_Splattershot", s_CurrentPaintTeam);
+    sead::BfresModel rollerModel = sead::BfresParser::createSplatRollerModel("Weapon_SplatRoller", s_CurrentPaintTeam);
+    sead::BfresModel chargerModel = sead::BfresParser::createSplatChargerModel("Weapon_SplatCharger", s_CurrentPaintTeam);
+    sead::BfresModel krakenModel = sead::BfresParser::createKrakenModel("Weapon_Kraken", s_CurrentPaintTeam);
+    sead::BfresModel rainmakerGoalModel = sead::BfresParser::createRainmakerPedestalModel("Obj_ShrBasketGoal");
     sead::BfresModel bulletModel = sead::BfresParser::createInkBulletModel("InkBullet", 0.35f);
     sead::BfresModel bombModel = sead::BfresParser::createInkBulletModel("SplatBomb", 0.65f);
     sead::BfresModel killerWailModel = sead::BfresParser::createKillerWailModel("Weapon_KillerWail", s_CurrentPaintTeam);
@@ -2500,7 +2504,7 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
             }
         }
 
-        // 3. Render Sighter Target Dummies
+        // 3. Render Sighter Target Dummies & Rainmaker Goal Pedestals
         for (const auto& target : stageTargets) {
             if (target.getState() != Game::TargetState::cPopped) {
                 sead::Matrix44f tw;
@@ -2508,6 +2512,13 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
                 renderer.submitModel(targetDummyModel, tw, 255);
             }
         }
+
+        // Render Rainmaker Base Goal Pedestals (Obj_ShrBasketGoal)
+        sead::Matrix44f goalAlpha, goalBravo;
+        goalAlpha.setTranslation(stageCenter.x - maxSpan * 0.35f, stageCenter.y, stageCenter.z);
+        goalBravo.setTranslation(stageCenter.x + maxSpan * 0.35f, stageCenter.y, stageCenter.z);
+        renderer.submitModel(rainmakerGoalModel, goalAlpha, 0); // Team Alpha Pedestal
+        renderer.submitModel(rainmakerGoalModel, goalBravo, 1); // Team Bravo Pedestal
 
         // 4. Render Playable Inkling Player Character
         sead::Matrix44f playerWorld;
@@ -2520,16 +2531,25 @@ int RunRenderWindow(int maxFrames, const char* stageName) {
         playerWorld.m[1][3] = playerPos.y + (isSquid ? 0.05f : 0.0f);
         playerWorld.m[2][3] = playerPos.z;
 
-        if (isSquid) {
+        if (activeSpecial == 1) {
+            // Kraken Giant Invincible Squid (Wsp_KingSquid)
+            renderer.submitModel(krakenModel, playerWorld, s_CurrentPaintTeam);
+        } else if (isSquid) {
             renderer.submitModel(inklingSquidModel, playerWorld, s_CurrentPaintTeam);
         } else {
             renderer.submitModel(inklingHumanModel, playerWorld, s_CurrentPaintTeam);
-            // Render held weapon (Splattershot) in player's hands
+            // Render active held weapon in player's hands
             sead::Matrix44f weaponWorld = playerWorld;
             weaponWorld.m[0][3] += cy * 0.28f + sy * 0.35f;
             weaponWorld.m[1][3] += 0.85f;
             weaponWorld.m[2][3] += -sy * 0.28f + cy * 0.35f;
-            renderer.submitModel(splattershotModel, weaponWorld, s_CurrentPaintTeam);
+            if (s_ActiveWeaponType == 0) {
+                renderer.submitModel(splattershotModel, weaponWorld, s_CurrentPaintTeam);
+            } else if (s_ActiveWeaponType == 1) {
+                renderer.submitModel(rollerModel, weaponWorld, s_CurrentPaintTeam);
+            } else if (s_ActiveWeaponType == 2) {
+                renderer.submitModel(chargerModel, weaponWorld, s_CurrentPaintTeam);
+            }
         }
 
         // 5. Render Octoling Rival Combatant

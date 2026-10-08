@@ -1048,6 +1048,128 @@ BfresModel BfresParser::createSplattershotModel(const char* name, u32 teamId) {
     return createInkzookaModel(name, teamId);
 }
 
+BfresModel BfresParser::createSplatRollerModel(const char* name, u32 teamId) {
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresParser szsParser;
+    const char* paths[] = { "content/Model/Wmn_Roller_Normal.szs", "content/Model/Wmn_Roller_Heavy.szs" };
+    for (const char* p : paths) {
+        if (szsParser.loadFromSzsFile(p)) {
+            const BfresModel* realModel = szsParser.getModel(0);
+            if (realModel && !realModel->meshes.empty()) {
+                BfresModel copy = *realModel;
+                if (name) copy.name = name;
+                f32 scale = 0.16f;
+                for (auto& m : copy.meshes) {
+                    for (auto& v : m.vertices) {
+                        v.position = v.position * scale;
+                        if (m.name.find("Ink") != std::string::npos || m.name.find("Roll") != std::string::npos) {
+                            v.color = teamColor;
+                        }
+                    }
+                }
+                return copy;
+            }
+        }
+    }
+    return createInkzookaModel(name, teamId);
+}
+
+BfresModel BfresParser::createSplatChargerModel(const char* name, u32 teamId) {
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wmn_Charge_Light.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.18f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                    if (m.name.find("Ink") != std::string::npos || m.name.find("Tank") != std::string::npos) {
+                        v.color = teamColor;
+                    }
+                }
+            }
+            return copy;
+        }
+    }
+    return createSplattershotModel(name, teamId);
+}
+
+BfresModel BfresParser::createKrakenModel(const char* name, u32 teamId) {
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.05f, 0.85f, 0.95f, 1.0f);
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsp_KingSquid.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.22f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                    v.color = teamColor;
+                }
+            }
+            return copy;
+        }
+    }
+    return createInklingSquidModel(name, teamId);
+}
+
+BfresModel BfresParser::createOctotrooperModel(const char* name, u32 teamId) {
+    Vector4f teamColor = (teamId == 0)
+        ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)
+        : Vector4f(0.95f, 0.12f, 0.45f, 1.0f);
+
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_Hohei.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.16f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                    v.color = teamColor;
+                }
+            }
+            return copy;
+        }
+    }
+    return createProceduralCube(name ? name : "Enemy_Octotrooper", 1.2f);
+}
+
+BfresModel BfresParser::createRainmakerPedestalModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_ShrBasketGoal.szs")) {
+        const BfresModel* realModel = szsParser.getModel(0);
+        if (realModel && !realModel->meshes.empty()) {
+            BfresModel copy = *realModel;
+            if (name) copy.name = name;
+            f32 scale = 0.12f;
+            for (auto& m : copy.meshes) {
+                for (auto& v : m.vertices) {
+                    v.position = v.position * scale;
+                }
+            }
+            return copy;
+        }
+    }
+    return createSplatoonCrateModel(name ? name : "Obj_ShrBasketGoal", 3.0f);
+}
+
 BfresModel BfresParser::createOctolingModel(const char* name, u32 teamId) {
     Vector4f teamColor = (teamId == 0)
         ? Vector4f(1.0f, 0.45f, 0.05f, 1.0f)

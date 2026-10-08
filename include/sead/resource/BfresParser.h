@@ -121,6 +121,11 @@ public:
     static BfresModel createKillerWailModel(const char* name = "Weapon_KillerWail", u32 teamId = 0);
     static BfresModel createInkzookaModel(const char* name = "Weapon_Inkzooka", u32 teamId = 0);
     static BfresModel createSplattershotModel(const char* name = "Weapon_Splattershot", u32 teamId = 0);
+    static BfresModel createSplatRollerModel(const char* name = "Weapon_SplatRoller", u32 teamId = 0);
+    static BfresModel createSplatChargerModel(const char* name = "Weapon_SplatCharger", u32 teamId = 0);
+    static BfresModel createKrakenModel(const char* name = "Weapon_Kraken", u32 teamId = 0);
+    static BfresModel createOctotrooperModel(const char* name = "Enemy_Octotrooper", u32 teamId = 1);
+    static BfresModel createRainmakerPedestalModel(const char* name = "Obj_ShrBasketGoal");
     static BfresModel createOctolingModel(const char* name = "RivalOctoling", u32 teamId = 1);
 
     bool loadFromSzsFile(const char* szsFilePath);
