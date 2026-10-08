@@ -105,6 +105,7 @@
 #include "Game/Camera/CameraParamEngine.h"
 #include "Game/Effect/ParticleBindCatalog.h"
 #include "Game/Plaza/PlazaAvatarCatalog.h"
+#include "Game/Audio/SLinkDatabase.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2212,6 +2213,58 @@ bool RunVerificationSuite() {
     printf("  Trap & TurnPlate Ballistics (AglParameter):  %s (Mine OHKO: 180 HP, Presage: 60f, Plate Rot: 1.0, Kraken Vel: 17.5m/s)\n",
            fullGimmickOk ? "PASSED" : "FAILED");
     if (!fullGimmickOk) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 47 Verification: Audio Sound Link 2 Database (SLink2DB / XLNK)
+    // -----------------------------------------------------------------
+    Game::SLinkDatabase slinkDb;
+    bool slinkLoaded = slinkDb.loadFromSzs("content/Static/SLink2DB.szs");
+
+    bool slinkOk = false;
+    if (slinkLoaded) {
+        // Assert authentic retail SLink2DB metrics
+        bool countOk = (slinkDb.getUserCount() == 883 &&
+                        slinkDb.getNamedUserCount() == 883 &&
+                        slinkDb.getTotalStringCount() >= 7000);
+
+        // Verify key player & bullet hierarchies
+        auto chargeHier = slinkDb.resolveHierarchy("BulletPlayerChargeShot");
+        bool chargeHierOk = (chargeHier.size() == 3 &&
+                             chargeHier[0] == "BulletPlayerChargeShot" &&
+                             chargeHier[1] == "BulletPlayerNormalShot" &&
+                             chargeHier[2] == "Bullet");
+
+        auto sprinklerHier = slinkDb.resolveHierarchy("BulletBombSprinkler");
+        bool sprinklerHierOk = (sprinklerHier.size() == 2 &&
+                                sprinklerHier[0] == "BulletBombSprinkler" &&
+                                sprinklerHier[1] == "SubWeapon");
+
+        // Verify sound triggers and cues
+        bool chargeTrigOk = slinkDb.hasTrigger("BulletPlayerChargeShot", "HitSplash") &&
+                            slinkDb.hasTrigger("BulletPlayerChargeShot", "Swish") &&
+                            slinkDb.hasTrigger("BulletPlayerChargeShot", "HiSplashP0FullCharge");
+
+        bool enemyBombTrigOk = slinkDb.hasTrigger("BulletEnemyBomb", "BombAlert") &&
+                               slinkDb.hasTrigger("BulletEnemyBomb", "OnSleep") &&
+                               slinkDb.hasTrigger("BulletEnemyBomb", "Fly_Ctrl");
+
+        // Verify Octo Valley boss audio bindings (DJ Octavio & Octostomp)
+        const auto* octavioFist = slinkDb.findUser("EnemyRailKingPunch");
+        bool octavioOk = (octavioFist != nullptr && octavioFist->parent == "BossRailKing");
+
+        const auto* rallyPunch = slinkDb.findUser("EnemyRailKingRallyPunch");
+        bool rallyOk = (rallyPunch != nullptr && rallyPunch->parent == "EnemyRailKingPunch");
+
+        const auto* stampKing = slinkDb.findUser("EnemyStampKing");
+        bool stampOk = (stampKing != nullptr);
+
+        slinkOk = (countOk && chargeHierOk && sprinklerHierOk &&
+                   chargeTrigOk && enemyBombTrigOk && octavioOk && rallyOk && stampOk);
+    }
+
+    printf("  Audio Sound Link 2 Engine (SLink2DB/XLNK):   %s (883 Named Users, 7,201 Strings, Bullet/Boss Cues Authenticated)\n",
+           slinkOk ? "PASSED" : "FAILED");
+    if (!slinkOk) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
