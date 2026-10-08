@@ -42,6 +42,8 @@ struct RollerWeaponParams {
     f32 splashInitSpeedRandomZ;
     f32 splashInitSpeedRandomX;
     f32 splashDeg;
+    f32 moveSpeed;
+    f32 inkConsumeSplash;
 
     bool load(const char* filePath);
 };
@@ -74,6 +76,23 @@ struct TrapParams {
     f32 playerColRadius;
     u32 timerFrame;
     u32 presageFrame;
+    f32 bombCoreDamageNear;
+    f32 bombCoreRadiusNear;
+    f32 bombCoreDamageMiddle;
+    f32 bombCoreRadiusMiddle;
+    f32 bombCorePaintRadius;
+
+    bool load(const char* filePath);
+};
+
+struct TurnPlateParams {
+    f32 harfLen;
+    f32 colZLen;
+    f32 rotSpeed;
+    f32 colHeight;
+    f32 playerMoveSpeed;
+    u32 lostTargetTime;
+    u32 lockStartTime;
 
     bool load(const char* filePath);
 };

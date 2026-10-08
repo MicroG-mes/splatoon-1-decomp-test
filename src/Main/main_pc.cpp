@@ -2173,6 +2173,46 @@ bool RunVerificationSuite() {
            realWaterTank.getTotalVertexCount());
     if (!fullEnvOk) allPassed = false;
 
+    // 46. Authentic Ink Mine Lethality & TurnPlate Gimmick Ballistics (Trap.params & TurnPlate.params)
+    printf("\n--- [46/46] INK MINE LETHALITY & REVOLVING TURNPLATE GIMMICK BALLISTICS ---\n");
+
+    Game::TrapParams aglTrap;
+    bool aglTrapLoaded = aglTrap.load("content/Static/Trap.params");
+    bool trapHitOk = (aglTrapLoaded && aglTrap.maxHp == 1.0f &&
+                      aglTrap.timerFrame == 600 &&          // 10-second automatic timer
+                      aglTrap.presageFrame == 60 &&         // 1-second detonation presage warning
+                      aglTrap.bombCoreDamageNear > 1.7f &&  // 180 HP OHKO near lethal blast
+                      aglTrap.bombCoreRadiusNear == 40.0f &&
+                      aglTrap.bombCoreDamageMiddle == 0.3f && // 30 HP splash
+                      aglTrap.bombCoreRadiusMiddle == 80.0f &&
+                      aglTrap.bombCorePaintRadius == 50.0f);
+
+    Game::TurnPlateParams aglTurnPlate;
+    bool aglTurnPlateLoaded = aglTurnPlate.load("content/Static/TurnPlate.params");
+    bool aglTurnPlateOk = (aglTurnPlateLoaded && aglTurnPlate.harfLen == 33.0f &&
+                           aglTurnPlate.colZLen == 70.0f &&
+                           aglTurnPlate.rotSpeed == 1.0f &&
+                           aglTurnPlate.colHeight == 10.0f &&
+                           aglTurnPlate.playerMoveSpeed == 2.0f &&
+                           aglTurnPlate.lostTargetTime == 30 &&
+                           aglTurnPlate.lockStartTime == 45);
+
+    // Verify Kraken Roller & Octo Valley Hero Roller ballistic physics
+    Game::RollerWeaponParams krakenRoller, heroRoller;
+    bool krakenRollerLoaded = krakenRoller.load("content/Static/RollerKingSquid.params");
+    bool heroRollerLoaded = heroRoller.load("content/Static/RollerMission.params");
+    bool rollersSpecialOk = (krakenRollerLoaded && heroRollerLoaded &&
+                             krakenRoller.swingLiftFrame == 9 &&
+                             krakenRoller.splashNum == 16 &&
+                             krakenRoller.splashInitSpeedBase == 17.5f && // 17.5 m/s tidal wave
+                             heroRoller.swingLiftFrame == 16 &&
+                             heroRoller.splashNum == 12);
+
+    bool fullGimmickOk = (trapHitOk && aglTurnPlateOk && rollersSpecialOk);
+    printf("  Trap & TurnPlate Ballistics (AglParameter):  %s (Mine OHKO: 180 HP, Presage: 60f, Plate Rot: 1.0, Kraken Vel: 17.5m/s)\n",
+           fullGimmickOk ? "PASSED" : "FAILED");
+    if (!fullGimmickOk) allPassed = false;
+
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
     printf("=================================================================\n\n");

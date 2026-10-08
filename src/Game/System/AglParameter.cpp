@@ -151,6 +151,8 @@ bool RollerWeaponParams::load(const char* filePath) {
     splashInitSpeedRandomZ = obj.getFloat("mSplashInitSpeedRandomZ", 3.0f);
     splashInitSpeedRandomX = obj.getFloat("mSplashInitSpeedRandomX", 0.4f);
     splashDeg = obj.getFloat("mSplashDeg", 2.0f);
+    moveSpeed = obj.getFloat("mMoveSpeed", 1.0f);
+    inkConsumeSplash = obj.getFloat("mInkConsumeSplash", 0.05f);
 
     return true;
 }
@@ -192,6 +194,26 @@ bool TrapParams::load(const char* filePath) {
     playerColRadius = obj.getFloat("mPlayerColRadius", 20.0f);
     timerFrame = static_cast<u32>(obj.getInt("mTimerFrame", 600));
     presageFrame = static_cast<u32>(obj.getInt("mPresageFrame", 60));
+    bombCoreDamageNear = obj.getFloat("mBombCoreDamageNear", 1.8f);
+    bombCoreRadiusNear = obj.getFloat("mBombCoreRadiusNear", 40.0f);
+    bombCoreDamageMiddle = obj.getFloat("mBombCoreDamageMiddle", 0.3f);
+    bombCoreRadiusMiddle = obj.getFloat("mBombCoreRadiusMiddle", 80.0f);
+    bombCorePaintRadius = obj.getFloat("mBombCorePaintRadius", 50.0f);
+
+    return true;
+}
+
+bool TurnPlateParams::load(const char* filePath) {
+    AglParameterObj obj;
+    if (!obj.loadFromFile(filePath)) return false;
+
+    harfLen = obj.getFloat("mHarfLen", 33.0f);
+    colZLen = obj.getFloat("mColZLen", 70.0f);
+    rotSpeed = obj.getFloat("mRotSpeed", 1.0f);
+    colHeight = obj.getFloat("mColHeight", 10.0f);
+    playerMoveSpeed = obj.getFloat("mPlayerMoveSpeed", 2.0f);
+    lostTargetTime = static_cast<u32>(obj.getInt("mLostTargetTime", 30));
+    lockStartTime = static_cast<u32>(obj.getInt("mLockStartTime", 45));
 
     return true;
 }
