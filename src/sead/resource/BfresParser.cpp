@@ -1871,6 +1871,42 @@ BfresModel BfresParser::createJumpPointModel(const char* name) {
     return createProceduralCube(name ? name : "Obj_JumpPoint", 1.0f);
 }
 
+BfresModel BfresParser::createOctavioPilotHouseModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_RailKingPilotHouse.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_RailKingPilotHouse";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_RailKingPilotHouse", 3.0f);
+}
+
+BfresModel BfresParser::createPropellerBasePlateModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Lft_PropellerBasePlateRailKing.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Lft_PropellerBasePlateRailKing";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Lft_PropellerBasePlateRailKing", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

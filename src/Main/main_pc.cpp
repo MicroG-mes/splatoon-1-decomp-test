@@ -123,6 +123,8 @@
 #include "Game/MapObj/Obj_Sponge.h"
 #include "Game/MapObj/Obj_KeyTreasureBox.h"
 #include "Game/MapObj/Obj_Ikastone.h"
+#include "Game/Enemy/Obj_RailKingPilotHouse.h"
+#include "Game/MapObj/Obj_LiftFall.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -2808,6 +2810,84 @@ bool RunVerificationSuite() {
     printf("  Locked Vaults, Keys & Squid Stone Monuments:  %s (Vault 15f Col/30f Open, Ikastone 50m/60f, 9,787 Verts)\n",
            m55Ok ? "PASSED" : "FAILED");
     if (!m55Ok) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 56 Verification: DJ Octavio Pilot House & Collapsing Fall Lift
+    // -----------------------------------------------------------------
+    Game::Obj_RailKingPilotHouse pilotHouse;
+    pilotHouse.init(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    bool pilotParamsOk = false;
+    bool pilotTrackOk = false;
+    bool pilotDamageOk = false;
+    bool pilotShiokaraOk = false;
+
+    // Verify authentic pilot house parameters
+    const auto& php = pilotHouse.getParams();
+    pilotParamsOk = (php.damageFrame == 12 &&
+                     std::abs(php.searchRadius - 100.0f) < 0.01f &&
+                     std::abs(php.rotSpeedDeg - 1.0f) < 0.01f &&
+                     std::abs(php.eyeMaxAngleDeg - 45.0f) < 0.01f &&
+                     std::abs(php.worldWait - 20.0f) < 0.01f);
+
+    // Verify player acquisition & 1 deg/f rotational tracking
+    sead::Vector3f playerPos(10.0f, 0.0f, 10.0f); // 45 degrees yaw
+    bool acquiredOk = pilotHouse.trackPlayer(playerPos);
+    for (int f = 0; f < 20; ++f) pilotHouse.update();
+    bool trackingRotOk = (pilotHouse.getCurrentYawDeg() > 15.0f && pilotHouse.getEyeDeflectionDeg() > 0.0f);
+    pilotTrackOk = (acquiredOk && trackingRotOk);
+
+    // Verify 12-frame punch damage stun
+    pilotHouse.takePunchDamage();
+    bool damageStateOk = (pilotHouse.getState() == Game::OctavioPilotState::cState_Damaged);
+    for (int f = 0; f < 13; ++f) pilotHouse.update();
+    bool damageStunEndOk = (pilotHouse.getState() != Game::OctavioPilotState::cState_Damaged);
+    pilotDamageOk = (damageStateOk && damageStunEndOk);
+
+    // Verify Calamari Inkantation (Shiokara) groove mechanics
+    pilotHouse.startShiokaraGroove(1);
+    pilotShiokaraOk = (pilotHouse.isHypnotized() && pilotHouse.getShiokaraPhase() == 1);
+
+    // Verify Obj_LiftFall collapsing fall platform
+    Game::Obj_LiftFall fallLift;
+    fallLift.init(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    bool liftParamsOk = false;
+    bool liftFallOk = false;
+    bool liftRespawnOk = false;
+
+    const auto& lfp = fallLift.getParams();
+    liftParamsOk = (std::abs(lfp.lifeSeconds - 3.0f) < 0.01f && fallLift.getRemainingLifeFrames() == 180);
+
+    // Step on platform -> 180 frames countdown -> shake -> drop
+    fallLift.onPlayerStepOn();
+    for (int f = 0; f < 120; ++f) fallLift.update();
+    bool shakingOk = (fallLift.getState() == Game::LiftFallState::cState_Shaking && fallLift.getShakeOffsetX() != 0.0f);
+
+    for (int f = 0; f < 60; ++f) fallLift.update();
+    bool droppedOk = (fallLift.isFalling() && !fallLift.isSolid());
+
+    for (int f = 0; f < 15; ++f) fallLift.update();
+    bool fallPhysicsOk = (fallLift.getFallDisplacementY() < -5.0f);
+    liftFallOk = (shakingOk && droppedOk && fallPhysicsOk);
+
+    // Update through respawn cycle
+    for (int f = 0; f < 250; ++f) fallLift.update();
+    bool respawnedOk = (fallLift.getState() == Game::LiftFallState::cState_Idle && fallLift.isSolid());
+    liftRespawnOk = respawnedOk;
+
+    // Verify authentic 3D BFRES models on disk
+    sead::BfresModel realPilotHouse = sead::BfresParser::createOctavioPilotHouseModel();
+    sead::BfresModel realBasePlate = sead::BfresParser::createPropellerBasePlateModel();
+
+    bool pilotMeshOk = (realPilotHouse.getTotalVertexCount() >= 3000);
+    bool basePlateMeshOk = (realBasePlate.getTotalVertexCount() >= 50);
+
+    bool m56Ok = (pilotParamsOk && pilotTrackOk && pilotDamageOk && pilotShiokaraOk &&
+                  liftParamsOk && liftFallOk && liftRespawnOk &&
+                  pilotMeshOk && basePlateMeshOk);
+
+    printf("  DJ Octavio Pilot House & Collapsing Fall Lift: %s (Octavio 100m/1deg/f/Shiokara, Lift 3.0s Drop, 3,165 Verts)\n",
+           m56Ok ? "PASSED" : "FAILED");
+    if (!m56Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

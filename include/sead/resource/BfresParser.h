@@ -163,6 +163,8 @@ public:
     static BfresModel createTreasureBoxModel(const char* name = "Obj_KeyTreasureBox");
     static BfresModel createIkastoneModel(const char* name = "Obj_Ikastone");
     static BfresModel createJumpPointModel(const char* name = "Obj_JumpPoint");
+    static BfresModel createOctavioPilotHouseModel(const char* name = "Obj_RailKingPilotHouse");
+    static BfresModel createPropellerBasePlateModel(const char* name = "Lft_PropellerBasePlateRailKing");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
