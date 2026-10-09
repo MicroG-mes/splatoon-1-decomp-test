@@ -198,6 +198,8 @@ public:
     static BfresModel createSwitchPaintModel(const char* name = "Obj_SwitchPaint");
     static BfresModel createColorConeModel(const char* name = "Obj_ColorCone");
     static BfresModel createSquidGuardModel(const char* name = "Obj_SquidGuard");
+    static BfresModel createBossWeakPointModel(const char* name = "Enm_BossWeakPoint");
+    static BfresModel createOctLegModel(const char* name = "Enm_OctLeg");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

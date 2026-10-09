@@ -149,6 +149,8 @@
 #include "Game/MapObj/Obj_SwitchPaint.h"
 #include "Game/MapObj/Obj_ColorCone.h"
 #include "Game/MapObj/Obj_SquidGuard.h"
+#include "Game/Enemy/Enm_BossWeakPoint.h"
+#include "Game/Enemy/Enm_OctLeg.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -3853,6 +3855,91 @@ bool RunVerificationSuite() {
     printf("  Paint Switches, Cones & Security Barriers:     %s (Ink Triggers, Wobble Spring, Rattle Fence, 1,110 Verts)\n",
            m66Ok ? "PASSED" : "FAILED");
     if (!m66Ok) allPassed = false;
+
+    // --- [67/67] OCTO VALLEY BOSS TENTACLE EXTREMITIES & WEAK POINT CORE ---
+    printf("\n--- [67/67] OCTO VALLEY BOSS TENTACLE EXTREMITIES & WEAK POINT CORE ---\n");
+
+    // 1. Enm_BossWeakPoint (Campaign Boss Weak Point Core)
+    Game::Enm_BossWeakPoint bossWeakPoint;
+    bossWeakPoint.init();
+    bossWeakPoint.vfunc_3();
+    bossWeakPoint.vfunc_5();
+    bossWeakPoint.vfunc_47();
+
+    bool bwpInitOk = (bossWeakPoint.getState() == Game::BossWeakPointState::cState_Disappear &&
+                      bossWeakPoint.getHealth() == 100.0f);
+
+    // Boss staggers, weak point emerges
+    bossWeakPoint.appear(sead::Vector3f(0.0f, 15.0f, 0.0f));
+    for (int f = 0; f < 15; ++f) bossWeakPoint.update();
+    bool bwpAppearOk = (bossWeakPoint.getState() == Game::BossWeakPointState::cState_Wait &&
+                        bossWeakPoint.isVulnerable());
+
+    // Player inks the weak point (damage accumulation + elastic pulsating)
+    bool bwpHit1 = bossWeakPoint.hitWithInk(35.0f, sead::Vector3f(0.0f, 0.0f, 1.0f));
+    bossWeakPoint.update();
+    bool bwpPulseOk = (bossWeakPoint.getHealth() == 65.0f && bossWeakPoint.getPulseScale() > 1.0f);
+
+    // Lethal ink damage -> cState_Die and splat count
+    bool bwpHit2 = bossWeakPoint.hitWithInk(70.0f, sead::Vector3f(0.0f, 0.0f, 1.0f));
+    bossWeakPoint.update();
+    bool bwpDieOk = (bossWeakPoint.isDefeated() && bossWeakPoint.getSplatsTriggered() == 1);
+
+    bool bossWeakPointOk = (bwpInitOk && bwpAppearOk && bwpHit1 && bwpPulseOk && bwpHit2 && bwpDieOk);
+
+    // 2. Enm_OctLeg (Octo Valley Boss Giant Tentacle Extremity)
+    Game::Enm_OctLeg octLeg;
+    octLeg.init();
+    octLeg.vfunc_3();
+    octLeg.vfunc_5();
+    octLeg.vfunc_47();
+
+    bool legInitOk = (octLeg.getState() == Game::OctLegState::cState_Idle &&
+                      octLeg.getHealth() == 180.0f && octLeg.hasArmor());
+
+    // Tentacle eyesight detection cone (Radius 300m, Height 200m)
+    bool sightNear = octLeg.checkSight(sead::Vector3f(50.0f, 30.0f, 50.0f));
+    bool sightFar = octLeg.checkSight(sead::Vector3f(500.0f, 30.0f, 50.0f));
+    bool legSightOk = (sightNear && !sightFar);
+
+    // Ground slam shockwave emission (160m radius)
+    octLeg.triggerSlam();
+    bool slamTriggerOk = octLeg.isShockWaveActive();
+    for (int f = 0; f < 10; ++f) octLeg.update();
+    bool slamProgressOk = (octLeg.getShockWaveProgress() > 50.0f);
+
+    // Segmented joint IK check (body4..body7 heights)
+    bool jointOk = (octLeg.getSegmentPos(0).y < octLeg.getSegmentPos(1).y &&
+                    octLeg.getSegmentPos(1).y < octLeg.getSegmentPos(2).y &&
+                    octLeg.getSegmentPos(2).y < octLeg.getSegmentPos(3).y);
+
+    // Frontal shield deflection
+    bool shieldDeflected = false;
+    bool dmgFront = octLeg.receiveDamage(50.0f, sead::Vector3f(0.0f, 10.0f, 8.0f), sead::Vector3f(0.0f, 0.0f, -1.0f), shieldDeflected);
+    bool shieldOk = (!dmgFront && shieldDeflected && octLeg.getHealth() == 180.0f);
+
+    // Rear vulnerable damage & armor break (sheds Enm_Break00/01/02)
+    bool dmgRear = octLeg.receiveDamage(100.0f, sead::Vector3f(0.0f, 10.0f, -5.0f), sead::Vector3f(0.0f, 0.0f, 1.0f), shieldDeflected);
+    bool armorBreakOk = (dmgRear && !shieldDeflected && !octLeg.hasArmor() &&
+                         octLeg.getState() == Game::OctLegState::cState_ArmorBreak);
+
+    // Lethal splat
+    bool dmgLethal = octLeg.receiveDamage(100.0f, sead::Vector3f(0.0f, 10.0f, 0.0f), sead::Vector3f(0.0f, 0.0f, 1.0f), shieldDeflected);
+    bool legDieOk = (dmgLethal && octLeg.isDefeated());
+
+    bool octLegOk = (legInitOk && legSightOk && slamTriggerOk && slamProgressOk && jointOk && shieldOk && armorBreakOk && legDieOk);
+
+    // 3. Authentic Retail BFRES Models on Disk
+    sead::BfresModel realBossWeakPointMdl = sead::BfresParser::createBossWeakPointModel();
+    sead::BfresModel realOctLegMdl = sead::BfresParser::createOctLegModel();
+
+    bool realBossModelOk = (realBossWeakPointMdl.getTotalVertexCount() == 961 &&
+                            realOctLegMdl.getTotalVertexCount() == 10877);
+
+    bool m67Ok = (bossWeakPointOk && octLegOk && realBossModelOk);
+    printf("  Boss Tentacle Extremities & Weak Point Core:   %s (Shockwaves, Shield Deflect, 11,838 Verts)\n",
+           m67Ok ? "PASSED" : "FAILED");
+    if (!m67Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

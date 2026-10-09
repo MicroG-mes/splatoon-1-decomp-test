@@ -2501,6 +2501,42 @@ BfresModel BfresParser::createSquidGuardModel(const char* name) {
     return createProceduralCube(name ? name : "Obj_SquidGuard", 1.0f);
 }
 
+BfresModel BfresParser::createBossWeakPointModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_BossWeakPoint.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Enm_BossWeakPoint";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Enm_BossWeakPoint", 1.0f);
+}
+
+BfresModel BfresParser::createOctLegModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_OctLeg.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Enm_OctLeg";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Enm_OctLeg", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");
