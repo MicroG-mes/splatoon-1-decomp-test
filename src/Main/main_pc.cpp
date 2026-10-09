@@ -163,6 +163,9 @@
 #include "Game/Enemy/Enm_TakopterTornado.h"
 #include "Game/MapObj/Obj_PaintLiftTurn.h"
 #include "Game/MapObj/Obj_PaintLiftSlide.h"
+#include "Game/Enemy/Enm_TakolienSpeedUp.h"
+#include "Game/Enemy/Enm_Cleaner.h"
+#include "Game/Enemy/Enm_TakopterBomb.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -4357,6 +4360,106 @@ bool RunVerificationSuite() {
     printf("  Octocopter Tornado & Moving Rail Platforms:          %s (Air Vortex, Wire Grating, 11,695 Verts)\n",
            m71Ok ? "PASSED" : "FAILED");
     if (!m71Ok) allPassed = false;
+
+    // --- [72/72] ELITE KELP OCTOLINGS, SQUEE-G CLEANERS & AERIAL BOMBERS ---
+    printf("\n--- [72/72] ELITE KELP OCTOLINGS, SQUEE-G CLEANERS & AERIAL BOMBERS ---\n");
+
+    // 1. Enm_TakolienSpeedUp (Elite Kelp Octoling)
+    Game::Enm_TakolienSpeedUp kelpOcto;
+    kelpOcto.init();
+    kelpOcto.setPosition(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    kelpOcto.vfunc_1();
+
+    bool eliteInitOk = (kelpOcto.hasKelpEquipped() &&
+                        kelpOcto.getState() == Game::TakolienState::cPatrol &&
+                        kelpOcto.getHp() == 100.0f);
+
+    // Speed multiplier & elite swim speed check
+    bool eliteSpeedOk = (Game::Enm_TakolienSpeedUp::cSpeedMultiplier == 1.35f &&
+                         Game::Enm_TakolienSpeedUp::cEliteSwimSpeed > Game::Enm_Takolien::cOctoSwimSpeed);
+
+    // Special weapon charge and Killer Wail deployment
+    for (int f = 0; f < 205; ++f) {
+        kelpOcto.updateEliteAi(sead::Vector3f(0.0f, 0.0f, 30.0f), false);
+    }
+    bool wailReady = kelpOcto.isSpecialReady();
+    bool wailDeployed = kelpOcto.tryDeployKillerWail(sead::Vector3f(0.0f, 0.0f, 50.0f));
+    bool eliteSpecialOk = (wailReady && wailDeployed && kelpOcto.isSpecialDeploying());
+
+    bool octoEliteOk = (eliteInitOk && eliteSpeedOk && eliteSpecialOk);
+
+    // 2. Enm_Cleaner (Squee-G Industrial Floor Cleaner)
+    Game::Enm_Cleaner cleaner;
+    cleaner.init();
+    cleaner.spawn(sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(1.0f, 0.0f, 0.0f));
+    cleaner.vfunc_3();
+    cleaner.vfunc_5();
+
+    bool clInitOk = (cleaner.getState() == Game::CleanerState::cState_Patrol &&
+                     cleaner.getHealth() == 100.0f && cleaner.getTotalCleanedInk() == 0.0f);
+
+    // Paint vacuum absorption & squeegee brush spin
+    cleaner.absorbInk(35.0f);
+    cleaner.vfunc_37();
+    bool clCleanOk = (cleaner.isCleaning() && cleaner.getTotalCleanedInk() == 35.0f &&
+                      cleaner.getBrushRotation() > 0.0f);
+
+    // Wall collision bump & 180-degree turnaround
+    cleaner.vfunc_11();
+    bool clTurnOk = (cleaner.getState() == Game::CleanerState::cState_Turn);
+    for (int f = 0; f < 18; ++f) cleaner.vfunc_7();
+    bool clResumeOk = (cleaner.getState() == Game::CleanerState::cState_Patrol &&
+                       cleaner.getPosition().x < 0.0f);
+
+    // Armored metal body deflecting attacks
+    bool clDeflected = false;
+    cleaner.hitWithInk(40.0f, clDeflected);
+    bool clArmorOk = (clDeflected && cleaner.getHealth() == 100.0f);
+
+    bool octoCleanerOk = (clInitOk && clCleanOk && clTurnOk && clResumeOk && clArmorOk);
+
+    // 3. Enm_TakopterBomb (Octobomber Aerial Minion)
+    Game::Enm_TakopterBomb bomber;
+    bomber.init();
+    bomber.setPosition(sead::Vector3f(0.0f, 100.0f, 0.0f));
+    bomber.vfunc_3();
+    bomber.vfunc_5();
+
+    bool bmInitOk = (bomber.getState() == Game::TakopterBombState::cState_Wait &&
+                     bomber.getHealth() == 140.0f && bomber.isAirborne());
+
+    // Aerial tracking eyesight check (cEyesightRadius = 280.0m)
+    bool bmSightNear = bomber.checkSight(sead::Vector3f(0.0f, 100.0f, 150.0f));
+    bool bmSightFar  = bomber.checkSight(sead::Vector3f(0.0f, 100.0f, 350.0f));
+    bool bmSightOk = (bmSightNear && !bmSightFar);
+
+    // Splat Bomb release
+    bomber.vfunc_47();
+    bool bmDropOk = (bomber.getState() == Game::TakopterBombState::cState_BombDrop &&
+                     bomber.getDroppedBombCount() == 1);
+    for (int f = 0; f < 20; ++f) bomber.vfunc_7();
+    bool bmWaitOk = (bomber.getState() == Game::TakopterBombState::cState_Wait);
+
+    // Lethal defeat
+    bomber.takeDamage(140.0f);
+    bool bmDieOk = (bomber.isDefeated() && bomber.getState() == Game::TakopterBombState::cState_Die &&
+                    bomber.getHealth() == 0.0f);
+
+    bool octoBomberOk = (bmInitOk && bmSightOk && bmDropOk && bmWaitOk && bmDieOk);
+
+    // 4. Authentic Retail BFRES Models on Disk (21,851 vertices total)
+    sead::BfresModel realTakolienSMdl = sead::BfresParser::createTakolienSModel();
+    sead::BfresModel realCleanerMdl = sead::BfresParser::createCleanerModel();
+    sead::BfresModel realBomberMdl = sead::BfresParser::createTakopterBombModel();
+
+    bool realM72ModelsOk = (realTakolienSMdl.getTotalVertexCount() == 8901 &&
+                            realCleanerMdl.getTotalVertexCount() == 1339 &&
+                            realBomberMdl.getTotalVertexCount() == 11611);
+
+    bool m72Ok = (octoEliteOk && octoCleanerOk && octoBomberOk && realM72ModelsOk);
+    printf("  Elite Kelp Octolings, Squee-G & Aerial Bombers:      %s (1.35x Speed, Killer Wail, 21,851 Verts)\n",
+           m72Ok ? "PASSED" : "FAILED");
+    if (!m72Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

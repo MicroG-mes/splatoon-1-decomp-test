@@ -2753,6 +2753,60 @@ BfresModel BfresParser::createWireNettingPlate00Model(const char* name) {
     return createProceduralCube(name ? name : "Lft_WireNettingPlate00", 1.0f);
 }
 
+BfresModel BfresParser::createTakolienSModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_TakolienS.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Enm_TakolienS";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Enm_TakolienS", 1.0f);
+}
+
+BfresModel BfresParser::createCleanerModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_Cleaner.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Enm_Cleaner";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Enm_Cleaner", 1.0f);
+}
+
+BfresModel BfresParser::createTakopterBombModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_TakopterBomb.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Enm_TakopterBomb";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Enm_TakopterBomb", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

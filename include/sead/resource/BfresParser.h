@@ -212,6 +212,9 @@ public:
     static BfresModel createTakopterTornadoModel(const char* name = "Enm_TakopterTornado");
     static BfresModel createTurnLift00Model(const char* name = "Lft_TurnLift00");
     static BfresModel createWireNettingPlate00Model(const char* name = "Lft_WireNettingPlate00");
+    static BfresModel createTakolienSModel(const char* name = "Enm_TakolienS");
+    static BfresModel createCleanerModel(const char* name = "Enm_Cleaner");
+    static BfresModel createTakopterBombModel(const char* name = "Enm_TakopterBomb");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
