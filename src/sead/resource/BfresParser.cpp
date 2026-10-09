@@ -2699,6 +2699,60 @@ BfresModel BfresParser::createBox01LModel(const char* name) {
     return createProceduralCube(name ? name : "Obj_Box01L", 1.0f);
 }
 
+BfresModel BfresParser::createTakopterTornadoModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_TakopterTornado.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Enm_TakopterTornado";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Enm_TakopterTornado", 1.0f);
+}
+
+BfresModel BfresParser::createTurnLift00Model(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Lft_TurnLift00.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Lft_TurnLift00";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Lft_TurnLift00", 1.0f);
+}
+
+BfresModel BfresParser::createWireNettingPlate00Model(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Lft_WireNettingPlate00.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Lft_WireNettingPlate00";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Lft_WireNettingPlate00", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

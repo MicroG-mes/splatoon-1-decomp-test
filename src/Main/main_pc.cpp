@@ -160,6 +160,9 @@
 #include "Game/Enemy/Enm_Stamp.h"
 #include "Game/MapObj/Obj_Box00L.h"
 #include "Game/MapObj/Obj_Box00S.h"
+#include "Game/Enemy/Enm_TakopterTornado.h"
+#include "Game/MapObj/Obj_PaintLiftTurn.h"
+#include "Game/MapObj/Obj_PaintLiftSlide.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -4242,6 +4245,118 @@ bool RunVerificationSuite() {
     printf("  Octostamp Minions & Breakable Supply Crates:         %s (Face Armor, Chance State, 6,574 Verts)\n",
            m70Ok ? "PASSED" : "FAILED");
     if (!m70Ok) allPassed = false;
+
+    // --- [71/71] OCTOCOPTER TORNADO VARIANT & FLOATING PLATFORM RAILS ---
+    printf("\n--- [71/71] OCTOCOPTER TORNADO VARIANT & FLOATING PLATFORM RAILS ---\n");
+
+    // 1. Enm_TakopterTornado (Octocopter Tornado Variant)
+    Game::Enm_TakopterTornado takopter;
+    takopter.init();
+    takopter.setPosition(sead::Vector3f(0.0f, 90.0f, 0.0f));
+    takopter.vfunc_3();
+    takopter.vfunc_5();
+    takopter.vfunc_7();
+    takopter.vfunc_47();
+
+    bool ttInitOk = (takopter.getState() == Game::TakopterTornadoState::cState_Wait &&
+                     takopter.getHealth() == 40.0f && takopter.isAirborne());
+
+    // Eyesight radius check (cEyesightRadius = 3000.0m)
+    bool ttSightNear = takopter.checkSight(sead::Vector3f(0.0f, 90.0f, 1500.0f));
+    bool ttSightFar  = takopter.checkSight(sead::Vector3f(0.0f, 90.0f, 4000.0f));
+    bool ttSightOk = (ttSightNear && !ttSightFar);
+
+    // Propeller spinning & natural hover oscillation
+    for (int f = 0; f < 10; ++f) takopter.update();
+    bool ttHoverOk = (takopter.getPropellerAngle() > 0.0f);
+
+    // Tornado vortex attack sequence
+    takopter.triggerTornadoAttack();
+    bool ttAtkStOk = (takopter.getState() == Game::TakopterTornadoState::cState_Attack);
+    for (int f = 0; f < 25; ++f) takopter.update();
+    bool ttAtkEndOk = (takopter.getState() == Game::TakopterTornadoState::cState_Wait);
+
+    // Ink damage & defeat pop
+    takopter.hitWithInk(20.0f, sead::Vector3f(0.0f, 0.0f, 1.0f));
+    bool ttHitOk = (takopter.getHealth() == 20.0f);
+    takopter.hitWithInk(20.0f, sead::Vector3f(0.0f, 0.0f, 1.0f));
+    bool ttDieOk = (takopter.isDefeated() && takopter.getHealth() == 0.0f);
+
+    bool takopterTornadoOk = (ttInitOk && ttSightOk && ttHoverOk && ttAtkStOk && ttAtkEndOk && ttHitOk && ttDieOk);
+
+    // 2. Obj_PaintLiftTurn (Revolving Turntable Platform)
+    Game::Obj_PaintLiftTurn turnLift;
+    turnLift.init();
+    turnLift.setPosition(sead::Vector3f(0.0f, 10.0f, 0.0f));
+    turnLift.vfunc_3();
+    turnLift.vfunc_5();
+    turnLift.vfunc_7();
+
+    bool tlInitOk = (turnLift.getState() == Game::TurnLiftState::cState_Idle &&
+                     turnLift.getCurrentAngle() == 0.0f && !turnLift.isRotating());
+
+    // Passenger deck bounds check (12m radius)
+    bool tlPassOn  = turnLift.checkPassenger(sead::Vector3f(5.0f, 10.5f, 5.0f));
+    bool tlPassOff = turnLift.checkPassenger(sead::Vector3f(25.0f, 10.5f, 0.0f));
+    bool tlPassOk = (tlPassOn && !tlPassOff);
+
+    // Ink impulse applies torque & accelerates rotation (vfunc_11)
+    turnLift.vfunc_11(); // adds 2.0 torque
+    turnLift.applyInkTorque(2.0f); // total 4.0 torque
+    bool tlSpinOk = (turnLift.isRotating() && turnLift.getAngularVelocity() == 4.0f);
+
+    // Rotation advances and dampens to closest detent alignment
+    for (int f = 0; f < 45; ++f) turnLift.update();
+    bool tlRotOk = (turnLift.getCurrentAngle() > 0.0f);
+    for (int f = 0; f < 75; ++f) turnLift.update();
+    turnLift.vfunc_30();
+    bool tlDetentOk = (turnLift.getState() == Game::TurnLiftState::cState_Idle ||
+                       turnLift.getState() == Game::TurnLiftState::cState_DetentPause);
+
+    bool paintLiftTurnOk = (tlInitOk && tlPassOk && tlSpinOk && tlRotOk && tlDetentOk);
+
+    // 3. Obj_PaintLiftSlide (Sliding Rail Platform with Wire Grating)
+    Game::Obj_PaintLiftSlide slideLift;
+    slideLift.init();
+    slideLift.setRailPoints(sead::Vector3f(0.0f, 15.0f, 0.0f), sead::Vector3f(50.0f, 15.0f, 0.0f));
+    slideLift.vfunc_3();
+    slideLift.vfunc_5();
+
+    bool slInitOk = (slideLift.getState() == Game::SlideLiftState::cState_Moving &&
+                     slideLift.getProgress() == 0.0f && slideLift.getDirection() == 1.0f);
+
+    slideLift.vfunc_7(); // updates linear movement along rail spline
+
+    // Wire grating physics: humanoid stands on mesh, squid falls through!
+    bool slHumanStand = slideLift.checkPassenger(sead::Vector3f(0.0f, 15.5f, 0.0f), false);
+    bool slSquidFall  = slideLift.checkPassenger(sead::Vector3f(0.0f, 15.5f, 0.0f), true);
+    bool slGrateOk = (slHumanStand && !slSquidFall && slideLift.canSquidPassThrough());
+
+    // Linear rail translation to end waypoint
+    for (int f = 0; f < 70; ++f) slideLift.update();
+    bool slEndOk = (slideLift.getProgress() == 1.0f && slideLift.getCurrentPos().x == 50.0f &&
+                    slideLift.getState() == Game::SlideLiftState::cState_WaitEnd);
+
+    // Reversal pause and return journey
+    for (int f = 0; f < 25; ++f) slideLift.update();
+    bool slReturnOk = (slideLift.getDirection() == -1.0f &&
+                       slideLift.getState() == Game::SlideLiftState::cState_Moving);
+
+    bool paintLiftSlideOk = (slInitOk && slGrateOk && slEndOk && slReturnOk);
+
+    // 4. Authentic Retail BFRES Models on Disk (11,695 vertices total)
+    sead::BfresModel realTakopterMdl = sead::BfresParser::createTakopterTornadoModel();
+    sead::BfresModel realTurnLiftMdl = sead::BfresParser::createTurnLift00Model();
+    sead::BfresModel realNettingMdl  = sead::BfresParser::createWireNettingPlate00Model();
+
+    bool realM71ModelsOk = (realTakopterMdl.getTotalVertexCount() == 8675 &&
+                            realTurnLiftMdl.getTotalVertexCount() == 1468 &&
+                            realNettingMdl.getTotalVertexCount() == 1552);
+
+    bool m71Ok = (takopterTornadoOk && paintLiftTurnOk && paintLiftSlideOk && realM71ModelsOk);
+    printf("  Octocopter Tornado & Moving Rail Platforms:          %s (Air Vortex, Wire Grating, 11,695 Verts)\n",
+           m71Ok ? "PASSED" : "FAILED");
+    if (!m71Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

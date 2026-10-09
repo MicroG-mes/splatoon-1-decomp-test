@@ -209,6 +209,9 @@ public:
     static BfresModel createBox00LModel(const char* name = "Obj_Box00L");
     static BfresModel createBox00SModel(const char* name = "Obj_Box00S");
     static BfresModel createBox01LModel(const char* name = "Obj_Box01L");
+    static BfresModel createTakopterTornadoModel(const char* name = "Enm_TakopterTornado");
+    static BfresModel createTurnLift00Model(const char* name = "Lft_TurnLift00");
+    static BfresModel createWireNettingPlate00Model(const char* name = "Lft_WireNettingPlate00");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
