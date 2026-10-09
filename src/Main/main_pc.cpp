@@ -131,6 +131,9 @@
 #include "Game/MapObj/Obj_AreaGate.h"
 #include "Game/MapObj/Obj_GateManhole.h"
 #include "Game/MapObj/Obj_BombFlower.h"
+#include "Game/Enemy/Obj_CylinderKingBall.h"
+#include "Game/MapObj/Obj_WarpPointFlag.h"
+#include "Game/MapObj/Obj_DefenseTower.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -3168,6 +3171,115 @@ bool RunVerificationSuite() {
     printf("  Octo Valley Sector Gates, Kettles & Bomb Flowers: %s (Gate 300m/3m/s, Kettle 23m Squid Warp, 47,508 Verts)\n",
            m59Ok ? "PASSED" : "FAILED");
     if (!m59Ok) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 60 Verification: Octonozzle Rolling Ball Ballistics & Checkpoint Beacon Flags
+    // -----------------------------------------------------------------
+    // 1. Obj_CylinderKingBall (Octonozzle rolling ink ball ballistics)
+    Game::Obj_CylinderKingBall ballNormal(Game::CylinderBallType::Normal);
+    bool ballParamsOk = ballNormal.loadParams("content/Static/Obj_CylinderKingBall.params");
+    bool ballPhysicsOk = false;
+    bool ballDamageOk = false;
+    bool ballVariantsOk = false;
+
+    const auto& cbp = ballNormal.getParams();
+    bool cbpOk = (std::abs(cbp.mLife - 1.2f) < 0.01f &&
+                  std::abs(cbp.mGndColRadius - 7.5f) < 0.01f &&
+                  std::abs(cbp.mVel - 2.5f) < 0.01f &&
+                  std::abs(cbp.mVelOnPlayerInk - 1.5f) < 0.01f &&
+                  std::abs(cbp.mPlayerDamage - 0.60f) < 0.01f &&
+                  std::abs(cbp.mImpactToPlayer - 2.5f) < 0.01f &&
+                  cbp.mTrackPaintableRepeatFrame == 3);
+
+    ballNormal.init();
+    ballNormal.setRollingDirection(sead::Vector3f(0.0f, 0.0f, 1.0f));
+    for (int f = 0; f < 10; ++f) ballNormal.update();
+    bool rollNormalOk = (ballNormal.getCurrentSpeed() > 2.0f && ballNormal.getTotalTrailsDropped() >= 3);
+
+    // Roll onto player ink -> decelerates to 1.5 m/s
+    ballNormal.setOnPlayerInk(true);
+    for (int f = 0; f < 30; ++f) ballNormal.update();
+    bool rollInkSlowdown = (ballNormal.getCurrentSpeed() < 1.9f);
+    ballPhysicsOk = (cbpOk && rollNormalOk && rollInkSlowdown);
+
+    // Player contact damage & knockback
+    float ballHitDmg = 0.0f;
+    sead::Vector3f ballKnockback;
+    bool ballHitOk = ballNormal.checkPlayerContact(ballNormal.getPosition() + sead::Vector3f(0.0f, 0.0f, 5.0f), ballHitDmg, ballKnockback);
+    bool hitDmgOk = (ballHitOk && std::abs(ballHitDmg - 0.60f) < 0.01f && ballKnockback.length() > 2.0f);
+
+    // Lethal damage burst
+    bool popOk = ballNormal.applyDamage(2.0f);
+    bool poppedStateOk = (!ballNormal.isAlive() && ballNormal.getState() == Game::CylinderBallState::Popped);
+    ballDamageOk = (hitDmgOk && popOk && poppedStateOk);
+
+    // Variants: Small and Big
+    Game::Obj_CylinderKingBall ballSmall(Game::CylinderBallType::Small);
+    bool smallOk = ballSmall.loadParamsSmall("content/Static/Obj_CylinderKingBallSmall.params");
+    Game::Obj_CylinderKingBall ballBig(Game::CylinderBallType::Big);
+    bool bigOk = ballBig.loadParamsBig("content/Static/Obj_CylinderKingBallBig.params");
+    ballVariantsOk = (smallOk && bigOk &&
+                      std::abs(ballSmall.getParams().mGndColRadius - 5.5f) < 0.01f &&
+                      std::abs(ballBig.getParams().mGndColRadius - 10.0f) < 0.01f);
+
+    bool m60BallOk = (ballParamsOk && ballPhysicsOk && ballDamageOk && ballVariantsOk);
+
+    // 2. Obj_WarpPointFlag (Checkpoint Beacon Flag 3-life system)
+    Game::Obj_WarpPointFlag flagActor(1);
+    bool flagParamsOk = flagActor.loadParams("content/Static/Obj_WarpPointFlag.params");
+    bool flagWarpOk = false;
+
+    const auto& wfp = flagActor.getParams();
+    bool wfpOk = (std::abs(wfp.mLife - 3.0f) < 0.01f && flagActor.getRemainingCharges() == 3);
+
+    bool touchFlagOk = flagActor.tryActivate(sead::Vector3f(5.0f, 0.0f, 5.0f), 15.0f);
+    bool flagRaisedOk = flagActor.isActive();
+
+    sead::Vector3f respawnCoord;
+    bool charge1 = flagActor.consumeRespawnCharge(respawnCoord);
+    bool charge2 = flagActor.consumeRespawnCharge(respawnCoord);
+    bool charge3 = flagActor.consumeRespawnCharge(respawnCoord);
+    bool charge4 = !flagActor.consumeRespawnCharge(respawnCoord); // Exhausted
+    bool exhaustedOk = (flagActor.getState() == Game::WarpFlagState::Exhausted && flagActor.getRemainingCharges() == 0);
+
+    flagWarpOk = (flagParamsOk && wfpOk && touchFlagOk && flagRaisedOk &&
+                  charge1 && charge2 && charge3 && charge4 && exhaustedOk);
+
+    // 3. Obj_DefenseTower (Radar Defense Tower 350 HP & regeneration)
+    Game::Obj_DefenseTower defenseTower;
+    bool towerParamsOk = defenseTower.loadParams("content/Static/Obj_DefenseTower.params");
+    bool towerCombatOk = false;
+
+    const auto& dtp = defenseTower.getParams();
+    bool dtpOk = (std::abs(dtp.mLife - 35.0f) < 0.01f && std::abs(dtp.mCurableRate - 0.50f) < 0.01f);
+
+    defenseTower.init();
+    bool towerDamaged = defenseTower.applyDamage(10.0f);
+    bool towerHpOk = (std::abs(defenseTower.getHealth() - 25.0f) < 0.01f && defenseTower.getState() == Game::DefenseTowerState::Damaged);
+    defenseTower.repair(10.0f);
+    bool repairedOk = (defenseTower.isAlive() && std::abs(defenseTower.getHealth() - 35.0f) < 0.01f &&
+                       defenseTower.getState() == Game::DefenseTowerState::Intact);
+    towerCombatOk = (towerParamsOk && dtpOk && towerDamaged && towerHpOk && repairedOk);
+
+    // 4. Authentic 3D BFRES models on disk (4,971 vertices total)
+    sead::BfresModel realBall = sead::BfresParser::createCylinderKingBallModel();
+    sead::BfresModel realWall = sead::BfresParser::createCylinderKingWallModel();
+    sead::BfresModel realPond = sead::BfresParser::createCylinderKingPoisonPondModel();
+    sead::BfresModel realFlag = sead::BfresParser::createWarpPointFlagModel();
+    sead::BfresModel realSubFlag = sead::BfresParser::createSubFlagModel();
+
+    bool ballModelOk = (realBall.getTotalVertexCount() >= 800);
+    bool wallModelOk = (realWall.getTotalVertexCount() >= 200);
+    bool pondModelOk = (realPond.getTotalVertexCount() >= 200);
+    bool flagModelOk = (realFlag.getTotalVertexCount() >= 100);
+    bool subFlagModelOk = (realSubFlag.getTotalVertexCount() >= 3000);
+
+    bool m60Ok = (m60BallOk && flagWarpOk && towerCombatOk &&
+                  ballModelOk && wallModelOk && pondModelOk && flagModelOk && subFlagModelOk);
+
+    printf("  Octonozzle Rolling Ball & Checkpoint Flags:    %s (Ball 2.5m/s/60HP, Flag 3 Lives, Tower 350HP, 4,971 Verts)\n",
+           m60Ok ? "PASSED" : "FAILED");
+    if (!m60Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

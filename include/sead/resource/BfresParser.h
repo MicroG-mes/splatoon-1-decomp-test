@@ -174,6 +174,11 @@ public:
     static BfresModel createBossGatewayModel(const char* name = "Obj_BossGateway");
     static BfresModel createGateManholeModel(const char* name = "Obj_GateManhole");
     static BfresModel createGatewayModel(const char* name = "Obj_Gateway");
+    static BfresModel createCylinderKingBallModel(const char* name = "Obj_CylinderKingBall");
+    static BfresModel createCylinderKingWallModel(const char* name = "Lft_CylinderKingWall");
+    static BfresModel createCylinderKingPoisonPondModel(const char* name = "Obj_CylinderKingPoisonPond");
+    static BfresModel createWarpPointFlagModel(const char* name = "Obj_Flag");
+    static BfresModel createSubFlagModel(const char* name = "Wsb_Flag");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

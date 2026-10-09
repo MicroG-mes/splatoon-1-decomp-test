@@ -2069,6 +2069,96 @@ BfresModel BfresParser::createGatewayModel(const char* name) {
     return createProceduralCube(name ? name : "Obj_Gateway", 1.0f);
 }
 
+BfresModel BfresParser::createCylinderKingBallModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_CylinderKingBall.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_CylinderKingBall";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_CylinderKingBall", 1.0f);
+}
+
+BfresModel BfresParser::createCylinderKingWallModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Lft_CylinderKingWall.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Lft_CylinderKingWall";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Lft_CylinderKingWall", 2.0f);
+}
+
+BfresModel BfresParser::createCylinderKingPoisonPondModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_CylinderKingPoisonPond.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_CylinderKingPoisonPond";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_CylinderKingPoisonPond", 2.0f);
+}
+
+BfresModel BfresParser::createWarpPointFlagModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_Flag.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_Flag";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_Flag", 1.0f);
+}
+
+BfresModel BfresParser::createSubFlagModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsb_Flag.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wsb_Flag";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Wsb_Flag", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");
