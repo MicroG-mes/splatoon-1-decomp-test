@@ -187,6 +187,8 @@ public:
     static BfresModel createSeaGullModel(const char* name = "Obj_SeaGull");
     static BfresModel createTree00Model(const char* name = "Obj_Tree00");
     static BfresModel createTree01Model(const char* name = "Obj_Tree01");
+    static BfresModel createRubberPoleModel(const char* name = "Obj_RubberPole00");
+    static BfresModel createWindsockModel(const char* name = "Obj_Windsock");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

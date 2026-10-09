@@ -2303,6 +2303,42 @@ BfresModel BfresParser::createTree01Model(const char* name) {
     return createProceduralCube(name ? name : "Obj_Tree01", 1.0f);
 }
 
+BfresModel BfresParser::createRubberPoleModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_RubberPole00.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_RubberPole00";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_RubberPole00", 1.0f);
+}
+
+BfresModel BfresParser::createWindsockModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_Windsock.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_Windsock";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_Windsock", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

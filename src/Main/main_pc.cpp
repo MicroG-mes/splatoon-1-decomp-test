@@ -139,6 +139,9 @@
 #include "Game/MapObj/Obj_Grass00.h"
 #include "Game/MapObj/Obj_SeaGull.h"
 #include "Game/MapObj/Obj_Tree00.h"
+#include "Game/MapObj/Obj_SighterTarget.h"
+#include "Game/MapObj/Obj_RubberPole00.h"
+#include "Game/MapObj/Obj_Windsock.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -3476,6 +3479,83 @@ bool RunVerificationSuite() {
     printf("  Environmental Props & Biome Vegetation:        %s (Grass Sway/Rub, Seagull Flight, Trees 35m, 5,165 Verts)\n",
            m62Ok ? "PASSED" : "FAILED");
     if (!m62Ok) allPassed = false;
+
+    // 63. Weapon Testing Range Target Dummies & Dynamic Testing Props (Obj_SighterTarget, Obj_RubberPole00, Obj_Windsock)
+    printf("\n--- [63/63] WEAPON TESTING TARGET DUMMIES & DYNAMIC PROPS ---\n");
+
+    // 1. Inflatable Target Dummies (Obj_SighterTarget)
+    Game::Obj_SighterTarget dummyNormal(Game::SighterTargetType::cTarget_Normal);
+    Game::Obj_SighterTarget dummyStrong(Game::SighterTargetType::cTarget_Strong);
+    dummyNormal.setPosition(sead::Vector3f(0.0f, 0.0f, 10.0f));
+    dummyStrong.setPosition(sead::Vector3f(0.0f, 0.0f, 20.0f));
+    dummyNormal.init();
+    dummyStrong.init();
+
+    bool dummyInitOk = (dummyNormal.getHealth() == 100.0f && dummyStrong.getHealth() == 500.0f &&
+                        dummyStrong.getScale() == 1.7f);
+
+    // Hit normal dummy with Splattershot blast (30 HP) -> cState_DamageShot
+    bool shot1Hit = dummyNormal.applyDamage(30.0f, sead::Vector3f(0.0f, 5.0f, 10.0f), sead::Vector3f(0.0f, 0.0f, 1.0f));
+    bool shot1StateOk = (shot1Hit && dummyNormal.getState() == Game::SighterTargetState::cState_DamageShot &&
+                         dummyNormal.getHealth() == 70.0f);
+
+    // Hit normal dummy with lethal shot -> cState_Burst
+    bool shotFatal = dummyNormal.applyDamage(80.0f, sead::Vector3f(0.0f, 5.0f, 10.0f), sead::Vector3f(0.0f, 0.0f, 1.0f));
+    bool sighterBurstOk = (shotFatal && dummyNormal.isBurst() && dummyNormal.getScale() == 0.0f);
+
+    // Advance 120 frames cooldown + 20 frames inflation -> respawns back to ready!
+    for (int f = 0; f < 145; ++f) dummyNormal.update();
+    bool respawnOk = (dummyNormal.isReady() && dummyNormal.getHealth() == 100.0f && dummyNormal.getScale() == 1.0f);
+
+    bool sighterTargetOk = (dummyInitOk && shot1StateOk && sighterBurstOk && respawnOk);
+
+    // 2. Rubber Pole Bumper Physics (Obj_RubberPole00)
+    Game::Obj_RubberPole00 rubberPole;
+    rubberPole.setPosition(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    rubberPole.init();
+
+    sead::Vector3f playerRebound(0.0f, 0.0f, 0.0f);
+    // Player runs into pole from front
+    bool playerCollided = rubberPole.checkPlayerCollision(sead::Vector3f(0.0f, 5.0f, 1.8f), 0.5f, playerRebound);
+    bool poleBounceOk = (playerCollided && rubberPole.isBending() && playerRebound.z > 0.0f);
+
+    // Advance 55 frames to settle back to upright
+    for (int f = 0; f < 55; ++f) rubberPole.update();
+    bool poleSettleOk = (!rubberPole.isBending() && rubberPole.getState() == Game::RubberPoleState::cState_Idle);
+
+    bool rubberPoleOk = (poleBounceOk && poleSettleOk);
+
+    // 3. Ambient Windsock Indicator (Obj_Windsock)
+    Game::Obj_Windsock windsock;
+    windsock.setPosition(sead::Vector3f(0.0f, 10.0f, 0.0f));
+    windsock.init();
+
+    // Calm breeze (3.0 m/s wind along +X)
+    windsock.setWind(sead::Vector3f(3.0f, 0.0f, 0.0f));
+    float calmInflation = windsock.getInflation();
+
+    // Strong gust (10.0 m/s wind along +Z) -> full horizontal inflation (1.0)
+    windsock.setWind(sead::Vector3f(0.0f, 0.0f, 10.0f));
+    float gustInflation = windsock.getInflation();
+    windsock.update();
+
+    bool windsockOk = (std::abs(calmInflation - 0.3f) < 0.01f && std::abs(gustInflation - 1.0f) < 0.01f);
+
+    // 4. Authentic Retail BFRES Models on Disk (4,467 vertices total across 3 models)
+    sead::BfresModel realSighter = sead::BfresParser::createSighterTargetModel();
+    sead::BfresModel realPole = sead::BfresParser::createRubberPoleModel();
+    sead::BfresModel realSock = sead::BfresParser::createWindsockModel();
+
+    bool sighterMdlOk = (realSighter.getTotalVertexCount() == 1480);
+    bool poleMdlOk = (realPole.getTotalVertexCount() == 792);
+    bool sockMdlOk = (realSock.getTotalVertexCount() == 2195);
+
+    bool m63Ok = (sighterTargetOk && rubberPoleOk && windsockOk &&
+                  sighterMdlOk && poleMdlOk && sockMdlOk);
+
+    printf("  Testing Range Targets & Dynamic Gimmicks:      %s (Normal 100HP/Heavy 500HP, Pole Bounce, Windsock 10m/s, 4,467 Verts)\n",
+           m63Ok ? "PASSED" : "FAILED");
+    if (!m63Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
