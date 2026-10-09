@@ -191,6 +191,10 @@ public:
     static BfresModel createWindsockModel(const char* name = "Obj_Windsock");
     static BfresModel createTakodozerModel(const char* name = "Enm_Takodozer");
     static BfresModel createOctoballModel(const char* name = "Enm_Ball");
+    static BfresModel createPropellerLift00Model(const char* name = "Lft_Propeller00");
+    static BfresModel createPropellerLift01Model(const char* name = "Lft_Propeller01");
+    static BfresModel createPropellerFanModel(const char* name = "Obj_Propeller01");
+    static BfresModel createHeroArmorModel(const char* name = "Obj_Armor");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

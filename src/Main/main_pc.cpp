@@ -144,6 +144,8 @@
 #include "Game/MapObj/Obj_Windsock.h"
 #include "Game/Enemy/EnemyTakodozer.h"
 #include "Game/Enemy/Enm_Ball.h"
+#include "Game/MapObj/Lft_Propeller00.h"
+#include "Game/MapObj/Obj_Armor.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -3560,7 +3562,7 @@ bool RunVerificationSuite() {
     if (!m63Ok) allPassed = false;
 
     // 64. Octarian Heavy Assault Armor: Octodozer & Rolling Octoball (Enm_Takodozer & Enm_Ball)
-    printf("\n--- [64/64] OCTARIAN HEAVY ASSAULT ARMOR: OCTODOZER & OCTOBALL ---\n");
+    printf("\n--- [64/65] OCTARIAN HEAVY ASSAULT ARMOR: OCTODOZER & OCTOBALL ---\n");
 
     // 1. EnemyTakodozer Bulldozer Mechanics
     Game::EnemyTakodozer dozer;
@@ -3657,6 +3659,101 @@ bool RunVerificationSuite() {
     printf("  Octarian Heavy Assault Armor (Dozer & Octoball): %s (Dozer 9,735V/100HP Plow, Ball 4,866V/Barrier, 14,601 Verts)\n",
            m64Ok ? "PASSED" : "FAILED");
     if (!m64Ok) allPassed = false;
+
+    // 65. Ink-Powered Propeller Platforms & Hero Armor Suit (Lft_Propeller00, Obj_Armor)
+    printf("\n--- [65/65] INK-POWERED PROPELLER PLATFORMS & HERO ARMOR SUIT ---\n");
+
+    // 1. Lft_Propeller00 Winch Platform Physics
+    Game::Lft_Propeller00 screwLiftPlatform;
+    screwLiftPlatform.setTrack(sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(0.0f, 25.0f, 0.0f));
+    screwLiftPlatform.init();
+
+    bool propInitOk = (screwLiftPlatform.getState() == Game::PropellerLiftState::cWait &&
+                       screwLiftPlatform.getProgress() == 0.0f &&
+                       screwLiftPlatform.getPropellerRpm() == 0.0f &&
+                       screwLiftPlatform.isAtStartPoint());
+
+    // Strike propeller with ink stream -> spins up RPM (5.0 * 18 = 90 RPM)
+    screwLiftPlatform.hitPropeller(5.0f);
+    bool propSpinOk = (screwLiftPlatform.isSpinning() && screwLiftPlatform.getPropellerRpm() == 90.0f);
+
+    // Update simulation -> platform advances upward along track (cMove)
+    for (int f = 0; f < 30; ++f) screwLiftPlatform.update();
+    bool propElevateOk = (screwLiftPlatform.getState() == Game::PropellerLiftState::cMove &&
+                          screwLiftPlatform.getProgress() > 0.0f &&
+                          screwLiftPlatform.getPosition().y > 0.0f);
+
+    // Rapid heavy fire pushes lift all the way to destination terminal (1.0) -> cEndPoint
+    for (int burst = 0; burst < 10; ++burst) {
+        screwLiftPlatform.hitPropeller(10.0f);
+        for (int f = 0; f < 20; ++f) screwLiftPlatform.update();
+    }
+    bool propEndOk = (screwLiftPlatform.isAtEndPoint() && screwLiftPlatform.getProgress() == 1.0f &&
+                      screwLiftPlatform.getPosition().y == 25.0f);
+
+    // Let propeller spin die down -> platform counterweight pulls it back to origin (cMoveReturn -> cWait)
+    for (int f = 0; f < 300; ++f) screwLiftPlatform.update();
+    bool propResetOk = (screwLiftPlatform.isAtStartPoint() && screwLiftPlatform.getProgress() == 0.0f &&
+                        screwLiftPlatform.getState() == Game::PropellerLiftState::cWait);
+
+    bool propPhysicsOk = (propInitOk && propSpinOk && propElevateOk && propEndOk && propResetOk);
+
+    // 2. Obj_Armor Collectible & Player Armor Suit Mechanics
+    Game::Obj_Armor armorPickup;
+    armorPickup.setPosition(sead::Vector3f(10.0f, 5.0f, 0.0f));
+    armorPickup.init();
+
+    bool armorInitOk = (armorPickup.getState() == Game::ArmorState::cState_Wait &&
+                        !armorPickup.isCollected());
+
+    // Update 15 frames (crest of 60-frame harmonic wave) -> floating bobbing and rotation
+    for (int f = 0; f < 15; ++f) armorPickup.update();
+    bool armorBobOk = (armorPickup.getPosition().y > 5.0f && armorPickup.getRotationAngle() > 0.0f);
+
+    // Player walks within 2.0m radius -> collects armor
+    bool touched = armorPickup.checkPlayerTouch(sead::Vector3f(10.5f, 5.0f, 0.0f));
+    bool armorCollectOk = (touched && armorPickup.isCollected());
+
+    // Player armor progression:
+    // Starts at Tier 1 (standard suit, 0 extra HP)
+    u32 playerArmorTier = 1;
+    f32 playerArmorHp = 0.0f;
+
+    // Pick up Level 2 armor (+100 HP extra durability)
+    bool upg1 = Game::Obj_Armor::applyArmorPickup(playerArmorTier, playerArmorHp);
+    bool tier2Ok = (upg1 && playerArmorTier == 2 && playerArmorHp == 100.0f);
+
+    // Pick up Level 3 armor (+200 HP extra durability)
+    bool upg2 = Game::Obj_Armor::applyArmorPickup(playerArmorTier, playerArmorHp);
+    bool tier3Ok = (upg2 && playerArmorTier == 3 && playerArmorHp == 200.0f);
+
+    // Enemy attacks player with 60.0 HP damage -> absorbed by armor layer (remaining 140 HP)
+    bool shattered = false;
+    bool dmg1 = Game::Obj_Armor::applyDamageToArmor(60.0f, playerArmorTier, playerArmorHp, shattered);
+    bool absorbOk = (dmg1 && !shattered && playerArmorTier == 3 && playerArmorHp == 140.0f);
+
+    // Massive lethal blast of 150.0 HP -> breaks armor layer, triggers shatter & invuln!
+    bool dmg2 = Game::Obj_Armor::applyDamageToArmor(150.0f, playerArmorTier, playerArmorHp, shattered);
+    bool breakOk = (dmg2 && shattered && playerArmorTier == 1 && playerArmorHp == 0.0f);
+
+    bool heroArmorOk = (armorInitOk && armorBobOk && armorCollectOk && tier2Ok && tier3Ok && absorbOk && breakOk);
+
+    // 3. Authentic Retail BFRES Models on Disk
+    sead::BfresModel realProp00 = sead::BfresParser::createPropellerLift00Model();
+    sead::BfresModel realProp01 = sead::BfresParser::createPropellerLift01Model();
+    sead::BfresModel realPropFan = sead::BfresParser::createPropellerFanModel();
+    sead::BfresModel realHeroArmor = sead::BfresParser::createHeroArmorModel();
+
+    bool prop00MdlOk = (realProp00.getTotalVertexCount() == 984);
+    bool prop01MdlOk = (realProp01.getTotalVertexCount() == 2208);
+    bool propFanMdlOk = (realPropFan.getTotalVertexCount() == 1592);
+    bool heroArmorMdlOk = (realHeroArmor.getTotalVertexCount() == 1784);
+
+    bool m65Ok = (propPhysicsOk && heroArmorOk &&
+                  prop00MdlOk && prop01MdlOk && propFanMdlOk && heroArmorMdlOk);
+    printf("  Propeller Platforms & Hero Armor Suit:         %s (Winch Physics, Armor Tiers 1-3, 6,568 Verts)\n",
+           m65Ok ? "PASSED" : "FAILED");
+    if (!m65Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
