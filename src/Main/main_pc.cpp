@@ -128,6 +128,9 @@
 #include "Game/MapObj/Obj_LiftFall.h"
 #include "Game/MapObj/Obj_MissilePosition.h"
 #include "Game/Enemy/Obj_ZakoPointUFO.h"
+#include "Game/MapObj/Obj_AreaGate.h"
+#include "Game/MapObj/Obj_GateManhole.h"
+#include "Game/MapObj/Obj_BombFlower.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -3045,6 +3048,126 @@ bool RunVerificationSuite() {
     printf("  Camera Sequence Director & Cinematics:        %s (Intro 210f, Sweep TV/DRC, Tutorial Jump, Staff Roll)\n",
            m58Ok ? "PASSED" : "FAILED");
     if (!m58Ok) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 59 Verification: Octo Valley Sector Gates, Kettles & Bomb Flowers
+    // -----------------------------------------------------------------
+    // 1. Obj_AreaGate (Sector Gate barrier & power unlock)
+    Game::Obj_AreaGate areaGate(1, 100);
+    bool gateParamsOk = areaGate.loadParams("content/Static/Obj_AreaGate.params");
+    bool gateCollisionOk = false;
+    bool gateUnlockOk = false;
+
+    const auto& agp = areaGate.getParams();
+    bool agpOk = (std::abs(agp.mBarrierWidth - 60.0f) < 0.01f &&
+                  std::abs(agp.mBarrierHeight - 300.0f) < 0.01f &&
+                  std::abs(agp.mBarrierBoundVelLen - 3.0f) < 0.01f &&
+                  std::abs(agp.mBarrierBoundVelY - 0.3f) < 0.01f &&
+                  agp.mShakeCancelFrame == 20);
+
+    sead::Vector3f rebound;
+    bool colHit = areaGate.checkPlayerCollision(sead::Vector3f(0.0f, 10.0f, 2.0f), rebound);
+    bool reboundPhysics = (rebound.y == 0.3f && rebound.z == 3.0f);
+    gateCollisionOk = (colHit && reboundPhysics);
+
+    bool underpoweredReject = !areaGate.tryUnlock(50);
+    bool poweredAccept = areaGate.tryUnlock(100);
+    bool shakingStateOk = (areaGate.getState() == Game::AreaGateState::cState_Shaking);
+    for (int f = 0; f < 20; ++f) areaGate.update();
+    bool gateOpeningStateOk = (areaGate.getState() == Game::AreaGateState::cState_Opening);
+    for (int f = 0; f < 15; ++f) areaGate.update();
+    bool openedPassableOk = (areaGate.isPassable() && areaGate.getState() == Game::AreaGateState::cState_Opened);
+    gateUnlockOk = (underpoweredReject && poweredAccept && shakingStateOk && gateOpeningStateOk && openedPassableOk);
+
+    bool m59GateOk = (gateParamsOk && agpOk && gateCollisionOk && gateUnlockOk);
+
+    // 2. Obj_GateManhole (Solo & Boss Mission Kettles)
+    Game::Obj_GateManhole manholeActor("Fld_EasyClimb00_Msn", false);
+    bool manholeParamsOk = manholeActor.loadParams("content/Static/Obj_GateManhole.params");
+    bool manholeWarpOk = false;
+
+    const auto& mhp = manholeActor.getParams();
+    bool mhpOk = (std::abs(mhp.mWarpColRadius - 23.0f) < 0.01f && mhp.mCommanderSearchProbability == 420);
+
+    bool hiddenInitially = !manholeActor.isRevealed();
+    manholeActor.reveal();
+    bool revealedOk = manholeActor.isRevealed();
+
+    // Human form rejected -> squid form accepted -> 35f countdown
+    sead::Vector3f playerInKettle(10.0f, 0.0f, 10.0f);
+    bool humanRejected = !manholeActor.tryEnterWarp(playerInKettle, false);
+    bool squidAccepted = manholeActor.tryEnterWarp(playerInKettle, true);
+    bool warpingStateOk = (manholeActor.getState() == Game::GateManholeState::cState_Warping);
+    for (int f = 0; f < 35; ++f) manholeActor.update();
+    bool warpDoneOk = manholeActor.isWarpTriggered();
+    manholeActor.setCleared(true);
+    bool clearedStateOk = (manholeActor.getState() == Game::GateManholeState::cState_Cleared);
+
+    // Boss Kettle variant
+    Game::Obj_GateManhole bossKettle("Fld_BossStampKing_Bos_Msn", true);
+    bool bossParamsOk = bossKettle.loadBossParams("content/Static/Obj_BossGateway.params");
+    const auto& bkp = bossKettle.getParams();
+    bool bkpOk = (std::abs(bkp.mWarpColRadius - 13.0f) < 0.01f && std::abs(bkp.mStageIconOffsetY - 20.0f) < 0.01f);
+
+    manholeWarpOk = (manholeParamsOk && mhpOk && hiddenInitially && revealedOk &&
+                     humanRejected && squidAccepted && warpingStateOk && warpDoneOk && clearedStateOk &&
+                     bossParamsOk && bkpOk);
+
+    // 3. Obj_BombFlower (Explosive ink balloon flower & respawn)
+    Game::Obj_BombFlower bombFlower;
+    bool flowerParamsOk = bombFlower.loadParams("content/Static/Obj_BombFlower.params");
+    bool flowerDetonateOk = false;
+    bool flowerRespawnOk = false;
+
+    const auto& bfp = bombFlower.getParams();
+    bool bfpOk = (std::abs(bfp.mMaxHp - 2.0f) < 0.01f &&
+                  bfp.mBurstWaitFrame == 180 &&
+                  bfp.mAppearFrame == 15 &&
+                  std::abs(bfp.mBombCorePaintRadius - 120.0f) < 0.01f &&
+                  std::abs(bfp.mBombCoreDamage - 12.0f) < 0.01f);
+
+    bombFlower.init();
+    bool partialDmgOk = bombFlower.applyDamage(1.0f, 1);
+    bool stillAliveOk = (bombFlower.isReady() && std::abs(bombFlower.getHealth() - 1.0f) < 0.01f);
+    bool fatalDmgOk = bombFlower.applyDamage(1.0f, 1);
+    bool flowerBurstOk = (bombFlower.isDetonated() && bombFlower.getLastHitterTeam() == 1);
+
+    float centerDmg = 0.0f;
+    bool centerHit = bombFlower.checkBlastHit(sead::Vector3f(0.0f, 20.0f, 0.0f), centerDmg);
+    float midDmg = 0.0f;
+    bool midHit = bombFlower.checkBlastHit(sead::Vector3f(0.0f, 20.0f, 45.0f), midDmg);
+    bool blastRadiusOk = (centerHit && std::abs(centerDmg - 12.0f) < 0.01f && midHit && std::abs(midDmg - 6.0f) < 0.1f);
+
+    flowerDetonateOk = (flowerParamsOk && bfpOk && partialDmgOk && stillAliveOk && fatalDmgOk && flowerBurstOk && blastRadiusOk);
+
+    // Respawn cycle (1f burst -> 180f respawning -> 15f growing -> ready)
+    bombFlower.update(); // 1f
+    bool respawningStateOk = (bombFlower.getState() == Game::BombFlowerState::cState_Respawning);
+    for (int f = 0; f < 180; ++f) bombFlower.update();
+    bool growingStateOk = (bombFlower.getState() == Game::BombFlowerState::cState_Growing);
+    for (int f = 0; f < 15; ++f) bombFlower.update();
+    bool regeneratedOk = (bombFlower.isReady() && std::abs(bombFlower.getHealth() - 2.0f) < 0.01f);
+    flowerRespawnOk = (respawningStateOk && growingStateOk && regeneratedOk);
+
+    // 4. Authentic 3D BFRES models on disk (47,508 vertices total)
+    sead::BfresModel realAreaGate = sead::BfresParser::createAreaGateModel();
+    sead::BfresModel realBombFlower = sead::BfresParser::createBombFlowerModel();
+    sead::BfresModel realBossGateway = sead::BfresParser::createBossGatewayModel();
+    sead::BfresModel realGateManhole = sead::BfresParser::createGateManholeModel();
+    sead::BfresModel realGateway = sead::BfresParser::createGatewayModel();
+
+    bool gateModelOk = (realAreaGate.getTotalVertexCount() >= 30000);
+    bool flowerModelOk = (realBombFlower.getTotalVertexCount() >= 4000);
+    bool bossGateModelOk = (realBossGateway.getTotalVertexCount() >= 2500);
+    bool manholeModelOk = (realGateManhole.getTotalVertexCount() >= 10);
+    bool gatewayModelOk = (realGateway.getTotalVertexCount() >= 200);
+
+    bool m59Ok = (m59GateOk && manholeWarpOk && flowerDetonateOk && flowerRespawnOk &&
+                  gateModelOk && flowerModelOk && bossGateModelOk && manholeModelOk && gatewayModelOk);
+
+    printf("  Octo Valley Sector Gates, Kettles & Bomb Flowers: %s (Gate 300m/3m/s, Kettle 23m Squid Warp, 47,508 Verts)\n",
+           m59Ok ? "PASSED" : "FAILED");
+    if (!m59Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

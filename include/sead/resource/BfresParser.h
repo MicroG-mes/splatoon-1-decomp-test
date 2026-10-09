@@ -169,6 +169,11 @@ public:
     static BfresModel createOctUfoWallModel(const char* name = "Lft_OctUfoWall");
     static BfresModel createRvlUfoMiniModel(const char* name = "Lft_RvlUfoMini");
     static BfresModel createMissileModel(const char* name = "Obj_Missile");
+    static BfresModel createAreaGateModel(const char* name = "Obj_AreaGate");
+    static BfresModel createBombFlowerModel(const char* name = "Obj_BombFlower");
+    static BfresModel createBossGatewayModel(const char* name = "Obj_BossGateway");
+    static BfresModel createGateManholeModel(const char* name = "Obj_GateManhole");
+    static BfresModel createGatewayModel(const char* name = "Obj_Gateway");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
