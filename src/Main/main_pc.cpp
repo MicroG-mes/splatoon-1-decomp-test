@@ -136,6 +136,9 @@
 #include "Game/MapObj/Obj_DefenseTower.h"
 #include "Game/MapObj/Obj_AirBall.h"
 #include "Game/MapObj/Obj_AncientDocument.h"
+#include "Game/MapObj/Obj_Grass00.h"
+#include "Game/MapObj/Obj_SeaGull.h"
+#include "Game/MapObj/Obj_Tree00.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -3383,6 +3386,96 @@ bool RunVerificationSuite() {
     printf("  Balloon Fish Sequences & Sunken Scrolls:       %s (Chained Spline Targets, 80f Bobbing, Pillar Beam 100m, 3,837 Verts)\n",
            m61Ok ? "PASSED" : "FAILED");
     if (!m61Ok) allPassed = false;
+
+    // 62. Octo Valley Environmental Props & Biome Vegetation (Obj_Grass00, Obj_SeaGull, Obj_Tree00)
+    printf("\n--- [62/62] OCTO VALLEY ENVIRONMENTAL PROPS & BIOME VEGETATION ---\n");
+
+    // 1. Interactive Grass Foliage (Obj_Grass00 & Obj_GrassRuins00)
+    Game::Obj_Grass00 grassProp(false);
+    grassProp.setPosition(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    grassProp.init();
+
+    // Idle wind sway
+    for (int f = 0; f < 30; ++f) grassProp.update();
+    bool grassIdleOk = (grassProp.getState() == Game::GrassState::cState_Wait_random);
+
+    // Player walks through grass -> cState_Rub
+    bool grassTouchOk = grassProp.checkPlayerTouch(sead::Vector3f(1.0f, 0.0f, 0.0f), sead::Vector3f(1.0f, 0.0f, 0.0f), false);
+    bool grassRubOk = (grassTouchOk && grassProp.getState() == Game::GrassState::cState_Rub && grassProp.isBending());
+
+    // Squid dashes through grass -> cState_RubBend
+    bool grassSquidOk = grassProp.checkPlayerTouch(sead::Vector3f(0.5f, 0.0f, 0.0f), sead::Vector3f(3.0f, 0.0f, 0.0f), true);
+    bool grassBendOk = (grassSquidOk && grassProp.getState() == Game::GrassState::cState_RubBend);
+
+    // Ink projectile hits grass -> cState_DamageShotBend
+    bool grassShotOk = grassProp.applyShotDamage(sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(0.0f, 0.0f, 1.0f));
+    bool grassShotBendOk = (grassShotOk && grassProp.getState() == Game::GrassState::cState_DamageShotBend);
+
+    // Settling back to neutral over 45 frames
+    for (int f = 0; f < 45; ++f) grassProp.update();
+    bool grassRecoverOk = (grassProp.getState() == Game::GrassState::cState_Wait_random);
+
+    bool m62GrassOk = (grassIdleOk && grassRubOk && grassBendOk && grassShotBendOk && grassRecoverOk);
+
+    // 2. Ambient Environmental Wildlife (Obj_SeaGull)
+    Game::Obj_SeaGull seagull;
+    seagull.setPosition(sead::Vector3f(50.0f, 10.0f, 50.0f));
+    seagull.init();
+
+    bool gullPerchOk = seagull.isPerched();
+    for (int f = 0; f < 60; ++f) seagull.update();
+
+    // Player approaches within 12.0m -> Startles seagull into flight!
+    bool gullApproached = seagull.checkPlayerProximity(sead::Vector3f(55.0f, 10.0f, 50.0f));
+    bool gullTakeOffOk = (gullApproached && seagull.getState() == Game::SeaGullState::cState_TakeOff);
+
+    // Advance 30 frames for wings to flap and transition to cruising flight
+    for (int f = 0; f < 30; ++f) seagull.update();
+    bool gullFlyingOk = (seagull.getState() == Game::SeaGullState::cState_Fly && seagull.isAirborne() && seagull.getAltitude() > 10.0f);
+
+    bool m62GullOk = (gullPerchOk && gullTakeOffOk && gullFlyingOk);
+
+    // 3. Environmental Biome Trees (Obj_Tree00 & Obj_Tree01)
+    Game::Obj_Tree00 tree00(0);
+    tree00.setPosition(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    tree00.init();
+
+    for (int f = 0; f < 30; ++f) tree00.update();
+    bool treeIdleOk = (tree00.getState() == Game::TreeState::cState_Wait);
+
+    // Ink bullet hits tree trunk -> cState_DamageShot
+    bool trunkHit = tree00.applyShotDamage(sead::Vector3f(2.0f, 10.0f, 0.0f), sead::Vector3f(1.0f, 0.0f, 0.0f));
+    bool treeShockOk = (trunkHit && tree00.getState() == Game::TreeState::cState_DamageShot && tree00.isShaking());
+
+    // Ink blast hits tree canopy -> cState_DamageShotBend
+    bool canopyHit = tree00.applyShotDamage(sead::Vector3f(5.0f, 30.0f, 0.0f), sead::Vector3f(1.0f, 0.0f, 0.0f));
+    bool treeBendOk = (canopyHit && tree00.getState() == Game::TreeState::cState_DamageShotBend);
+
+    // Recovery back to idle sway
+    for (int f = 0; f < 60; ++f) tree00.update();
+    bool treeRecoverOk = (tree00.getState() == Game::TreeState::cState_Wait);
+
+    bool m62TreeOk = (treeIdleOk && treeShockOk && treeBendOk && treeRecoverOk);
+
+    // 4. Authentic Retail BFRES Models on Disk (5,165 vertices total across 5 models)
+    sead::BfresModel realGrass = sead::BfresParser::createGrassModel();
+    sead::BfresModel realGrassRuins = sead::BfresParser::createGrassRuinsModel();
+    sead::BfresModel realGull = sead::BfresParser::createSeaGullModel();
+    sead::BfresModel realTree0 = sead::BfresParser::createTree00Model();
+    sead::BfresModel realTree1 = sead::BfresParser::createTree01Model();
+
+    bool grassMdlOk = (realGrass.getTotalVertexCount() == 383);
+    bool grassRuinsMdlOk = (realGrassRuins.getTotalVertexCount() == 28);
+    bool gullMdlOk = (realGull.getTotalVertexCount() == 416);
+    bool tree0MdlOk = (realTree0.getTotalVertexCount() == 2169);
+    bool tree1MdlOk = (realTree1.getTotalVertexCount() == 2169);
+
+    bool m62Ok = (m62GrassOk && m62GullOk && m62TreeOk &&
+                  grassMdlOk && grassRuinsMdlOk && gullMdlOk && tree0MdlOk && tree1MdlOk);
+
+    printf("  Environmental Props & Biome Vegetation:        %s (Grass Sway/Rub, Seagull Flight, Trees 35m, 5,165 Verts)\n",
+           m62Ok ? "PASSED" : "FAILED");
+    if (!m62Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

@@ -182,6 +182,11 @@ public:
     static BfresModel createAirBallModel(const char* name = "Obj_AirBall");
     static BfresModel createAirBallDuelModel(const char* name = "Obj_AirBallDuel");
     static BfresModel createAirBallMsnModel(const char* name = "Obj_AirBallMsn");
+    static BfresModel createGrassModel(const char* name = "Obj_Grass00");
+    static BfresModel createGrassRuinsModel(const char* name = "Obj_GrassRuins00");
+    static BfresModel createSeaGullModel(const char* name = "Obj_SeaGull");
+    static BfresModel createTree00Model(const char* name = "Obj_Tree00");
+    static BfresModel createTree01Model(const char* name = "Obj_Tree01");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
