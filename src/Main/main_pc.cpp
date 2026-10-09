@@ -157,6 +157,9 @@
 #include "Game/MapObj/Obj_BigNamazu.h"
 #include "Game/MapObj/Obj_RespawnPlatform.h"
 #include "Game/MapObj/Obj_JumpPoint.h"
+#include "Game/Enemy/Enm_Stamp.h"
+#include "Game/MapObj/Obj_Box00L.h"
+#include "Game/MapObj/Obj_Box00S.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -4137,6 +4140,108 @@ bool RunVerificationSuite() {
     printf("  Great Zapfish, Respawn Platform & Super Jump Beacon: %s (100k MW, Shield Dome, 17,896 Verts)\n",
            m69Ok ? "PASSED" : "FAILED");
     if (!m69Ok) allPassed = false;
+
+    // --- [70/70] OCTOSTAMP MINIONS & BREAKABLE SUPPLY CRATES ---
+    printf("\n--- [70/70] OCTOSTAMP MINIONS & BREAKABLE SUPPLY CRATES ---\n");
+
+    // 1. Enm_Stamp (Octostamp Minion)
+    Game::Enm_Stamp stamp;
+    stamp.init();
+    stamp.spawn(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    stamp.vfunc_3();
+    stamp.vfunc_5();
+    stamp.vfunc_7();
+    stamp.vfunc_9();
+    stamp.vfunc_11();
+
+    bool stampInitOk = (stamp.getState() == Game::StampState::cState_Wait &&
+                        stamp.getHealth() == 70.0f && !stamp.isChanceState());
+
+    // Eyesight radius check (cEyesightRadius = 250m)
+    bool stampSightNear = stamp.checkSight(sead::Vector3f(0.0f, 0.0f, 100.0f));
+    bool stampSightFar  = stamp.checkSight(sead::Vector3f(0.0f, 0.0f, 350.0f));
+    bool stampSightOk = (stampSightNear && !stampSightFar);
+
+    // Front metal face deflection: hit from front (hitDir.z < 0) defers 100% of damage
+    bool deflFront = false;
+    bool hitFront = stamp.takeDamage(30.0f, sead::Vector3f(0.0f, 5.0f, -1.0f), sead::Vector3f(0.0f, 0.0f, -1.0f), deflFront);
+    bool stampDeflectOk = (!hitFront && deflFront && stamp.getHealth() == 70.0f);
+
+    // Jump slam attack lifecycle
+    stamp.triggerSlamAttack();
+    bool slamWindupOk = (stamp.getState() == Game::StampState::cState_AttackSt);
+    for (int f = 0; f < 15; ++f) stamp.update();
+    bool slamAirOk = (stamp.getState() == Game::StampState::cState_Attack);
+    for (int f = 0; f < 10; ++f) stamp.update();
+    bool slamChanceOk = (stamp.getState() == Game::StampState::cState_Chance && stamp.isChanceState());
+
+    // Face-down vulnerability: tentacle weak point takes lethal damage!
+    bool deflBack = false;
+    bool hitBack = stamp.takeDamage(70.0f, sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(0.0f, 0.0f, -1.0f), deflBack);
+    bool stampDieOk = (hitBack && !deflBack && stamp.isDefeated() && stamp.getHealth() == 0.0f);
+
+    bool octoStampOk = (stampInitOk && stampSightOk && stampDeflectOk && slamWindupOk && slamAirOk && slamChanceOk && stampDieOk);
+
+    // 2. Obj_Box00L (Large Breakable Supply Crate)
+    Game::Obj_Box00L boxL;
+    boxL.init();
+    boxL.setPosition(sead::Vector3f(10.0f, 0.0f, 10.0f));
+    boxL.vfunc_3();
+    boxL.vfunc_5();
+    boxL.vfunc_7();
+    boxL.vfunc_9();
+
+    bool boxLInitOk = (boxL.getState() == Game::BoxState::cState_Normal &&
+                       boxL.getHealth() == 50.0f && !boxL.isBroken());
+
+    // Partial damage -> wobble spring reaction
+    boxL.takeDamage(20.0f);
+    bool boxLWobbleOk = (boxL.getState() == Game::BoxState::cState_Wobble &&
+                         boxL.getWobbleScale() > 1.0f && boxL.getHealth() == 30.0f);
+
+    // Wobble settles over 30 frames
+    for (int f = 0; f < 30; ++f) boxL.update();
+    bool boxLSettleOk = (boxL.getState() == Game::BoxState::cState_Normal && boxL.getWobbleScale() == 1.0f);
+
+    // Smashed completely -> drops 5 Power Eggs
+    boxL.takeDamage(30.0f);
+    bool boxLBreakOk = (boxL.isBroken() && boxL.getHealth() == 0.0f && boxL.getDroppedPowerEggs() == 5);
+
+    bool objBoxLOk = (boxLInitOk && boxLWobbleOk && boxLSettleOk && boxLBreakOk);
+
+    // 3. Obj_Box00S (Small Breakable Supply Crate)
+    Game::Obj_Box00S boxS;
+    boxS.init();
+    boxS.setPosition(sead::Vector3f(20.0f, 0.0f, 20.0f));
+    boxS.vfunc_3();
+    boxS.vfunc_5();
+    boxS.vfunc_7();
+    boxS.vfunc_9();
+
+    bool boxSInitOk = (boxS.getState() == Game::BoxSmallState::cState_Normal &&
+                       boxS.getHealth() == 20.0f && !boxS.isBroken());
+
+    // Single blast shatters crate -> drops 2 Power Eggs
+    boxS.takeDamage(20.0f);
+    bool boxSBreakOk = (boxS.isBroken() && boxS.getHealth() == 0.0f && boxS.getDroppedPowerEggs() == 2);
+
+    bool objBoxSOk = (boxSInitOk && boxSBreakOk);
+
+    // 4. Authentic Retail BFRES Models on Disk (6,574 vertices total)
+    sead::BfresModel realStampMdl = sead::BfresParser::createStampModel();
+    sead::BfresModel realBox00LMdl = sead::BfresParser::createBox00LModel();
+    sead::BfresModel realBox00SMdl = sead::BfresParser::createBox00SModel();
+    sead::BfresModel realBox01LMdl = sead::BfresParser::createBox01LModel();
+
+    bool realM70ModelsOk = (realStampMdl.getTotalVertexCount() == 3464 &&
+                            realBox00LMdl.getTotalVertexCount() == 1028 &&
+                            realBox00SMdl.getTotalVertexCount() == 1008 &&
+                            realBox01LMdl.getTotalVertexCount() == 1074);
+
+    bool m70Ok = (octoStampOk && objBoxLOk && objBoxSOk && realM70ModelsOk);
+    printf("  Octostamp Minions & Breakable Supply Crates:         %s (Face Armor, Chance State, 6,574 Verts)\n",
+           m70Ok ? "PASSED" : "FAILED");
+    if (!m70Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

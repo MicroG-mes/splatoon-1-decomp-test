@@ -205,6 +205,10 @@ public:
     static BfresModel createAtarimeHouseModel(const char* name = "Obj_AtarimeHouse");
     static BfresModel createBigNamazuModel(const char* name = "Obj_BigNamazu");
     static BfresModel createRespawnPlatformModel(const char* name = "Obj_RespawnPlatform");
+    static BfresModel createStampModel(const char* name = "Enm_Stamp");
+    static BfresModel createBox00LModel(const char* name = "Obj_Box00L");
+    static BfresModel createBox00SModel(const char* name = "Obj_Box00S");
+    static BfresModel createBox01LModel(const char* name = "Obj_Box01L");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
