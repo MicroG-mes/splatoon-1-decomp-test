@@ -2447,6 +2447,60 @@ BfresModel BfresParser::createHeroArmorModel(const char* name) {
     return createProceduralCube(name ? name : "Obj_Armor", 1.0f);
 }
 
+BfresModel BfresParser::createSwitchPaintModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_SwitchPaint.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_SwitchPaint";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_SwitchPaint", 1.0f);
+}
+
+BfresModel BfresParser::createColorConeModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_ColorCone.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_ColorCone";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_ColorCone", 1.0f);
+}
+
+BfresModel BfresParser::createSquidGuardModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_SquidGuard.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_SquidGuard";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_SquidGuard", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

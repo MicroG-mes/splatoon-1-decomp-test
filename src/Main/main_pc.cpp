@@ -146,6 +146,9 @@
 #include "Game/Enemy/Enm_Ball.h"
 #include "Game/MapObj/Lft_Propeller00.h"
 #include "Game/MapObj/Obj_Armor.h"
+#include "Game/MapObj/Obj_SwitchPaint.h"
+#include "Game/MapObj/Obj_ColorCone.h"
+#include "Game/MapObj/Obj_SquidGuard.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -3661,7 +3664,7 @@ bool RunVerificationSuite() {
     if (!m64Ok) allPassed = false;
 
     // 65. Ink-Powered Propeller Platforms & Hero Armor Suit (Lft_Propeller00, Obj_Armor)
-    printf("\n--- [65/65] INK-POWERED PROPELLER PLATFORMS & HERO ARMOR SUIT ---\n");
+    printf("\n--- [65/66] INK-POWERED PROPELLER PLATFORMS & HERO ARMOR SUIT ---\n");
 
     // 1. Lft_Propeller00 Winch Platform Physics
     Game::Lft_Propeller00 screwLiftPlatform;
@@ -3754,6 +3757,102 @@ bool RunVerificationSuite() {
     printf("  Propeller Platforms & Hero Armor Suit:         %s (Winch Physics, Armor Tiers 1-3, 6,568 Verts)\n",
            m65Ok ? "PASSED" : "FAILED");
     if (!m65Ok) allPassed = false;
+
+    // 66. Paint Trigger Switches, Traffic Cones & Crowd Barriers (Obj_SwitchPaint, Obj_ColorCone, Obj_SquidGuard)
+    printf("\n--- [66/66] PAINT SWITCH TRIGGERS, TRAFFIC CONES & CROWD BARRIERS ---\n");
+
+    // 1. Obj_SwitchPaint Ink Sensor & Auto-Reset Logic
+    Game::Obj_SwitchPaint paintSwitch;
+    paintSwitch.setPosition(sead::Vector3f(0.0f, 2.0f, 0.0f));
+    paintSwitch.setActivationThreshold(10.0f);
+    paintSwitch.setAutoResetFrames(60);
+    paintSwitch.init();
+
+    bool swInitOk = (paintSwitch.getState() == Game::SwitchPaintState::cOff &&
+                     !paintSwitch.isActivated() &&
+                     paintSwitch.getAccumulatedInk() == 0.0f);
+
+    // Spray with partial ink blast (6.0f < 10.0f) -> remains cOff
+    bool partialActivated = paintSwitch.paintInk(6.0f, 1);
+    bool swPartialOk = (!partialActivated && paintSwitch.getState() == Game::SwitchPaintState::cOff &&
+                        paintSwitch.getAccumulatedInk() == 6.0f);
+
+    // Hit with remaining ink to exceed threshold (6.0 + 5.0 = 11.0 >= 10.0) -> triggers cOn!
+    bool fullActivated = paintSwitch.paintInk(5.0f, 1);
+    bool swActiveOk = (fullActivated && paintSwitch.isActivated() &&
+                       paintSwitch.getState() == Game::SwitchPaintState::cOn &&
+                       paintSwitch.consumeSignal());
+
+    // Advance 65 frames -> timer expires and auto-resets switch back to cOff!
+    for (int f = 0; f < 65; ++f) paintSwitch.update();
+    bool swResetOk = (!paintSwitch.isActivated() && paintSwitch.getState() == Game::SwitchPaintState::cOff);
+
+    // Test VS mode flip:
+    paintSwitch.setVsMode(true);
+    paintSwitch.paintInk(10.0f, 1); // Team 1 claims switch
+    bool team1Claimed = (paintSwitch.isActivated() && paintSwitch.getOwningTeam() == 1);
+    paintSwitch.paintInk(12.0f, 2); // Opponent team 2 shoots 12 ink -> neutralizes/resets!
+    bool team2Flipped = (!paintSwitch.isActivated());
+
+    bool switchPaintOk = (swInitOk && swPartialOk && swActiveOk && swResetOk && team1Claimed && team2Flipped);
+
+    // 2. Obj_ColorCone Elastic Torsional Wobble & Topple Physics
+    Game::Obj_ColorCone cone;
+    cone.setPosition(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    cone.init();
+
+    bool coneInitOk = (cone.isUpright() && cone.getTiltAngle() == 0.0f);
+
+    // Light ink blast or brush (3.0 m/s impulse < 6.0 threshold) -> tilts elastically
+    cone.applyImpulse(sead::Vector3f(3.0f, 0.0f, 0.0f));
+    bool coneTiltOk = (cone.getState() == Game::ColorConeState::cState_Tilted);
+
+    // Advance 45 frames -> spring-damper returns cone upright!
+    for (int f = 0; f < 45; ++f) cone.update();
+    bool coneSettleOk = (cone.isUpright() && cone.getTiltAngle() == 0.0f);
+
+    // Heavy player dash/stamp (8.0 m/s impulse >= 6.0 threshold) -> topples cone!
+    cone.applyImpulse(sead::Vector3f(0.0f, 0.0f, 8.0f));
+    bool coneToppleOk = (cone.isToppled() && cone.getTiltAngle() == Game::Obj_ColorCone::cMaxTiltAngle);
+
+    bool colorConeOk = (coneInitOk && coneTiltOk && coneSettleOk && coneToppleOk);
+
+    // 3. Obj_SquidGuard Steel Barricade Collision & Elastic Rattle
+    Game::Obj_SquidGuard barrier;
+    barrier.setPosition(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    barrier.init();
+
+    bool barInitOk = (barrier.getState() == Game::SquidGuardState::cState_Idle &&
+                      !barrier.isRattling());
+
+    // Ink bullet impact rattles the steel frame
+    barrier.hitWithInk(10.0f, sead::Vector3f(0.0f, 0.0f, 1.0f));
+    bool barRattleOk = (barrier.isRattling() && barrier.getState() == Game::SquidGuardState::cState_Rattle);
+
+    // Player running into barrier receives physical rebound pushback
+    sead::Vector3f sgRebound(0.0f, 0.0f, 0.0f);
+    bool sgColHit = barrier.checkPlayerCollision(sead::Vector3f(0.5f, 0.5f, 0.1f), 0.5f, sgRebound);
+    bool barColOk = (sgColHit && sgRebound.z != 0.0f);
+
+    // Settle 30 frames -> rattle decays back to idle
+    for (int f = 0; f < 30; ++f) barrier.update();
+    bool barSettleOk = (!barrier.isRattling() && barrier.getState() == Game::SquidGuardState::cState_Idle);
+
+    bool squidGuardOk = (barInitOk && barRattleOk && barColOk && barSettleOk);
+
+    // 4. Authentic Retail BFRES Models on Disk
+    sead::BfresModel realSwitchMdl = sead::BfresParser::createSwitchPaintModel();
+    sead::BfresModel realConeMdl = sead::BfresParser::createColorConeModel();
+    sead::BfresModel realGuardMdl = sead::BfresParser::createSquidGuardModel();
+
+    bool realModelOk = (realSwitchMdl.getTotalVertexCount() == 356 &&
+                        realConeMdl.getTotalVertexCount() == 654 &&
+                        realGuardMdl.getTotalVertexCount() == 100);
+
+    bool m66Ok = (switchPaintOk && colorConeOk && squidGuardOk && realModelOk);
+    printf("  Paint Switches, Cones & Security Barriers:     %s (Ink Triggers, Wobble Spring, Rattle Fence, 1,110 Verts)\n",
+           m66Ok ? "PASSED" : "FAILED");
+    if (!m66Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

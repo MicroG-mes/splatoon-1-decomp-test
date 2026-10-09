@@ -195,6 +195,9 @@ public:
     static BfresModel createPropellerLift01Model(const char* name = "Lft_Propeller01");
     static BfresModel createPropellerFanModel(const char* name = "Obj_Propeller01");
     static BfresModel createHeroArmorModel(const char* name = "Obj_Armor");
+    static BfresModel createSwitchPaintModel(const char* name = "Obj_SwitchPaint");
+    static BfresModel createColorConeModel(const char* name = "Obj_ColorCone");
+    static BfresModel createSquidGuardModel(const char* name = "Obj_SquidGuard");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
