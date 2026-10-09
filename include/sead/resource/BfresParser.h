@@ -189,6 +189,8 @@ public:
     static BfresModel createTree01Model(const char* name = "Obj_Tree01");
     static BfresModel createRubberPoleModel(const char* name = "Obj_RubberPole00");
     static BfresModel createWindsockModel(const char* name = "Obj_Windsock");
+    static BfresModel createTakodozerModel(const char* name = "Enm_Takodozer");
+    static BfresModel createOctoballModel(const char* name = "Enm_Ball");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

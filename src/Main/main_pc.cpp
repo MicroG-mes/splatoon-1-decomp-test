@@ -142,6 +142,8 @@
 #include "Game/MapObj/Obj_SighterTarget.h"
 #include "Game/MapObj/Obj_RubberPole00.h"
 #include "Game/MapObj/Obj_Windsock.h"
+#include "Game/Enemy/EnemyTakodozer.h"
+#include "Game/Enemy/Enm_Ball.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -3481,7 +3483,7 @@ bool RunVerificationSuite() {
     if (!m62Ok) allPassed = false;
 
     // 63. Weapon Testing Range Target Dummies & Dynamic Testing Props (Obj_SighterTarget, Obj_RubberPole00, Obj_Windsock)
-    printf("\n--- [63/63] WEAPON TESTING TARGET DUMMIES & DYNAMIC PROPS ---\n");
+    printf("\n--- [63/64] WEAPON TESTING TARGET DUMMIES & DYNAMIC PROPS ---\n");
 
     // 1. Inflatable Target Dummies (Obj_SighterTarget)
     Game::Obj_SighterTarget dummyNormal(Game::SighterTargetType::cTarget_Normal);
@@ -3556,6 +3558,105 @@ bool RunVerificationSuite() {
     printf("  Testing Range Targets & Dynamic Gimmicks:      %s (Normal 100HP/Heavy 500HP, Pole Bounce, Windsock 10m/s, 4,467 Verts)\n",
            m63Ok ? "PASSED" : "FAILED");
     if (!m63Ok) allPassed = false;
+
+    // 64. Octarian Heavy Assault Armor: Octodozer & Rolling Octoball (Enm_Takodozer & Enm_Ball)
+    printf("\n--- [64/64] OCTARIAN HEAVY ASSAULT ARMOR: OCTODOZER & OCTOBALL ---\n");
+
+    // 1. EnemyTakodozer Bulldozer Mechanics
+    Game::EnemyTakodozer dozer;
+    dozer.setPosition(sead::Vector3f(0.0f, 0.0f, -20.0f));
+    dozer.init();
+
+    bool dozerInitOk = (dozer.getState() == Game::OctodozerState::cPatrol &&
+                        dozer.getTentacleHp() == 100.0f &&
+                        dozer.getSpeed() == 0.60f &&
+                        dozer.isShieldPlowActive());
+
+    // Frontal attack: player shoots incoming ink blast at front plow -> 100% deflected!
+    // Takodozer moving along +Z (0, 0, 1), shot coming from player in front towards -Z (0, 0, -1)
+    sead::Vector3f frontShotDir(0.0f, 0.0f, -1.0f);
+    bool frontShotDamaged = dozer.applyDamage(40.0f, frontShotDir, false);
+    bool frontDeflectOk = (!frontShotDamaged && dozer.getTentacleHp() == 100.0f &&
+                           dozer.getFrontPlowDeflectedDamage() == 40.0f);
+
+    // AI targeting: player enters eyesight cone (< 500m in front) -> cChase state
+    sead::Vector3f playerFrontPos(0.0f, 0.0f, 30.0f);
+    dozer.updateAi(playerFrontPos, 100.0f);
+    bool dozerChaseOk = (dozer.isChasing() && dozer.getEyeScale() == 2.069f);
+
+    // Advance 30 frames of chase -> accelerates toward 1.20 m/s
+    for (int f = 0; f < 30; ++f) dozer.updateAi(playerFrontPos, 100.0f);
+    bool dozerSpeedOk = (dozer.getSpeed() > 1.0f);
+
+    // Rear sneak attack: player climbs atop rear cockpit and hits driver tentacle weak point
+    sead::Vector3f rearShotDir(0.0f, 0.0f, 1.0f);
+    bool rearShotDamaged = dozer.applyDamage(100.0f, rearShotDir, true);
+    bool dozerDefeatOk = (rearShotDamaged && dozer.isDestroyed() &&
+                          dozer.getTentacleHp() == 0.0f &&
+                          dozer.getDroppedPowerEggs() == 20);
+
+    bool octodozerOk = (dozerInitOk && frontDeflectOk && dozerChaseOk && dozerSpeedOk && dozerDefeatOk);
+
+    // 2. Enm_Ball (Octoball) Ballistics & BarrierGuard
+    Game::Enm_Ball octoballNormal;
+    octoballNormal.setPosition(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    octoballNormal.init();
+
+    // Normal variant initial state
+    bool ballInitOk = (octoballNormal.getState() == Game::OctoballState::cWait &&
+                       octoballNormal.getHp() == Game::Enm_Ball::cMaxHp);
+
+    // Player nearby (< 200m) -> alert notice -> roll dash with BarrierGuard
+    octoballNormal.updateAi(sead::Vector3f(0.0f, 0.0f, 10.0f), false);
+    bool ballNoticeOk = (octoballNormal.getState() == Game::OctoballState::cNotice);
+
+    // Wait 20 frames for curl-up -> enters cMove rolling dash
+    for (int f = 0; f < 21; ++f) octoballNormal.updateAi(sead::Vector3f(0.0f, 0.0f, 10.0f), false);
+    bool ballRollOk = (octoballNormal.isRolling() && octoballNormal.isInvulnerable() &&
+                       octoballNormal.getSpeed() == 1.50f);
+
+    // Frontal ink shot while rolling -> deflected by BarrierGuard
+    bool rollHitDeflected = !octoballNormal.applyDamage(15.0f);
+    bool rollBarrierOk = (rollHitDeflected && octoballNormal.getHp() == Game::Enm_Ball::cMaxHp &&
+                          octoballNormal.getBarrierDeflectedDamage() == 15.0f);
+
+    // Octoball rolls onto player ink -> sinks, drops barrier into cChance / cDazedUncurl
+    octoballNormal.updateAi(sead::Vector3f(0.0f, 0.0f, 10.0f), true);
+    bool ballSunkOk = (octoballNormal.isChanceState() && !octoballNormal.isInvulnerable() &&
+                       octoballNormal.getSpeed() == 0.20f);
+
+    // Shot during Chance state -> takes lethal damage, splats and drops 5 Power Eggs
+    bool fatalHit = octoballNormal.applyDamage(30.0f);
+    bool ballDefeatOk = (fatalHit && octoballNormal.isDefeated() &&
+                         octoballNormal.getHp() == 0.0f &&
+                         octoballNormal.getDroppedPowerEggs() == 5);
+
+    // 3. Real vs Fake Octoball Variants
+    Game::Enm_Ball octoballReal;
+    octoballReal.setVariant(Game::OctoballVariant::cReal);
+    octoballReal.init();
+    bool realVariantOk = (octoballReal.getMaxHp() == 12.0f && octoballReal.getHp() == 12.0f);
+
+    Game::Enm_Ball octoballFake;
+    octoballFake.setVariant(Game::OctoballVariant::cFake);
+    octoballFake.init();
+    bool fakeVariantOk = (octoballFake.getMaxHp() == 0.60f && octoballFake.getHp() == 0.60f);
+
+    bool octoballAllOk = (ballInitOk && ballNoticeOk && ballRollOk && rollBarrierOk &&
+                          ballSunkOk && ballDefeatOk && realVariantOk && fakeVariantOk);
+
+    // 4. Authentic Retail BFRES Models on Disk (14,601 vertices total across both models)
+    sead::BfresModel realDozerMdl = sead::BfresParser::createTakodozerModel();
+    sead::BfresModel realOctoballMdl = sead::BfresParser::createOctoballModel();
+
+    bool dozerMdlOk = (realDozerMdl.getTotalVertexCount() == 9735);
+    bool ballMdlOk = (realOctoballMdl.getTotalVertexCount() == 4866);
+
+    bool m64Ok = (octodozerOk && octoballAllOk && dozerMdlOk && ballMdlOk);
+
+    printf("  Octarian Heavy Assault Armor (Dozer & Octoball): %s (Dozer 9,735V/100HP Plow, Ball 4,866V/Barrier, 14,601 Verts)\n",
+           m64Ok ? "PASSED" : "FAILED");
+    if (!m64Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
