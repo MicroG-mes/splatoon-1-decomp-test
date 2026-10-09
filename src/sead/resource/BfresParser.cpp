@@ -2591,6 +2591,42 @@ BfresModel BfresParser::createAtarimeHouseModel(const char* name) {
     return createProceduralCube(name ? name : "Obj_AtarimeHouse", 1.0f);
 }
 
+BfresModel BfresParser::createBigNamazuModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_BigNamazu.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_BigNamazu";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_BigNamazu", 1.0f);
+}
+
+BfresModel BfresParser::createRespawnPlatformModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_RespawnPlatform.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_RespawnPlatform";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_RespawnPlatform", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

@@ -203,6 +203,8 @@ public:
     static BfresModel createCommanderModel(const char* name = "Npc_Commander");
     static BfresModel createCommanderBindModel(const char* name = "Npc_CommanderBind");
     static BfresModel createAtarimeHouseModel(const char* name = "Obj_AtarimeHouse");
+    static BfresModel createBigNamazuModel(const char* name = "Obj_BigNamazu");
+    static BfresModel createRespawnPlatformModel(const char* name = "Obj_RespawnPlatform");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

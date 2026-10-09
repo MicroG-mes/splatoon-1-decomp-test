@@ -154,6 +154,9 @@
 #include "Game/Npc/Npc_Commander.h"
 #include "Game/Npc/Npc_CommanderBind.h"
 #include "Game/MapObj/Obj_AtarimeHouse.h"
+#include "Game/MapObj/Obj_BigNamazu.h"
+#include "Game/MapObj/Obj_RespawnPlatform.h"
+#include "Game/MapObj/Obj_JumpPoint.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -4035,6 +4038,105 @@ bool RunVerificationSuite() {
     printf("  Cap'n Cuttlefish Overworld NPC, Bound Boss & Cabin: %s (Dialogue, Dance Cheer, 47,663 Verts)\n",
            m68Ok ? "PASSED" : "FAILED");
     if (!m68Ok) allPassed = false;
+
+    // --- [69/69] THE GREAT ZAPFISH, MATCH RESPAWN PLATFORMS & SUPER JUMP BEACONS ---
+    printf("\n--- [69/69] THE GREAT ZAPFISH, MATCH RESPAWN PLATFORMS & SUPER JUMP BEACONS ---\n");
+
+    // 1. Obj_BigNamazu (The Great Zapfish)
+    Game::Obj_BigNamazu bigNamazu;
+    bigNamazu.init();
+    bigNamazu.setPosition(sead::Vector3f(0.0f, 150.0f, 0.0f));
+    bigNamazu.vfunc_3();
+    bigNamazu.vfunc_5();
+    bigNamazu.vfunc_7();
+    bigNamazu.vfunc_9();
+
+    bool bnInitOk = (bigNamazu.getState() == Game::BigNamazuState::cState_Start &&
+                     bigNamazu.getPowerOutputMW() == 100000.0f);
+
+    for (int f = 0; f < 35; ++f) bigNamazu.update();
+    bool bnWaitOk = (bigNamazu.getState() == Game::BigNamazuState::cState_Wait &&
+                     bigNamazu.getBreathingScale() > 0.95f);
+
+    // Stolen event simulation
+    bigNamazu.setToMissing();
+    bool bnMissingOk = (bigNamazu.getState() == Game::BigNamazuState::cState_Missing &&
+                        bigNamazu.getPowerOutputMW() == 0.0f);
+
+    // Rescued and returned to tower
+    bigNamazu.restoreToTower();
+    bool bnRestoreOk = (bigNamazu.getState() == Game::BigNamazuState::cState_Start &&
+                        bigNamazu.getPowerOutputMW() == 100000.0f);
+
+    bool bigNamazuOk = (bnInitOk && bnWaitOk && bnMissingOk && bnRestoreOk);
+
+    // 2. Obj_RespawnPlatform (Team Match Spawn Point Platform)
+    Game::Obj_RespawnPlatform spawnPlatform;
+    spawnPlatform.init();
+    spawnPlatform.setPosition(sead::Vector3f(0.0f, 0.0f, -50.0f));
+    spawnPlatform.setTeam(Game::RespawnTeam::cTeam_Alpha);
+    spawnPlatform.vfunc_3();
+    spawnPlatform.vfunc_5();
+    spawnPlatform.vfunc_7();
+    spawnPlatform.vfunc_14();
+
+    bool spInitOk = (spawnPlatform.getState() == Game::RespawnPlatformState::cState_Wait &&
+                     spawnPlatform.getTeam() == Game::RespawnTeam::cTeam_Alpha);
+
+    // Barrier shield area protection (4.5m radius)
+    bool inShield = spawnPlatform.isInsideBarrier(sead::Vector3f(1.0f, 0.5f, -50.0f)); // dist 1.0m
+    bool outShield = spawnPlatform.isInsideBarrier(sead::Vector3f(10.0f, 0.5f, -50.0f)); // dist 10.0m
+    bool spShieldOk = (inShield && !outShield);
+
+    // Player respawn event & ink tank rapid replenishment
+    spawnPlatform.triggerRespawnEffect();
+    bool spRespawnOk = (spawnPlatform.getState() == Game::RespawnPlatformState::cState_Respawn &&
+                        spawnPlatform.getSpawnsCount() == 1);
+    f32 refilledInk = spawnPlatform.refillPlayerInk(0.20f);
+    bool spInkOk = (std::abs(refilledInk - 0.30f) < 0.001f);
+
+    for (int f = 0; f < 25; ++f) spawnPlatform.update();
+    bool spReturnOk = (spawnPlatform.getState() == Game::RespawnPlatformState::cState_Wait);
+
+    bool respawnPlatformOk = (spInitOk && spShieldOk && spRespawnOk && spInkOk && spReturnOk);
+
+    // 3. Obj_JumpPoint (Deployable Super Jump Beacon & Jump Point)
+    Game::Obj_JumpPoint jumpBeacon;
+    jumpBeacon.init();
+    jumpBeacon.deploy(sead::Vector3f(20.0f, 0.0f, 15.0f), 0);
+    jumpBeacon.vfunc_3();
+    jumpBeacon.vfunc_5();
+    jumpBeacon.vfunc_7();
+    jumpBeacon.vfunc_9();
+
+    bool jbInitOk = (jumpBeacon.getState() == Game::JumpPointState::cState_Idle &&
+                     jumpBeacon.getDurability() == 3.0f && jumpBeacon.isActive());
+
+    // Super jump landing consumption (1 durability per jump)
+    jumpBeacon.vfunc_11();
+    bool jbJump1Ok = (jumpBeacon.getDurability() == 2.0f && jumpBeacon.isActive());
+
+    // 2 more super jumps break the beacon
+    jumpBeacon.onSuperJumpLanded();
+    jumpBeacon.onSuperJumpLanded();
+    bool jbBreakOk = (jumpBeacon.getDurability() == 0.0f && !jumpBeacon.isActive() &&
+                      jumpBeacon.getState() == Game::JumpPointState::cState_Break);
+
+    bool jumpPointOk = (jbInitOk && jbJump1Ok && jbBreakOk);
+
+    // 4. Authentic Retail BFRES Models on Disk
+    sead::BfresModel realNamazuMdl = sead::BfresParser::createBigNamazuModel();
+    sead::BfresModel realSpawnMdl = sead::BfresParser::createRespawnPlatformModel();
+    sead::BfresModel realBeaconMdl = sead::BfresParser::createJumpPointModel();
+
+    bool realM69ModelsOk = (realNamazuMdl.getTotalVertexCount() == 7563 &&
+                            realSpawnMdl.getTotalVertexCount() == 6843 &&
+                            realBeaconMdl.getTotalVertexCount() == 3490);
+
+    bool m69Ok = (bigNamazuOk && respawnPlatformOk && jumpPointOk && realM69ModelsOk);
+    printf("  Great Zapfish, Respawn Platform & Super Jump Beacon: %s (100k MW, Shield Dome, 17,896 Verts)\n",
+           m69Ok ? "PASSED" : "FAILED");
+    if (!m69Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
