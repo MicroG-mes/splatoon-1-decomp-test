@@ -215,6 +215,8 @@ public:
     static BfresModel createTakolienSModel(const char* name = "Enm_TakolienS");
     static BfresModel createCleanerModel(const char* name = "Enm_Cleaner");
     static BfresModel createTakopterBombModel(const char* name = "Enm_TakopterBomb");
+    static BfresModel createChargeLiftModel(const char* name = "Lft_Charge");
+    static BfresModel createBridgeUpDown00Model(const char* name = "Obj_BridgeUpDown00");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

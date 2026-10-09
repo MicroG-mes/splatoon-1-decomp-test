@@ -166,6 +166,10 @@
 #include "Game/Enemy/Enm_TakolienSpeedUp.h"
 #include "Game/Enemy/Enm_Cleaner.h"
 #include "Game/Enemy/Enm_TakopterBomb.h"
+#include "Game/Enemy/Enm_Charge.h"
+#include "Game/MapObj/Obj_SeesawLift.h"
+#include "Game/MapObj/Obj_BridgeUpDown00.h"
+#include "Game/MapObj/Lft_Charge.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -4460,6 +4464,112 @@ bool RunVerificationSuite() {
     printf("  Elite Kelp Octolings, Squee-G & Aerial Bombers:      %s (1.35x Speed, Killer Wail, 21,851 Verts)\n",
            m72Ok ? "PASSED" : "FAILED");
     if (!m72Ok) allPassed = false;
+
+    // --- [73/73] OCTOSNIPER TURRETS, BALANCE SEESAWS & RISING DRAWBRIDGES ---
+    printf("\n--- [73/73] OCTOSNIPER TURRETS, BALANCE SEESAWS & RISING DRAWBRIDGES ---\n");
+
+    // 1. Enm_Charge (Octosniper / タコスナイパー)
+    Game::Enm_Charge sniper;
+    sniper.init();
+    sniper.setupBunker(sead::Vector3f(0.0f, 10.0f, 0.0f), 0.0f);
+    bool snInitOk = (sniper.getState() == Game::OctosniperState::cIdle &&
+                     sniper.getHealth() == 80.0f && sniper.isAlive());
+
+    // Sight acquisition and laser targeting
+    sniper.updateAimAtPlayer(sead::Vector3f(0.0f, 10.0f, 25.0f));
+    sniper.vfunc_7();
+    bool snLockOk = (sniper.getState() == Game::OctosniperState::cLockOn);
+
+    // Charge countdown
+    for (int f = 0; f < 25; ++f) sniper.vfunc_7();
+    bool snChargingOk = (sniper.getState() == Game::OctosniperState::cCharging && sniper.isLaserActive());
+
+    // Shot release
+    for (int f = 0; f < 65; ++f) sniper.vfunc_7();
+    bool snFiredOk = (sniper.getState() == Game::OctosniperState::cCooldown ||
+                      sniper.getState() == Game::OctosniperState::cIdle);
+
+    bool octoSniperOk = (snInitOk && snLockOk && snChargingOk && snFiredOk);
+
+    // 2. Obj_SeesawLift (Balance Seesaw Platform)
+    Game::Obj_SeesawLift seesaw;
+    seesaw.init();
+    seesaw.spawn(sead::Vector3f(0.0f, 5.0f, 0.0f));
+    bool seesawInitOk = (seesaw.getState() == Game::SeesawLiftState::cBalanced && seesaw.isLevel());
+
+    // Player weight torque tilt
+    seesaw.applyWeightImpulse(4.0f, 50.0f); // 4 meters from pivot, 50kg weight
+    for (int f = 0; f < 30; ++f) seesaw.vfunc_7();
+    bool seesawTiltingOk = (seesaw.getTiltAngle() > 0.0f);
+
+    // Continue weight until max tilt limit reached
+    for (int f = 0; f < 60; ++f) {
+        seesaw.applyWeightImpulse(5.0f, 80.0f);
+        seesaw.vfunc_7();
+    }
+    bool seesawMaxOk = (seesaw.isAtMaxTilt() && seesaw.getTiltAngle() >= Game::Obj_SeesawLift::cMaxTiltRadians - 0.01f);
+
+    // Player dismounts -> spring restoring torque returns toward level
+    seesaw.applyWeightImpulse(0.0f, 0.0f);
+    for (int f = 0; f < 120; ++f) seesaw.vfunc_7();
+    bool seesawRestoreOk = (seesaw.getTiltAngle() < Game::Obj_SeesawLift::cMaxTiltRadians);
+
+    bool seesawOk = (seesawInitOk && seesawTiltingOk && seesawMaxOk && seesawRestoreOk);
+
+    // 3. Obj_BridgeUpDown00 (Rising Drawbridge Platform)
+    Game::Obj_BridgeUpDown00 drawbridge;
+    drawbridge.init();
+    drawbridge.spawn(sead::Vector3f(0.0f, 0.0f, 0.0f), 0.0f);
+    bool brInitOk = (drawbridge.getState() == Game::BridgeUpDownState::cLowered &&
+                     drawbridge.isPassable() && drawbridge.getAngleDegrees() == 0.0f);
+
+    // Ink switch trigger -> raise bridge
+    drawbridge.vfunc_11();
+    bool brRaisingOk = (drawbridge.getState() == Game::BridgeUpDownState::cRaising);
+    for (int f = 0; f < 70; ++f) drawbridge.vfunc_7();
+    bool brRaisedOk = (drawbridge.getState() == Game::BridgeUpDownState::cRaised &&
+                       drawbridge.isFullyRaised() && drawbridge.getAngleDegrees() == Game::Obj_BridgeUpDown00::cMaxAngleDegrees);
+
+    // Hold duration expires -> descends back down
+    for (int f = 0; f < 265; ++f) drawbridge.vfunc_7();
+    bool brLoweredOk = (drawbridge.getState() == Game::BridgeUpDownState::cLowered && drawbridge.isPassable());
+
+    bool bridgeOk = (brInitOk && brRaisingOk && brRaisedOk && brLoweredOk);
+
+    // 4. Lft_Charge (Octosniper Perch Lift Platform)
+    Game::Lft_Charge chargeLift;
+    chargeLift.init();
+    chargeLift.spawn(sead::Vector3f(0.0f, 0.0f, 0.0f), 25.0f);
+    bool cLiftInitOk = (chargeLift.getState() == Game::ChargeLiftState::cBottom &&
+                        chargeLift.isAtBottom() && chargeLift.getCurrentHeight() == 0.0f);
+
+    chargeLift.vfunc_11(); // Ascend
+    bool clAscendingOk = (chargeLift.getState() == Game::ChargeLiftState::cAscending);
+    for (int f = 0; f < 80; ++f) chargeLift.vfunc_7();
+    bool clTopOk = (chargeLift.getState() == Game::ChargeLiftState::cTop &&
+                    chargeLift.isAtTop() && chargeLift.getCurrentHeight() == 25.0f);
+
+    // Top dwell expires -> descending return
+    for (int f = 0; f < 235; ++f) chargeLift.vfunc_7();
+    bool clBottomOk = (chargeLift.getState() == Game::ChargeLiftState::cBottom && chargeLift.isAtBottom());
+
+    bool chargeLiftOk = (cLiftInitOk && clAscendingOk && clTopOk && clBottomOk);
+
+    // 5. Authentic Retail BFRES Models on Disk (8,880 vertices total)
+    sead::BfresModel realChargeLiftMdl  = sead::BfresParser::createChargeLiftModel();
+    sead::BfresModel realBridgeMdl      = sead::BfresParser::createBridgeUpDown00Model();
+    sead::BfresModel realPropLift00Mdl  = sead::BfresParser::createPropellerLift00Model();
+    sead::BfresModel realPropLift01Mdl  = sead::BfresParser::createPropellerLift01Model();
+
+    bool realM73ModelsOk = (realChargeLiftMdl.getTotalVertexCount() == 3064 &&
+                            realBridgeMdl.getTotalVertexCount() == 2624 &&
+                            realPropLift00Mdl.getTotalVertexCount() == 984 &&
+                            realPropLift01Mdl.getTotalVertexCount() == 2208);
+
+    bool m73Ok = (octoSniperOk && seesawOk && bridgeOk && chargeLiftOk && realM73ModelsOk);
+    printf("  Octosniper Turrets, Balance Seesaws & Drawbridges:   %s (Laser Lock, Restitution, 8,880 Verts)\n",
+           m73Ok ? "PASSED" : "FAILED");
+    if (!m73Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

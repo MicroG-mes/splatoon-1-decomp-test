@@ -2807,6 +2807,42 @@ BfresModel BfresParser::createTakopterBombModel(const char* name) {
     return createProceduralCube(name ? name : "Enm_TakopterBomb", 1.0f);
 }
 
+BfresModel BfresParser::createChargeLiftModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Lft_Charge.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Lft_Charge";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Lft_Charge", 1.0f);
+}
+
+BfresModel BfresParser::createBridgeUpDown00Model(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_BridgeUpDown00.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_BridgeUpDown00";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_BridgeUpDown00", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");
