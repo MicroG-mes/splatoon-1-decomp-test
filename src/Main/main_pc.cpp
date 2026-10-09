@@ -173,6 +173,8 @@
 #include "Game/Enemy/Enm_TakolienVehicleFix.h"
 #include "Game/Enemy/Enm_TakolienVehicleMove.h"
 #include "Game/Enemy/Enm_TakolienVehicleSubmarine.h"
+#include "Game/Bullet/GameBulletBombSucker.h"
+#include "Game/Bullet/BulletBombMarking.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -4660,6 +4662,94 @@ bool RunVerificationSuite() {
     printf("  Octoling Assault Mechs & Ink-Submersibles:           %s (Mortar, Walker, Breach, 22,469 Verts)\n",
            m74Ok ? "PASSED" : "FAILED");
     if (!m74Ok) allPassed = false;
+
+    // --- [75/75] SPECIAL & SUB WEAPON 3D ARSENAL PIPELINE ---
+    printf("\n--- [75/75] SPECIAL & SUB WEAPON 3D ARSENAL PIPELINE ---\n");
+
+    // 1. Suction Bomb Adhesion & Countdown Fuse (GameBulletBombSucker / Wsb_Bomb_Hold)
+    Game::GameBulletBombSucker suctionBomb;
+    suctionBomb.init();
+    suctionBomb.launch(sead::Vector3f(0.0f, 10.0f, 0.0f), sead::Vector3f(0.0f, -1.0f, 0.0f), 1.0f, 0);
+    bool sbAirOk = (!suctionBomb.isStuck() && suctionBomb.getFuseFrames() == 120);
+
+    // Sticks to wall upon impact
+    suctionBomb.onHitWall(sead::Vector3f(5.0f, 2.0f, 0.0f), sead::Vector3f(-1.0f, 0.0f, 0.0f));
+    bool sbStuckOk = (suctionBomb.isStuck() && suctionBomb.getPosition().x == 5.0f);
+
+    // Fuse counts down 120 frames to detonation
+    for (int f = 0; f < 120; ++f) suctionBomb.update();
+    bool sbDetonateOk = (suctionBomb.isDetonated() && suctionBomb.getDamage() == 180.0f);
+
+    bool suctionOk = (sbAirOk && sbStuckOk && sbDetonateOk);
+
+    // 2. Point Sensor Echolocation Tracking (BulletBombMarking / Wsb_MarkingBall)
+    Game::BulletBombMarking pointSensor;
+    pointSensor.init();
+    pointSensor.throwBomb(sead::Vector3f(0.0f, 2.0f, 0.0f), sead::Vector3f(1.0f, 0.5f, 0.0f), 0, 1);
+    bool psAirOk = (pointSensor.getState() == Game::MarkingBombState::cInAirAirborne);
+
+    pointSensor.vfunc_11(); // Detonate pulse -> cSensorPulse
+    bool psPulseOk = (pointSensor.getState() == Game::MarkingBombState::cSensorPulse);
+
+    // Radar pulse detects enemy team (team 1 vs sensor team 0) within 5.0m
+    bool psMarkEnemyOk = pointSensor.checkMarkEnemy(sead::Vector3f(3.0f, 2.0f, 0.0f), 1);
+    bool psIgnoreTeammateOk = !pointSensor.checkMarkEnemy(sead::Vector3f(3.0f, 2.0f, 0.0f), 0);
+
+    bool sensorOk = (psAirOk && psPulseOk && psMarkEnemyOk && psIgnoreTeammateOk);
+
+    // 3. Seeker Target Homing (Bomb_Chase / Wsb_Bomb_Chase)
+    Game::Bomb_Chase seekerBomb;
+    seekerBomb.init();
+    seekerBomb.launch(sead::Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 0, 1);
+    bool skLaunchOk = (seekerBomb.getState() == Game::ChaseBombState::cLaunching ||
+                       seekerBomb.getState() == Game::ChaseBombState::cCruisingTrail);
+    seekerBomb.checkEnemyHoming(sead::Vector3f(5.0f, 0.0f, 5.0f), 1);
+    bool skHomeOk = (seekerBomb.getState() == Game::ChaseBombState::cHomingTarget);
+
+    bool m75SeekerOk = (skLaunchOk && skHomeOk);
+
+    // 4. Special Weapons Integration
+    // Killer Wail (PlayerWeaponBigLaser): sonic beam penetration
+    Game::PlayerWeaponBigLaser m75Laser;
+    m75Laser.init();
+    m75Laser.deploy(sead::Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 0);
+    bool kwInitOk = (m75Laser.getState() == Game::BigLaserState::cPlacingSpeaker);
+
+    // Kraken (PlayerKingSquid): cephalopod armor & invulnerability
+    Game::PlayerKingSquid m75Kraken;
+    m75Kraken.init();
+    m75Kraken.activate(sead::Vector3f(0.0f, 0.0f, 0.0f), 0);
+    bool krActiveOk = (m75Kraken.isActive() && m75Kraken.isInvulnerable());
+
+    // Inkzooka (GameWeaponSuperShot): tornado vortex cannon
+    Game::GameWeaponSuperShot m75Zooka;
+    m75Zooka.init();
+    m75Zooka.activate(0, sead::Vector3f(0.0f, 0.0f, 0.0f));
+    bool zkActiveOk = (m75Zooka.isActive() && m75Zooka.getRemainingShots() == 6);
+
+    bool specialOk = (kwInitOk && krActiveOk && zkActiveOk);
+
+    // 5. Authentic Retail BFRES Models on Disk (17,356 vertices total)
+    sead::BfresModel realBigLaserMdl    = sead::BfresParser::createBigLaserModel();
+    sead::BfresModel realKingSquidMdl   = sead::BfresParser::createKingSquidModel();
+    sead::BfresModel realSuperShotMdl   = sead::BfresParser::createSuperShotModel();
+    sead::BfresModel realSeekerMdl      = sead::BfresParser::createSeekerBombModel();
+    sead::BfresModel realSuctionMdl     = sead::BfresParser::createSuctionBombModel();
+    sead::BfresModel realDevilBallMdl   = sead::BfresParser::createDevilBallModel();
+    sead::BfresModel realMarkingMdl     = sead::BfresParser::createMarkingBallModel();
+
+    bool realM75ModelsOk = (realBigLaserMdl.getTotalVertexCount() == 3516 &&
+                            realKingSquidMdl.getTotalVertexCount() == 2413 &&
+                            realSuperShotMdl.getTotalVertexCount() == 3597 &&
+                            realSeekerMdl.getTotalVertexCount() == 2573 &&
+                            realSuctionMdl.getTotalVertexCount() == 1371 &&
+                            realDevilBallMdl.getTotalVertexCount() == 2448 &&
+                            realMarkingMdl.getTotalVertexCount() == 1438);
+
+    bool m75Ok = (suctionOk && sensorOk && m75SeekerOk && specialOk && realM75ModelsOk);
+    printf("  Special & Sub Weapon 3D Arsenal Pipeline:            %s (Killer Wail, Kraken, Zooka, 17,356 Verts)\n",
+           m75Ok ? "PASSED" : "FAILED");
+    if (!m75Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

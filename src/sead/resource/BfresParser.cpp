@@ -2897,6 +2897,132 @@ BfresModel BfresParser::createTakolienVehicleSubmarineModel(const char* name) {
     return createProceduralCube(name ? name : "Enm_TakolienVehicleSubmarine", 1.0f);
 }
 
+BfresModel BfresParser::createBigLaserModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsp_BigLaser.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wsp_BigLaser";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Wsp_BigLaser", 1.0f);
+}
+
+BfresModel BfresParser::createKingSquidModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsp_KingSquid.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wsp_KingSquid";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Wsp_KingSquid", 1.0f);
+}
+
+BfresModel BfresParser::createSuperShotModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsp_SuperShot.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wsp_SuperShot";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Wsp_SuperShot", 1.0f);
+}
+
+BfresModel BfresParser::createSeekerBombModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsb_Bomb_Chase.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wsb_Bomb_Chase";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Wsb_Bomb_Chase", 1.0f);
+}
+
+BfresModel BfresParser::createSuctionBombModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsb_Bomb_Hold.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wsb_Bomb_Hold";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Wsb_Bomb_Hold", 1.0f);
+}
+
+BfresModel BfresParser::createDevilBallModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsb_DevilBall.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wsb_DevilBall";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Wsb_DevilBall", 1.0f);
+}
+
+BfresModel BfresParser::createMarkingBallModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Wsb_MarkingBall.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Wsb_MarkingBall";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Wsb_MarkingBall", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");

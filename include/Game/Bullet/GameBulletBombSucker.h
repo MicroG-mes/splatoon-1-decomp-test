@@ -17,6 +17,11 @@ public:
 
     void explode();
 
+    bool isStuck() const { return mIsStuck; }
+    bool isDetonated() const { return mFuseFrames <= 0; }
+    s32 getFuseFrames() const { return mFuseFrames; }
+    f32 getExplosionRadius() const { return mExplosionRadius; }
+
 protected:
     bool mIsStuck;
     sead::Vector3f mStickNormal;

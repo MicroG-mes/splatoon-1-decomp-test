@@ -220,6 +220,13 @@ public:
     static BfresModel createTakolienVehicleFixModel(const char* name = "Enm_TakolienVehicleFix");
     static BfresModel createTakolienVehicleMoveModel(const char* name = "Enm_TakolienVehicleMove");
     static BfresModel createTakolienVehicleSubmarineModel(const char* name = "Enm_TakolienVehicleSubmarine");
+    static BfresModel createBigLaserModel(const char* name = "Wsp_BigLaser");
+    static BfresModel createKingSquidModel(const char* name = "Wsp_KingSquid");
+    static BfresModel createSuperShotModel(const char* name = "Wsp_SuperShot");
+    static BfresModel createSeekerBombModel(const char* name = "Wsb_Bomb_Chase");
+    static BfresModel createSuctionBombModel(const char* name = "Wsb_Bomb_Hold");
+    static BfresModel createDevilBallModel(const char* name = "Wsb_DevilBall");
+    static BfresModel createMarkingBallModel(const char* name = "Wsb_MarkingBall");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
