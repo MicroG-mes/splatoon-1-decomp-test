@@ -103,6 +103,7 @@
 #include "Game/Player/SkillTipsCatalog.h"
 #include "Game/Mission/CuttlefishDialogueMgr.h"
 #include "Game/Camera/CameraParamEngine.h"
+#include "Game/Camera/CameraSequenceDirector.h"
 #include "Game/Effect/ParticleBindCatalog.h"
 #include "Game/Plaza/PlazaAvatarCatalog.h"
 #include "Game/Audio/SLinkDatabase.h"
@@ -2983,6 +2984,67 @@ bool RunVerificationSuite() {
     printf("  Octarian UFO Spawner & Missile Turret Station: %s (Missile 5m/s/15-30f, UFO 1000 HP, 4,361 Verts)\n",
            m57Ok ? "PASSED" : "FAILED");
     if (!m57Ok) allPassed = false;
+
+    // -----------------------------------------------------------------
+    // Milestone 58 Verification: Splatoon Camera Sequence Director & Post-Game Cinematics
+    // -----------------------------------------------------------------
+    Game::CameraSequenceDirector camDirector;
+    bool directorInitOk = camDirector.init(&camEngine);
+
+    // 1. Test Match Intro cinematic sequence (PreGame Stage -> Friend -> Opposite)
+    bool introStartOk = camDirector.startSequence(Game::CameraSequenceType::MatchIntro);
+    bool introTotalFramesOk = (camDirector.getTotalFrames() == 210);
+    bool kf0Ok = (camDirector.getCurrentKeyframeIndex() == 0);
+
+    // Advance 90 frames to Friend player view
+    camDirector.update(90.0f);
+    bool kf1Ok = (camDirector.getCurrentKeyframeIndex() == 1);
+
+    // Advance 60 frames to Opposite team player view
+    camDirector.update(60.0f);
+    bool kf2Ok = (camDirector.getCurrentKeyframeIndex() == 2);
+
+    // Complete sequence
+    camDirector.update(60.0f);
+    bool introFinishedOk = (camDirector.isFinished() && !camDirector.isPlaying());
+    bool matchIntroOk = (introStartOk && introTotalFramesOk && kf0Ok && kf1Ok && kf2Ok && introFinishedOk);
+
+    // 2. Test Post-Game Stage Sweep with simultaneous Dual TV & GamePad DRC top-down output
+    bool sweepStartOk = camDirector.startSequence(Game::CameraSequenceType::PostGameMatchSweep, "Fld_Ruins00");
+    bool sweepFramesOk = (camDirector.getTotalFrames() == 210);
+
+    const auto& tvCam = camDirector.getCurrentCameraTV();
+    const auto& drcCam = camDirector.getCurrentCameraDRC();
+    bool dualViewportsOk = (tvCam.pos.y > 1000.0f && drcCam.pos.y > 5000.0f && (std::abs(drcCam.fovy - 10.0f) < 0.01f || std::abs(drcCam.fovy - 15.0f) < 0.01f));
+
+    // Advance 120 frames to Game_FinalResult (Judd victory / defeat pedestal)
+    camDirector.update(120.0f);
+    bool finalResultCutOk = (camDirector.getCurrentKeyframeIndex() == 1);
+    camDirector.update(30.0f); // Advance through 20-frame transition interpolation
+    const auto& resultCam = camDirector.getCurrentCameraTV();
+    bool juddPedestalOk = (resultCam.at.z < -2000.0f);
+
+    bool postGameOk = (sweepStartOk && sweepFramesOk && dualViewportsOk && finalResultCutOk && juddPedestalOk);
+
+    // 3. Test Tutorial Super Jump launch sequence
+    bool jumpStartOk = camDirector.startSequence(Game::CameraSequenceType::TutorialSuperJump);
+    bool jumpFramesOk = (camDirector.getTotalFrames() == 180);
+    const auto& jumpCam = camDirector.getCurrentCameraTV();
+    bool jumpCoordOk = (std::abs(jumpCam.pos.x - 690.0f) < 0.1f && std::abs(jumpCam.pos.y - 260.0f) < 0.1f);
+    bool tutorialJumpOk = (jumpStartOk && jumpFramesOk && jumpCoordOk);
+
+    // 4. Test Staff Roll panoramic credits crawl (16:9 widescreen, 48.5 FOV)
+    bool staffStartOk = camDirector.startSequence(Game::CameraSequenceType::StaffRollCredits);
+    bool staffFramesOk = (camDirector.getTotalFrames() == 300);
+    const auto& staffCam = camDirector.getCurrentCameraTV();
+    bool staffAspectOk = (std::abs(staffCam.aspect - 1.77777779f) < 0.01f && std::abs(staffCam.fovy - 48.5f) < 0.01f);
+    bool staffRollOk = (staffStartOk && staffFramesOk && staffAspectOk);
+
+    bool m58Ok = (directorInitOk && matchIntroOk && postGameOk && tutorialJumpOk && staffRollOk);
+
+    printf("  Camera Sequence Director & Cinematics:        %s (Intro 210f, Sweep TV/DRC, Tutorial Jump, Staff Roll)\n",
+           m58Ok ? "PASSED" : "FAILED");
+    if (!m58Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
