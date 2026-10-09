@@ -37,6 +37,7 @@ void EnemyHohei::init() {
  * Resource load.
  */
 void EnemyHohei::vfunc_3() {
+    mModel = sead::BfresParser::createOctotrooperModel("Enm_Hohei");
     mWorldPos.set(0.0f, 0.0f, 0.0f);
 }
 

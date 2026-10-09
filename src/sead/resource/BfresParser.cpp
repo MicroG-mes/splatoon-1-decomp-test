@@ -1134,9 +1134,19 @@ BfresModel BfresParser::createOctotrooperModel(const char* name, u32 teamId) {
 
     BfresParser szsParser;
     if (szsParser.loadFromSzsFile("content/Model/Enm_Hohei.szs")) {
-        const BfresModel* realModel = szsParser.getModel(0);
-        if (realModel && !realModel->meshes.empty()) {
-            BfresModel copy = *realModel;
+        const BfresModel* mainModel = nullptr;
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* m = szsParser.getModel(i);
+            if (m && m->name.find("Enm_Hohei") != std::string::npos) {
+                mainModel = m;
+                break;
+            }
+        }
+        if (!mainModel && szsParser.getModelCount() > 0) {
+            mainModel = szsParser.getModel(0);
+        }
+        if (mainModel && !mainModel->meshes.empty()) {
+            BfresModel copy = *mainModel;
             if (name) copy.name = name;
             f32 scale = 0.16f;
             for (auto& m : copy.meshes) {
@@ -3021,6 +3031,96 @@ BfresModel BfresParser::createMarkingBallModel(const char* name) {
         if (!combined.meshes.empty()) return combined;
     }
     return createProceduralCube(name ? name : "Wsb_MarkingBall", 1.0f);
+}
+
+BfresModel BfresParser::createAirDancerModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_AirDancer.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_AirDancer";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_AirDancer", 2.0f);
+}
+
+BfresModel BfresParser::createHeavyCraneMachineModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Lft_HeavyCraneMachine.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Lft_HeavyCraneMachine";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Lft_HeavyCraneMachine", 5.0f);
+}
+
+BfresModel BfresParser::createJudgeSleepModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Npc_JudgeSleep.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Npc_JudgeSleep";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Npc_JudgeSleep", 1.5f);
+}
+
+BfresModel BfresParser::createJerryModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Obj_Jerry00.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Obj_Jerry00";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Obj_Jerry00", 1.2f);
+}
+
+BfresModel BfresParser::createClimbLiftModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Lft_ClimbLift.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Lft_ClimbLift";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Lft_ClimbLift", 2.0f);
 }
 
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {

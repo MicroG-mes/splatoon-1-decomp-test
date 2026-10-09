@@ -227,6 +227,11 @@ public:
     static BfresModel createSuctionBombModel(const char* name = "Wsb_Bomb_Hold");
     static BfresModel createDevilBallModel(const char* name = "Wsb_DevilBall");
     static BfresModel createMarkingBallModel(const char* name = "Wsb_MarkingBall");
+    static BfresModel createAirDancerModel(const char* name = "Obj_AirDancer");
+    static BfresModel createHeavyCraneMachineModel(const char* name = "Lft_HeavyCraneMachine");
+    static BfresModel createJudgeSleepModel(const char* name = "Npc_JudgeSleep");
+    static BfresModel createJerryModel(const char* name = "Obj_Jerry00");
+    static BfresModel createClimbLiftModel(const char* name = "Lft_ClimbLift");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

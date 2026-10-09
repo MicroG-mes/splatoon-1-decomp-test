@@ -175,6 +175,12 @@
 #include "Game/Enemy/Enm_TakolienVehicleSubmarine.h"
 #include "Game/Bullet/GameBulletBombSucker.h"
 #include "Game/Bullet/BulletBombMarking.h"
+#include "Game/MapObj/Obj_AirDancer.h"
+#include "Game/MapObj/Lft_HeavyCraneMachine.h"
+#include "Game/MapObj/Lft_ClimbLift.h"
+#include "Game/Npc/Npc_JudgeSleep.h"
+#include "Game/Npc/Obj_Jerry00.h"
+#include "Game/Enemy/Enm_Hohei.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -4750,6 +4756,122 @@ bool RunVerificationSuite() {
     printf("  Special & Sub Weapon 3D Arsenal Pipeline:            %s (Killer Wail, Kraken, Zooka, 17,356 Verts)\n",
            m75Ok ? "PASSED" : "FAILED");
     if (!m75Ok) allPassed = false;
+
+    // --- [76/76] OCTOTROOPER MINIONS, AIR DANCERS, HEAVY CRANES & PLAZA INHABITANTS ---
+    printf("\n--- [76/76] OCTOTROOPER MINIONS, AIR DANCERS, HEAVY CRANES & PLAZA INHABITANTS ---\n");
+
+    // 1. Octotrooper Infantry Soldier (Enm_Hohei / EnemyHohei)
+    Game::EnemyHohei m76Octotrooper;
+    m76Octotrooper.init();
+    bool hoheiSpawnOk = (m76Octotrooper.getState() == Game::OctotrooperState::cIdlePatrol &&
+                         m76Octotrooper.getRemainingHp() == 40.0f);
+
+    // AI targeting player within 15m -> Charge -> Shoot
+    sead::Vector3f playerNearby(5.0f, 0.0f, 5.0f);
+    m76Octotrooper.updateAi(playerNearby);
+    bool hoheiChargeOk = (m76Octotrooper.getState() == Game::OctotrooperState::cAimCharge);
+    for (int f = 0; f < 50; ++f) m76Octotrooper.updateAi(playerNearby);
+    bool hoheiShootOk = (m76Octotrooper.getState() == Game::OctotrooperState::cShoot ||
+                         m76Octotrooper.getState() == Game::OctotrooperState::cHopBack);
+
+    // Damage & defeat
+    m76Octotrooper.applyDamage(40.0f);
+    bool hoheiDefeatOk = (m76Octotrooper.getState() == Game::OctotrooperState::cSplatted &&
+                          m76Octotrooper.getRemainingHp() <= 0.0f);
+    bool m76HoheiOk = (hoheiSpawnOk && hoheiChargeOk && hoheiShootOk && hoheiDefeatOk);
+
+    // 2. Inflatable Tube Dancer Prop & Aerodynamics (Obj_AirDancer)
+    Game::Obj_AirDancer airDancer;
+    airDancer.init();
+    bool adInitOk = (airDancer.getState() == Game::AirDancerState::cWaving &&
+                     airDancer.getInflationRatio() == 1.0f);
+    for (int f = 0; f < 60; ++f) airDancer.update();
+    bool adWobbleOk = (std::abs(airDancer.getWobbleAngle()) > 0.1f &&
+                       airDancer.getTipOffset().y > 4.0f);
+
+    // Dynamic ink impact causes limp deflection
+    airDancer.applyImpact(sead::Vector3f(1.0f, 0.0f, 0.0f));
+    bool adImpactOk = (airDancer.getState() == Game::AirDancerState::cLimpHit &&
+                       airDancer.getInflationRatio() < 1.0f);
+    airDancer.setBlowerActive(false);
+    for (int f = 0; f < 30; ++f) airDancer.update();
+    bool adDeflateOk = (airDancer.getState() == Game::AirDancerState::cDeflated);
+    bool airDancerOk = (adInitOk && adWobbleOk && adImpactOk && adDeflateOk);
+
+    // 3. Heavy Industrial Tower Crane Lift (Lft_HeavyCraneMachine)
+    Game::Lft_HeavyCraneMachine heavyCrane;
+    heavyCrane.init();
+    bool hcParamOk = (heavyCrane.getEnterMoveDuration() == 10.0f &&
+                      heavyCrane.getEnterBreak0Duration() == 5.0f &&
+                      heavyCrane.getEnterBreak1Duration() == 5.0f);
+    heavyCrane.setTargetAngle(90.0f);
+    heavyCrane.setTargetTrolleyDist(25.0f);
+    heavyCrane.setTargetHoistHeight(18.0f);
+    for (int f = 0; f < 120; ++f) heavyCrane.update();
+    bool hcKinematicsOk = (heavyCrane.getCurrentAngle() > 0.0f &&
+                           heavyCrane.getTrolleyDist() > 15.0f &&
+                           heavyCrane.getHoistHeight() > 10.0f);
+    sead::Vector3f platPos = heavyCrane.getPlatformWorldPos();
+    bool hcPlatOk = (platPos.y > 10.0f);
+    bool heavyCraneOk = (hcParamOk && hcKinematicsOk && hcPlatOk);
+
+    // 4. Sleeping Judd the Cat NPC (Npc_JudgeSleep)
+    Game::Npc_JudgeSleep judgeSleep;
+    judgeSleep.init();
+    bool jsInitOk = (judgeSleep.getState() == Game::JudgeSleepState::cDeepSleep &&
+                     !judgeSleep.isAwake());
+    for (int f = 0; f < 45; ++f) judgeSleep.update();
+    bool jsBreathOk = (judgeSleep.getChestExpansion() >= 1.0f &&
+                       judgeSleep.getSnoreBubbleSize() > 0.5f);
+    judgeSleep.wakeUp();
+    bool jsWakeOk = (judgeSleep.isAwake());
+    bool judgeSleepOk = (jsInitOk && jsBreathOk && jsWakeOk);
+
+    // 5. Jellyfish Citizen Spectator NPC (Obj_Jerry00 / Npc_Jerry00)
+    Game::Obj_Jerry00 jerryDefault(Game::JerryVariant::cDefault);
+    Game::Obj_Jerry00 jerryHelmet(Game::JerryVariant::cHelmet);
+    Game::Obj_Jerry00 jerryArt(Game::JerryVariant::cArt);
+    Game::Obj_Jerry00 jerryWedding(Game::JerryVariant::cWeddingRelative);
+    jerryDefault.init();
+    bool jrInitOk = (jerryDefault.getVariant() == Game::JerryVariant::cDefault &&
+                     jerryHelmet.getVariant() == Game::JerryVariant::cHelmet &&
+                     jerryArt.getVariant() == Game::JerryVariant::cArt &&
+                     jerryWedding.getVariant() == Game::JerryVariant::cWeddingRelative);
+    for (int f = 0; f < 60; ++f) jerryDefault.update();
+    bool jrWobbleOk = (jerryDefault.getGelatinousSquish() != 1.0f);
+    jerryDefault.triggerCheer();
+    jerryDefault.update();
+    bool jrCheerOk = (jerryDefault.getBobbingHeight() > 0.0f);
+    bool jerryOk = (jrInitOk && jrWobbleOk && jrCheerOk);
+
+    // 6. Vertical Inkable Climb Surface Lift (Lft_ClimbLift)
+    Game::Lft_ClimbLift climbLift;
+    climbLift.init();
+    bool climbLiftInitOk = (climbLift.getState() == Game::ClimbLiftState::cMovingUp &&
+                            climbLift.isInkCovered());
+    for (int f = 0; f < 100; ++f) climbLift.update();
+    bool clMoveOk = (climbLift.getCurrentHeight() > 0.0f);
+    bool climbLiftOk = (climbLiftInitOk && clMoveOk);
+
+    // 7. Authentic Retail BFRES Models on Disk (25,374 vertices total)
+    sead::BfresModel realHoheiMdl       = sead::BfresParser::createOctotrooperModel();
+    sead::BfresModel realAirDancerMdl   = sead::BfresParser::createAirDancerModel();
+    sead::BfresModel realHeavyCraneMdl  = sead::BfresParser::createHeavyCraneMachineModel();
+    sead::BfresModel realJudgeSleepMdl  = sead::BfresParser::createJudgeSleepModel();
+    sead::BfresModel realJerryMdl       = sead::BfresParser::createJerryModel();
+    sead::BfresModel realClimbLiftMdl   = sead::BfresParser::createClimbLiftModel();
+
+    bool realM76ModelsOk = (realHoheiMdl.getTotalVertexCount() == 4547 &&
+                            realAirDancerMdl.getTotalVertexCount() == 1698 &&
+                            realHeavyCraneMdl.getTotalVertexCount() == 13755 &&
+                            realJudgeSleepMdl.getTotalVertexCount() == 3517 &&
+                            realJerryMdl.getTotalVertexCount() == 1337 &&
+                            realClimbLiftMdl.getTotalVertexCount() == 520);
+
+    bool m76Ok = (m76HoheiOk && airDancerOk && heavyCraneOk && judgeSleepOk && jerryOk && climbLiftOk && realM76ModelsOk);
+    printf("  Octotrooper Minions, Air Dancers, Cranes & Citizens:  %s (Hohei 4,547V, Crane 13,755V, Judge 3,517V, 25,374 Verts)\n",
+           m76Ok ? "PASSED" : "FAILED");
+    if (!m76Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

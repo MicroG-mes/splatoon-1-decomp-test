@@ -3,6 +3,7 @@
 #include "types.h"
 #include "Game/Actor/GambitActor.h"
 #include "sead/math/seadVector.h"
+#include "sead/resource/BfresParser.h"
 
 namespace Game {
 
@@ -48,6 +49,8 @@ public:
     OctotrooperState getState() const { return mState; }
     f32 getRemainingHp() const { return mCurrentHp; }
     const sead::Vector3f& getPosition() const { return mWorldPos; }
+    u32 getModelVertexCount() const { return static_cast<u32>(mModel.getTotalVertexCount()); }
+    const sead::BfresModel& getModel() const { return mModel; }
 
 protected:
     void fireInkBlob();
@@ -77,6 +80,7 @@ protected:
     undefined mPadding5[0x8];
 
     void* mStateMachineComponent;      // 0x20C
+    sead::BfresModel mModel;
 };
 
 // Internal binary alias
