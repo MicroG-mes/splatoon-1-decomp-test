@@ -179,6 +179,9 @@ public:
     static BfresModel createCylinderKingPoisonPondModel(const char* name = "Obj_CylinderKingPoisonPond");
     static BfresModel createWarpPointFlagModel(const char* name = "Obj_Flag");
     static BfresModel createSubFlagModel(const char* name = "Wsb_Flag");
+    static BfresModel createAirBallModel(const char* name = "Obj_AirBall");
+    static BfresModel createAirBallDuelModel(const char* name = "Obj_AirBallDuel");
+    static BfresModel createAirBallMsnModel(const char* name = "Obj_AirBallMsn");
 
     bool loadFromSzsFile(const char* szsFilePath);
 

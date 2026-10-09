@@ -134,6 +134,8 @@
 #include "Game/Enemy/Obj_CylinderKingBall.h"
 #include "Game/MapObj/Obj_WarpPointFlag.h"
 #include "Game/MapObj/Obj_DefenseTower.h"
+#include "Game/MapObj/Obj_AirBall.h"
+#include "Game/MapObj/Obj_AncientDocument.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -3280,6 +3282,107 @@ bool RunVerificationSuite() {
     printf("  Octonozzle Rolling Ball & Checkpoint Flags:    %s (Ball 2.5m/s/60HP, Flag 3 Lives, Tower 350HP, 4,971 Verts)\n",
            m60Ok ? "PASSED" : "FAILED");
     if (!m60Ok) allPassed = false;
+
+    // 61. Octo Valley Balloon Fish Target Sequences & Sunken Scroll Collectibles (Obj_AirBall & Obj_AncientDocument)
+    printf("\n--- [61/61] OCTO VALLEY BALLOON FISH SEQUENCES & SUNKEN SCROLL COLLECTIBLES ---\n");
+
+    // 1. Mission Balloon Target Sequence Chain (Obj_AirBall)
+    Game::Obj_AirBall b0(Game::AirBallType::cType_Mission);
+    Game::Obj_AirBall b1(Game::AirBallType::cType_Mission);
+    Game::Obj_AirBall b2(Game::AirBallType::cType_Mission);
+
+    b0.setSequence(1, 0, 3, 600);
+    b1.setSequence(1, 1, 3, 600);
+    b2.setSequence(1, 2, 3, 600);
+
+    b0.linkNext(&b1);
+    b1.linkNext(&b2);
+
+    b0.init();
+    b1.init();
+    b2.init();
+
+    bool seqInitOk = (b0.getState() == Game::AirBallState::cState_Appear &&
+                      b1.getState() == Game::AirBallState::cState_Hidden &&
+                      b2.getState() == Game::AirBallState::cState_Hidden);
+
+    // Advance 15 frames for b0 to fully inflate
+    for (int f = 0; f < 15; ++f) {
+        b0.update();
+    }
+    bool b0ReadyOk = (b0.getState() == Game::AirBallState::cState_Wait && std::abs(b0.getScale() - 1.0f) < 0.05f);
+
+    // Advance 40 frames to simulate harmonic bobbing
+    for (int f = 0; f < 40; ++f) {
+        b0.update();
+    }
+    bool b0BobbingOk = (std::abs(b0.getCurrentYOffset()) <= b0.getParams().mBobbingAmplitude + 0.1f);
+
+    // Hit b0: pops and activates b1!
+    bool b0Hit = b0.applyDamage(1.0f, 1);
+    bool b1Activated = (b0.isBurst() && b1.getState() == Game::AirBallState::cState_Appear);
+
+    // Inflate b1, then pop b1 -> activates b2
+    for (int f = 0; f < 15; ++f) b1.update();
+    bool b1Hit = b1.applyDamage(1.0f, 1);
+    bool b2Activated = (b1.isBurst() && b2.getState() == Game::AirBallState::cState_Appear);
+
+    // Inflate b2, pop b2 -> completes chain!
+    for (int f = 0; f < 15; ++f) b2.update();
+    bool b2Hit = b2.applyDamage(1.0f, 1);
+    bool chainCompletedOk = (b2.isBurst() && b2.isChainCompleted());
+
+    bool airBallSeqOk = (seqInitOk && b0ReadyOk && b0BobbingOk && b0Hit && b1Activated && b1Hit && b2Activated && b2Hit && chainCompletedOk);
+
+    // 2. Battle Dojo Duel Balloon (Obj_AirBall Duel)
+    Game::Obj_AirBall duelBall(Game::AirBallType::cType_Duel);
+    duelBall.init();
+    for (int f = 0; f < 15; ++f) duelBall.update();
+    duelBall.setFeverMode(true);
+    bool feverModeOk = duelBall.isFeverMode();
+    duelBall.setPosition(sead::Vector3f(10.0f, 5.0f, 20.0f));
+    bool sphereHitOk = duelBall.checkHit(sead::Vector3f(10.0f, 5.0f, 25.0f), 2.0f);
+    bool duelPopOk = duelBall.applyDamage(1.0f, 2);
+
+    bool airBallDuelOk = (feverModeOk && sphereHitOk && duelPopOk && duelBall.isBurst());
+
+    // 3. Sunken Scroll Collectible (Obj_AncientDocument)
+    Game::Obj_AncientDocument sunkenScroll(1, false);
+    sunkenScroll.spawn(sead::Vector3f(0.0f, 2.0f, 0.0f), 1, false);
+
+    // Advance 30 frames: verify yaw spinning and pillar beam glow ramp
+    for (int f = 0; f < 30; ++f) {
+        sunkenScroll.update();
+    }
+    bool scrollSpinOk = (sunkenScroll.getYaw() > 0.0f);
+    bool pillarGlowOk = (sunkenScroll.getPillarIntensity() > 5.0f && sunkenScroll.getPillarHeight() == 100.0f);
+
+    // Player collects scroll
+    bool collectedOk = sunkenScroll.tryCollect(sead::Vector3f(0.0f, 2.0f, 1.0f), 1.0f, 1);
+    bool scrollStateOk = (collectedOk && sunkenScroll.isCollected() && sunkenScroll.getPillarIntensity() == 0.0f);
+
+    bool sunkenScrollOk = (scrollSpinOk && pillarGlowOk && scrollStateOk && sunkenScroll.getDocumentId() == 1);
+
+    // 4. Authentic Retail BFRES 3D Models on Disk (3,837 vertices total)
+    sead::BfresModel realAirBall = sead::BfresParser::createAirBallModel();
+    sead::BfresModel realAirBallDuel = sead::BfresParser::createAirBallDuelModel();
+    sead::BfresModel realAirBallMsn = sead::BfresParser::createAirBallMsnModel();
+    sead::BfresModel realScroll = sead::BfresParser::createSunkenScrollModel();
+    sead::BfresModel realScrollDummy = sead::BfresParser::createSunkenScrollDummyModel();
+
+    bool airBallModelOk = (realAirBall.getTotalVertexCount() == 953);
+    bool airBallDuelModelOk = (realAirBallDuel.getTotalVertexCount() == 949);
+    bool airBallMsnModelOk = (realAirBallMsn.getTotalVertexCount() == 953);
+    bool scrollModelOk = (realScroll.getTotalVertexCount() == 491);
+    bool scrollDummyModelOk = (realScrollDummy.getTotalVertexCount() == 491);
+
+    bool m61Ok = (airBallSeqOk && airBallDuelOk && sunkenScrollOk &&
+                  airBallModelOk && airBallDuelModelOk && airBallMsnModelOk &&
+                  scrollModelOk && scrollDummyModelOk);
+
+    printf("  Balloon Fish Sequences & Sunken Scrolls:       %s (Chained Spline Targets, 80f Bobbing, Pillar Beam 100m, 3,837 Verts)\n",
+           m61Ok ? "PASSED" : "FAILED");
+    if (!m61Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");
