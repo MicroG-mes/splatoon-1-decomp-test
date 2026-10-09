@@ -170,6 +170,9 @@
 #include "Game/MapObj/Obj_SeesawLift.h"
 #include "Game/MapObj/Obj_BridgeUpDown00.h"
 #include "Game/MapObj/Lft_Charge.h"
+#include "Game/Enemy/Enm_TakolienVehicleFix.h"
+#include "Game/Enemy/Enm_TakolienVehicleMove.h"
+#include "Game/Enemy/Enm_TakolienVehicleSubmarine.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -4570,6 +4573,93 @@ bool RunVerificationSuite() {
     printf("  Octosniper Turrets, Balance Seesaws & Drawbridges:   %s (Laser Lock, Restitution, 8,880 Verts)\n",
            m73Ok ? "PASSED" : "FAILED");
     if (!m73Ok) allPassed = false;
+
+    // --- [74/74] OCTOLING ARMORED ASSAULT MECHS & SUBMERSIBLES ---
+    printf("\n--- [74/74] OCTOLING ARMORED ASSAULT MECHS & SUBMERSIBLES ---\n");
+
+    // 1. Enm_TakolienVehicleFix (Heavy Turret Cannon)
+    Game::Enm_TakolienVehicleFix fixMech;
+    fixMech.init();
+    fixMech.spawn(sead::Vector3f(0.0f, 0.0f, 0.0f), 0.0f);
+    bool fixInitOk = (fixMech.getState() == Game::VehicleFixState::cIdle &&
+                      fixMech.getHealth() == 200.0f && fixMech.getCanopyHealth() == 100.0f &&
+                      !fixMech.isPilotEjected());
+
+    // Target tracking and bubble mortar burst
+    fixMech.updateAim(sead::Vector3f(0.0f, 0.0f, 20.0f));
+    bool fixAimOk = (fixMech.getState() == Game::VehicleFixState::cAiming);
+    for (int f = 0; f < 18; ++f) fixMech.vfunc_7();
+    bool fixFireOk = (fixMech.getShotsFired() >= 1);
+
+    // Canopy armor deflection & catastrophic destruction with pilot ejection
+    fixMech.takeDamage(50.0f, true);
+    bool fixShieldOk = (fixMech.getCanopyHealth() == 50.0f && fixMech.getHealth() == 200.0f);
+    fixMech.takeDamage(200.0f, false);
+    bool fixDestructOk = (fixMech.isDestroyed() && fixMech.isPilotEjected());
+
+    bool vehicleFixOk = (fixInitOk && fixAimOk && fixFireOk && fixShieldOk && fixDestructOk);
+
+    // 2. Enm_TakolienVehicleMove (Bipedal Assault Walker)
+    Game::Enm_TakolienVehicleMove moveMech;
+    moveMech.init();
+    moveMech.spawn(sead::Vector3f(0.0f, 0.0f, 0.0f), sead::Vector3f(15.0f, 0.0f, 0.0f));
+    bool mvInitOk = (moveMech.getState() == Game::VehicleMoveState::cPatrol &&
+                     moveMech.getHealth() == 150.0f && moveMech.getStridePhase() == 0.0f);
+
+    for (int f = 0; f < 20; ++f) moveMech.vfunc_7();
+    bool mvPatrolOk = (moveMech.getPosition().x > 0.0f && moveMech.getStridePhase() > 0.0f);
+
+    // Pursuit chase and bubble cannon attack
+    moveMech.updateAi(sead::Vector3f(25.0f, 0.0f, 0.0f));
+    bool mvChaseOk = (moveMech.getState() == Game::VehicleMoveState::cChase);
+    moveMech.updateAi(sead::Vector3f(10.0f, 0.0f, 0.0f));
+    bool mvShootOk = (moveMech.getState() == Game::VehicleMoveState::cShoot);
+    for (int f = 0; f < 25; ++f) moveMech.vfunc_7();
+    bool mvFireOk = (moveMech.getShotsFired() >= 1);
+
+    moveMech.takeDamage(150.0f);
+    bool mvDestructOk = (moveMech.isDestroyed() && moveMech.isPilotEjected());
+
+    bool vehicleMoveOk = (mvInitOk && mvPatrolOk && mvChaseOk && mvShootOk && mvFireOk && mvDestructOk);
+
+    // 3. Enm_TakolienVehicleSubmarine (Ink-Submersible Pod)
+    Game::Enm_TakolienVehicleSubmarine subMech;
+    subMech.init();
+    subMech.spawn(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    bool subInitOk = (subMech.getState() == Game::VehicleSubmarineState::cSubmerged &&
+                      subMech.isSubmerged() && subMech.getCurrentDepth() == -3.0f &&
+                      subMech.getHealth() == 180.0f);
+
+    // Periscope tracking & surface breach eruption
+    subMech.updateSubmarineAi(sead::Vector3f(0.0f, 0.0f, 15.0f));
+    bool subPeriOk = (subMech.getState() == Game::VehicleSubmarineState::cPeriscope &&
+                      subMech.getCurrentDepth() == -0.5f);
+
+    subMech.updateSubmarineAi(sead::Vector3f(0.0f, 0.0f, 5.0f));
+    bool subBreachOk = (subMech.getState() == Game::VehicleSubmarineState::cBreachJump &&
+                        subMech.getBreachCount() == 1);
+    for (int f = 0; f < 20; ++f) subMech.vfunc_7();
+    bool subSurfaceOk = (subMech.getState() == Game::VehicleSubmarineState::cSurfaced &&
+                         subMech.getCurrentDepth() >= 0.0f);
+
+    subMech.takeDamage(180.0f);
+    bool subDestructOk = (subMech.isDestroyed() && subMech.isPilotEjected());
+
+    bool vehicleSubOk = (subInitOk && subPeriOk && subBreachOk && subSurfaceOk && subDestructOk);
+
+    // 4. Authentic Retail BFRES Models on Disk (22,469 vertices total)
+    sead::BfresModel realVehFixMdl  = sead::BfresParser::createTakolienVehicleFixModel();
+    sead::BfresModel realVehMoveMdl = sead::BfresParser::createTakolienVehicleMoveModel();
+    sead::BfresModel realVehSubMdl  = sead::BfresParser::createTakolienVehicleSubmarineModel();
+
+    bool realM74ModelsOk = (realVehFixMdl.getTotalVertexCount() == 8049 &&
+                            realVehMoveMdl.getTotalVertexCount() == 6248 &&
+                            realVehSubMdl.getTotalVertexCount() == 8172);
+
+    bool m74Ok = (vehicleFixOk && vehicleMoveOk && vehicleSubOk && realM74ModelsOk);
+    printf("  Octoling Assault Mechs & Ink-Submersibles:           %s (Mortar, Walker, Breach, 22,469 Verts)\n",
+           m74Ok ? "PASSED" : "FAILED");
+    if (!m74Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

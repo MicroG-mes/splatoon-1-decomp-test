@@ -2843,6 +2843,60 @@ BfresModel BfresParser::createBridgeUpDown00Model(const char* name) {
     return createProceduralCube(name ? name : "Obj_BridgeUpDown00", 1.0f);
 }
 
+BfresModel BfresParser::createTakolienVehicleFixModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_TakolienVehicleFix.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Enm_TakolienVehicleFix";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Enm_TakolienVehicleFix", 1.0f);
+}
+
+BfresModel BfresParser::createTakolienVehicleMoveModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_TakolienVehicleMove.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Enm_TakolienVehicleMove";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Enm_TakolienVehicleMove", 1.0f);
+}
+
+BfresModel BfresParser::createTakolienVehicleSubmarineModel(const char* name) {
+    BfresParser szsParser;
+    if (szsParser.loadFromSzsFile("content/Model/Enm_TakolienVehicleSubmarine.szs")) {
+        BfresModel combined;
+        combined.name = name ? name : "Enm_TakolienVehicleSubmarine";
+        for (size_t i = 0; i < szsParser.getModelCount(); ++i) {
+            const BfresModel* part = szsParser.getModel(i);
+            if (part) {
+                for (const auto& mesh : part->meshes) {
+                    combined.meshes.push_back(mesh);
+                }
+            }
+        }
+        if (!combined.meshes.empty()) return combined;
+    }
+    return createProceduralCube(name ? name : "Enm_TakolienVehicleSubmarine", 1.0f);
+}
+
 bool BfresParser::loadFromSzsFile(const char* szsFilePath) {
     if (!szsFilePath) return false;
     FILE* fp = fopen(szsFilePath, "rb");
