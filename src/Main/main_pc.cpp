@@ -151,6 +151,9 @@
 #include "Game/MapObj/Obj_SquidGuard.h"
 #include "Game/Enemy/Enm_BossWeakPoint.h"
 #include "Game/Enemy/Enm_OctLeg.h"
+#include "Game/Npc/Npc_Commander.h"
+#include "Game/Npc/Npc_CommanderBind.h"
+#include "Game/MapObj/Obj_AtarimeHouse.h"
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -3940,6 +3943,98 @@ bool RunVerificationSuite() {
     printf("  Boss Tentacle Extremities & Weak Point Core:   %s (Shockwaves, Shield Deflect, 11,838 Verts)\n",
            m67Ok ? "PASSED" : "FAILED");
     if (!m67Ok) allPassed = false;
+
+    // --- [68/68] CAP'N CUTTLEFISH OVERWORLD NPC, BOUND BOSS & CABIN HQ ---
+    printf("\n--- [68/68] CAP'N CUTTLEFISH OVERWORLD NPC, BOUND BOSS & CABIN HQ ---\n");
+
+    // 1. Npc_Commander (Cap'n Cuttlefish Overworld Mentor)
+    Game::Npc_Commander commander;
+    commander.init();
+    commander.setPosition(sead::Vector3f(10.0f, 0.0f, 10.0f));
+    commander.vfunc_3();
+    commander.vfunc_5();
+    commander.vfunc_7();
+    commander.vfunc_9();
+
+    bool cfInitOk = (commander.getState() == Game::CommanderState::cState_Wait && !commander.isTalking());
+
+    // Player proximity check (cTalkRadius = 3.5m)
+    bool cfNear = commander.checkPlayerProximity(sead::Vector3f(12.0f, 0.0f, 10.0f)); // dist 2.0m
+    bool cfFar  = commander.checkPlayerProximity(sead::Vector3f(20.0f, 0.0f, 10.0f)); // dist 10.0m
+    bool cfProxOk = (cfNear && !cfFar);
+
+    // Dialogue interaction lifecycle
+    commander.startTalking();
+    bool cfTalkStOk = (commander.isTalking() && commander.getState() == Game::CommanderState::cState_Talk_St);
+    for (int f = 0; f < 6; ++f) commander.update();
+    bool cfTalkAOk = (commander.isTalking() && commander.getState() == Game::CommanderState::cState_Talk_A);
+
+    commander.triggerCaneFlick();
+    bool cfFlickOk = (commander.getState() == Game::CommanderState::cState_Flick);
+    for (int f = 0; f < 15; ++f) commander.update();
+    bool cfReturnWait = (commander.getState() == Game::CommanderState::cState_Wait);
+
+    bool commanderOk = (cfInitOk && cfProxOk && cfTalkStOk && cfTalkAOk && cfFlickOk && cfReturnWait);
+
+    // 2. Npc_CommanderBind (Trapped Cuttlefish in DJ Octavio Boss Arena)
+    Game::Npc_CommanderBind boundCuttlefish;
+    boundCuttlefish.init();
+    boundCuttlefish.setPosition(sead::Vector3f(0.0f, 25.0f, 0.0f));
+    boundCuttlefish.vfunc_3();
+    boundCuttlefish.vfunc_5();
+    boundCuttlefish.vfunc_7();
+    boundCuttlefish.vfunc_9();
+
+    bool cbInitOk = (boundCuttlefish.getState() == Game::CommanderBindState::cState_Wait && boundCuttlefish.isBound());
+
+    // Shiokara-Bushi (Calamari Inkantation) plays -> dancing cheer state
+    boundCuttlefish.startCheeringDance();
+    boundCuttlefish.update();
+    bool cbDanceOk = boundCuttlefish.isDancing();
+
+    // Octavio defeated -> rescue shatter break sequence via vfunc_11
+    boundCuttlefish.vfunc_11();
+    bool cbBreakOk = (boundCuttlefish.getState() == Game::CommanderBindState::cState_Break);
+    for (int f = 0; f < 25; ++f) boundCuttlefish.update();
+    bool cbReleaseOk = (boundCuttlefish.getState() == Game::CommanderBindState::cState_ReleaseCommander);
+    for (int f = 0; f < 12; ++f) boundCuttlefish.update();
+    bool cbLandOk = boundCuttlefish.isRescued();
+
+    bool commanderBindOk = (cbInitOk && cbDanceOk && cbBreakOk && cbReleaseOk && cbLandOk);
+
+    // 3. Obj_AtarimeHouse (Cuttlefish Cabin / Area 1 Headquarters)
+    Game::Obj_AtarimeHouse cuttlefishHQ;
+    cuttlefishHQ.setPosition(sead::Vector3f(0.0f, 0.0f, 0.0f));
+    cuttlefishHQ.init();
+    cuttlefishHQ.vfunc_3();
+    cuttlefishHQ.vfunc_5();
+    cuttlefishHQ.vfunc_7();
+    cuttlefishHQ.vfunc_14();
+
+    bool hqInitOk = (cuttlefishHQ.getState() == Game::AtarimeHouseState::cState_Normal);
+    bool hqNear = cuttlefishHQ.isPlayerInCompound(sead::Vector3f(5.0f, 0.0f, 5.0f)); // dist ~7.0m <= 12.0m
+    bool hqFar  = cuttlefishHQ.isPlayerInCompound(sead::Vector3f(20.0f, 0.0f, 20.0f)); // dist ~28.0m > 12.0m
+    bool hqCompoundOk = (hqNear && !hqFar);
+
+    for (int f = 0; f < 30; ++f) cuttlefishHQ.update();
+    bool hqSwayOk = (cuttlefishHQ.getAntennaSway() != 0.0f);
+    bool hqChimneyOk = (cuttlefishHQ.getChimneyPosition().y == 8.5f);
+
+    bool atarimeHouseOk = (hqInitOk && hqCompoundOk && hqSwayOk && hqChimneyOk);
+
+    // 4. Authentic Retail BFRES Models on Disk
+    sead::BfresModel realCommanderMdl = sead::BfresParser::createCommanderModel();
+    sead::BfresModel realCommanderBindMdl = sead::BfresParser::createCommanderBindModel();
+    sead::BfresModel realAtarimeHouseMdl = sead::BfresParser::createAtarimeHouseModel();
+
+    bool realMdlOk = (realCommanderMdl.getTotalVertexCount() == 13757 &&
+                      realCommanderBindMdl.getTotalVertexCount() == 4759 &&
+                      realAtarimeHouseMdl.getTotalVertexCount() == 29147);
+
+    bool m68Ok = (commanderOk && commanderBindOk && atarimeHouseOk && realMdlOk);
+    printf("  Cap'n Cuttlefish Overworld NPC, Bound Boss & Cabin: %s (Dialogue, Dance Cheer, 47,663 Verts)\n",
+           m68Ok ? "PASSED" : "FAILED");
+    if (!m68Ok) allPassed = false;
 
     printf("\n=================================================================\n");
     printf("[+] Overall Verification Result: %s\n", allPassed ? "PASSED (100% OK)" : "FAILED");

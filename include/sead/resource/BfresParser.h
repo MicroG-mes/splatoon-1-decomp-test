@@ -200,6 +200,9 @@ public:
     static BfresModel createSquidGuardModel(const char* name = "Obj_SquidGuard");
     static BfresModel createBossWeakPointModel(const char* name = "Enm_BossWeakPoint");
     static BfresModel createOctLegModel(const char* name = "Enm_OctLeg");
+    static BfresModel createCommanderModel(const char* name = "Npc_Commander");
+    static BfresModel createCommanderBindModel(const char* name = "Npc_CommanderBind");
+    static BfresModel createAtarimeHouseModel(const char* name = "Obj_AtarimeHouse");
 
     bool loadFromSzsFile(const char* szsFilePath);
 
